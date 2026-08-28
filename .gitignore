@@ -1,0 +1,34 @@
+# Environment files
+.env
+.env.*
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# Node / frontend
+node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Logs
+*.log
+
+# OS / editor files
+.DS_Store
+.vscode/
+.idea/
+
+# Project data and secrets
+uploads/
+data/
+secrets/
+credentials/
