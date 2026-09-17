@@ -1,0 +1,3023 @@
+{
+  "dataset_size": 180,
+  "retrieval_query_count": 20,
+  "profile_count": 8,
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "retrieval": {
+    "summary": {
+      "hit_rate_at_1": 0.9,
+      "hit_rate_at_3": 0.95,
+      "hit_rate_at_5": 1.0,
+      "strict_precision_at_5": 0.9400000000000001,
+      "relaxed_precision_at_5": 1.0,
+      "domain_recall_at_5": 0.525,
+      "mrr": 0.9375,
+      "ndcg_at_5": 0.7447672966568502
+    },
+    "rows": [
+      {
+        "query_id": "RQ001",
+        "query": "Python machine learning internship",
+        "expected_primary_domains": [
+          "Machine Learning"
+        ],
+        "expected_secondary_domains": [
+          "Data Science",
+          "Generative AI / NLP"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0076",
+          "JOB-0075",
+          "JOB-0073",
+          "JOB-0082",
+          "JOB-0084"
+        ],
+        "retrieved_domains": [
+          "Machine Learning",
+          "Machine Learning",
+          "Machine Learning",
+          "Machine Learning",
+          "Machine Learning"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.3333333333333333,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.6387878864795979,
+        "pass": true
+      },
+      {
+        "query_id": "RQ002",
+        "query": "React JavaScript frontend internship",
+        "expected_primary_domains": [
+          "Frontend Development"
+        ],
+        "expected_secondary_domains": [
+          "Full Stack Development"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0038",
+          "JOB-0041",
+          "JOB-0047",
+          "JOB-0044",
+          "JOB-0037"
+        ],
+        "retrieved_domains": [
+          "Frontend Development",
+          "Frontend Development",
+          "Frontend Development",
+          "Frontend Development",
+          "Frontend Development"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.5,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.7601875334318685,
+        "pass": true
+      },
+      {
+        "query_id": "RQ003",
+        "query": "Java Spring Boot backend internship",
+        "expected_primary_domains": [
+          "Java Backend"
+        ],
+        "expected_secondary_domains": [
+          "Software Development"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0024",
+          "JOB-0021",
+          "JOB-0018",
+          "JOB-0015",
+          "JOB-0017"
+        ],
+        "retrieved_domains": [
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.5,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.7601875334318685,
+        "pass": true
+      },
+      {
+        "query_id": "RQ004",
+        "query": "Python FastAPI REST API internship",
+        "expected_primary_domains": [
+          "Python Backend"
+        ],
+        "expected_secondary_domains": [
+          "Software Development"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0026",
+          "JOB-0035",
+          "JOB-0032",
+          "JOB-0029",
+          "JOB-0031"
+        ],
+        "retrieved_domains": [
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.5,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.7601875334318685,
+        "pass": true
+      },
+      {
+        "query_id": "RQ005",
+        "query": "full stack React Node MongoDB internship",
+        "expected_primary_domains": [
+          "Full Stack Development"
+        ],
+        "expected_secondary_domains": [
+          "Frontend Development",
+          "Software Development"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0041",
+          "JOB-0051",
+          "JOB-0054",
+          "JOB-0044",
+          "JOB-0060"
+        ],
+        "retrieved_domains": [
+          "Frontend Development",
+          "Full Stack Development",
+          "Full Stack Development",
+          "Frontend Development",
+          "Full Stack Development"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 2,
+        "strict_precision_at_5": 0.6,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.6666666666666666,
+        "reciprocal_rank": 0.5,
+        "ndcg_at_5": 0.7224242270408039,
+        "pass": true
+      },
+      {
+        "query_id": "RQ006",
+        "query": "data science Python Pandas statistics internship",
+        "expected_primary_domains": [
+          "Data Science"
+        ],
+        "expected_secondary_domains": [
+          "Data Analytics",
+          "Machine Learning"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0069",
+          "JOB-0071",
+          "JOB-0062",
+          "JOB-0070",
+          "JOB-0072"
+        ],
+        "retrieved_domains": [
+          "Data Science",
+          "Data Science",
+          "Data Science",
+          "Data Science",
+          "Data Science"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.3333333333333333,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.6387878864795979,
+        "pass": true
+      },
+      {
+        "query_id": "RQ007",
+        "query": "NLP transformers embeddings RAG internship",
+        "expected_primary_domains": [
+          "Generative AI / NLP"
+        ],
+        "expected_secondary_domains": [
+          "Machine Learning",
+          "Data Science"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0088",
+          "JOB-0091",
+          "JOB-0094",
+          "JOB-0095",
+          "JOB-0085"
+        ],
+        "retrieved_domains": [
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.3333333333333333,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.6387878864795979,
+        "pass": true
+      },
+      {
+        "query_id": "RQ008",
+        "query": "SQL Excel Power BI data analyst internship",
+        "expected_primary_domains": [
+          "Data Analytics"
+        ],
+        "expected_secondary_domains": [
+          "Database / SQL"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0098",
+          "JOB-0101",
+          "JOB-0104",
+          "JOB-0106",
+          "JOB-0107"
+        ],
+        "retrieved_domains": [
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.5,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.7601875334318685,
+        "pass": true
+      },
+      {
+        "query_id": "RQ009",
+        "query": "AWS cloud Docker Terraform internship",
+        "expected_primary_domains": [
+          "Cloud Computing"
+        ],
+        "expected_secondary_domains": [
+          "DevOps"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0110",
+          "JOB-0119",
+          "JOB-0116",
+          "JOB-0113",
+          "JOB-0120"
+        ],
+        "retrieved_domains": [
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.5,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.7601875334318685,
+        "pass": true
+      },
+      {
+        "query_id": "RQ010",
+        "query": "DevOps Linux CI CD Docker internship",
+        "expected_primary_domains": [
+          "DevOps"
+        ],
+        "expected_secondary_domains": [
+          "Cloud Computing"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0129",
+          "JOB-0126",
+          "JOB-0132",
+          "JOB-0123",
+          "JOB-0124"
+        ],
+        "retrieved_domains": [
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "DevOps"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.5,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.7601875334318685,
+        "pass": true
+      },
+      {
+        "query_id": "RQ011",
+        "query": "cybersecurity SOC Linux SIEM internship",
+        "expected_primary_domains": [
+          "Cybersecurity"
+        ],
+        "expected_secondary_domains": [
+          "Cloud Computing"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0141",
+          "JOB-0138",
+          "JOB-0135",
+          "JOB-0139",
+          "JOB-0144"
+        ],
+        "retrieved_domains": [
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.5,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.7601875334318685,
+        "pass": true
+      },
+      {
+        "query_id": "RQ012",
+        "query": "database SQL PostgreSQL internship",
+        "expected_primary_domains": [
+          "Database / SQL"
+        ],
+        "expected_secondary_domains": [
+          "Data Analytics",
+          "Python Backend"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0151",
+          "JOB-0148",
+          "JOB-0145",
+          "JOB-0155",
+          "JOB-0153"
+        ],
+        "retrieved_domains": [
+          "Database / SQL",
+          "Database / SQL",
+          "Database / SQL",
+          "Database / SQL",
+          "Database / SQL"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.3333333333333333,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.6387878864795979,
+        "pass": true
+      },
+      {
+        "query_id": "RQ013",
+        "query": "QA Selenium API testing internship",
+        "expected_primary_domains": [
+          "Software Testing / QA"
+        ],
+        "expected_secondary_domains": [
+          "Software Development"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0157",
+          "JOB-0166",
+          "JOB-0159",
+          "JOB-0160",
+          "JOB-0162"
+        ],
+        "retrieved_domains": [
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.5,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.7601875334318685,
+        "pass": true
+      },
+      {
+        "query_id": "RQ014",
+        "query": "Flutter mobile developer internship",
+        "expected_primary_domains": [
+          "Mobile Development"
+        ],
+        "expected_secondary_domains": [
+          "Software Development"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0174",
+          "JOB-0171",
+          "JOB-0180",
+          "JOB-0177",
+          "JOB-0176"
+        ],
+        "retrieved_domains": [
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.5,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.7601875334318685,
+        "pass": true
+      },
+      {
+        "query_id": "RQ015",
+        "query": "software developer algorithms Python internship",
+        "expected_primary_domains": [
+          "Software Development"
+        ],
+        "expected_secondary_domains": [
+          "Python Backend"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0031",
+          "JOB-0034",
+          "JOB-0036",
+          "JOB-0004",
+          "JOB-0005"
+        ],
+        "retrieved_domains": [
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Software Development",
+          "Software Development"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 4,
+        "strict_precision_at_5": 0.4,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 1.0,
+        "reciprocal_rank": 0.25,
+        "ndcg_at_5": 0.8597186998521972,
+        "pass": true
+      },
+      {
+        "query_id": "RQ016",
+        "query": "I want an internship working with AI and text data",
+        "expected_primary_domains": [
+          "Generative AI / NLP"
+        ],
+        "expected_secondary_domains": [
+          "Machine Learning",
+          "Data Science"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0093",
+          "JOB-0087",
+          "JOB-0090",
+          "JOB-0096",
+          "JOB-0089"
+        ],
+        "retrieved_domains": [
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.3333333333333333,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.6387878864795979,
+        "pass": true
+      },
+      {
+        "query_id": "RQ017",
+        "query": "I want to build dashboards and analyze business data",
+        "expected_primary_domains": [
+          "Data Analytics"
+        ],
+        "expected_secondary_domains": [
+          "Database / SQL",
+          "Data Science"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0107",
+          "JOB-0098",
+          "JOB-0101",
+          "JOB-0103",
+          "JOB-0104"
+        ],
+        "retrieved_domains": [
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.3333333333333333,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.6387878864795979,
+        "pass": true
+      },
+      {
+        "query_id": "RQ018",
+        "query": "I want to work with cloud deployments and containers",
+        "expected_primary_domains": [
+          "Cloud Computing",
+          "DevOps"
+        ],
+        "expected_secondary_domains": [],
+        "retrieved_job_ids": [
+          "JOB-0122",
+          "JOB-0118",
+          "JOB-0112",
+          "JOB-0117",
+          "JOB-0110"
+        ],
+        "retrieved_domains": [
+          "DevOps",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 1.0,
+        "pass": true
+      },
+      {
+        "query_id": "RQ019",
+        "query": "Java Android application development internship",
+        "expected_primary_domains": [
+          "Mobile Development"
+        ],
+        "expected_secondary_domains": [
+          "Java Backend"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0169",
+          "JOB-0178",
+          "JOB-0175",
+          "JOB-0172",
+          "JOB-0019"
+        ],
+        "retrieved_domains": [
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development",
+          "Java Backend"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 0.8,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 1.0,
+        "pass": true
+      },
+      {
+        "query_id": "RQ020",
+        "query": "Python backend APIs databases and testing",
+        "expected_primary_domains": [
+          "Python Backend"
+        ],
+        "expected_secondary_domains": [
+          "Software Development",
+          "Database / SQL"
+        ],
+        "retrieved_job_ids": [
+          "JOB-0034",
+          "JOB-0036",
+          "JOB-0029",
+          "JOB-0031",
+          "JOB-0030"
+        ],
+        "retrieved_domains": [
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend"
+        ],
+        "primary_hit": true,
+        "first_relevant_rank": 1,
+        "strict_precision_at_5": 1.0,
+        "relaxed_precision_at_5": 1.0,
+        "domain_recall_at_5": 0.3333333333333333,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_5": 0.6387878864795979,
+        "pass": true
+      }
+    ]
+  },
+  "matching": {
+    "summary": {
+      "top1_domain_accuracy": 0.875,
+      "top3_hit_rate": 0.875,
+      "top5_relaxed_hit_rate": 0.875,
+      "mrr": 0.875
+    },
+    "rows": [
+      {
+        "profile_id": "P001",
+        "name": "Machine Learning Student",
+        "expected_primary_domains": [
+          "Machine Learning",
+          "Data Science"
+        ],
+        "expected_secondary_domains": [
+          "Generative AI / NLP"
+        ],
+        "retrieved_domains": [
+          "Data Science",
+          "Data Science",
+          "Data Science",
+          "Data Science",
+          "Data Science"
+        ],
+        "top_match_domain": "Data Science",
+        "top_match_score": 60.0,
+        "top1_correct": true,
+        "top3_hit": true,
+        "top5_relaxed_hit": true,
+        "reciprocal_rank": 1.0,
+        "score_behavior_pass": true,
+        "results": [
+          {
+            "job_id": "JOB-0069",
+            "job_title": "Data Analytics and ML Intern",
+            "company": "ByteBridge Innovations",
+            "domain": "Data Science",
+            "location": "Remote, India",
+            "work_mode": "Remote",
+            "employment_type": "Internship",
+            "retrieval_score": 0.5828083097934723,
+            "match_score": 60.0,
+            "required_skills_score": 0.75,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.18181818181818182,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Python",
+              "Pandas",
+              "SQL"
+            ],
+            "missing_required_skills": [
+              "Statistics"
+            ],
+            "matched_preferred_skills": [
+              "NumPy",
+              "Scikit-learn"
+            ],
+            "missing_preferred_skills": [
+              "Matplotlib",
+              "Jupyter",
+              "Communication"
+            ],
+            "relevant_projects": [
+              "Classification and data analysis with Pandas and Scikit-learn"
+            ],
+            "strengths": [
+              "Python matched",
+              "Pandas matched",
+              "SQL matched",
+              "NumPy preferred skill matched",
+              "Scikit-learn preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Classification and data analysis with Pandas and Scikit-learn"
+            ],
+            "gaps": [
+              "Statistics missing",
+              "Matplotlib preferred skill not found",
+              "Jupyter preferred skill not found",
+              "Communication preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 3 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Classification and data analysis with Pandas and Scikit-learn. The main gap is Statistics."
+          },
+          {
+            "job_id": "JOB-0071",
+            "job_title": "Junior Data Science Intern",
+            "company": "InsightMesh Analytics",
+            "domain": "Data Science",
+            "location": "Remote, India",
+            "work_mode": "Remote",
+            "employment_type": "Entry Level",
+            "retrieval_score": 0.5812729895114899,
+            "match_score": 60.0,
+            "required_skills_score": 0.75,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.18181818181818182,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Python",
+              "Pandas",
+              "SQL"
+            ],
+            "missing_required_skills": [
+              "Statistics"
+            ],
+            "matched_preferred_skills": [
+              "NumPy",
+              "Scikit-learn"
+            ],
+            "missing_preferred_skills": [
+              "Matplotlib",
+              "Jupyter",
+              "Agile"
+            ],
+            "relevant_projects": [
+              "Classification and data analysis with Pandas and Scikit-learn"
+            ],
+            "strengths": [
+              "Python matched",
+              "Pandas matched",
+              "SQL matched",
+              "NumPy preferred skill matched",
+              "Scikit-learn preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Classification and data analysis with Pandas and Scikit-learn"
+            ],
+            "gaps": [
+              "Statistics missing",
+              "Matplotlib preferred skill not found",
+              "Jupyter preferred skill not found",
+              "Agile preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 3 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Classification and data analysis with Pandas and Scikit-learn. The main gap is Statistics."
+          },
+          {
+            "job_id": "JOB-0062",
+            "job_title": "Junior Data Science Intern",
+            "company": "DataNest Solutions",
+            "domain": "Data Science",
+            "location": "Mumbai, Maharashtra",
+            "work_mode": "On-site",
+            "employment_type": "Internship",
+            "retrieval_score": 0.597581946849823,
+            "match_score": 50.0,
+            "required_skills_score": 0.75,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 0.0,
+            "project_relevance_score": 0.18181818181818182,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Python",
+              "Pandas",
+              "SQL"
+            ],
+            "missing_required_skills": [
+              "Statistics"
+            ],
+            "matched_preferred_skills": [
+              "NumPy",
+              "Scikit-learn"
+            ],
+            "missing_preferred_skills": [
+              "Matplotlib",
+              "Jupyter",
+              "Problem Solving"
+            ],
+            "relevant_projects": [
+              "Classification and data analysis with Pandas and Scikit-learn"
+            ],
+            "strengths": [
+              "Python matched",
+              "Pandas matched",
+              "SQL matched",
+              "NumPy preferred skill matched",
+              "Scikit-learn preferred skill matched",
+              "Relevant project evidence: Classification and data analysis with Pandas and Scikit-learn"
+            ],
+            "gaps": [
+              "Statistics missing",
+              "Matplotlib preferred skill not found",
+              "Jupyter preferred skill not found",
+              "Problem Solving preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 3 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Classification and data analysis with Pandas and Scikit-learn. The main gap is Statistics."
+          },
+          {
+            "job_id": "JOB-0070",
+            "job_title": "Data Science Intern",
+            "company": "InfraNova Technologies",
+            "domain": "Data Science",
+            "location": "Remote, India",
+            "work_mode": "Remote",
+            "employment_type": "Internship",
+            "retrieval_score": 0.5711365371942521,
+            "match_score": 50.0,
+            "required_skills_score": 0.75,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 0.0,
+            "project_relevance_score": 0.18181818181818182,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Python",
+              "Pandas",
+              "SQL"
+            ],
+            "missing_required_skills": [
+              "Statistics"
+            ],
+            "matched_preferred_skills": [
+              "NumPy",
+              "Scikit-learn"
+            ],
+            "missing_preferred_skills": [
+              "Matplotlib",
+              "Jupyter",
+              "Problem Solving"
+            ],
+            "relevant_projects": [
+              "Classification and data analysis with Pandas and Scikit-learn"
+            ],
+            "strengths": [
+              "Python matched",
+              "Pandas matched",
+              "SQL matched",
+              "NumPy preferred skill matched",
+              "Scikit-learn preferred skill matched",
+              "Relevant project evidence: Classification and data analysis with Pandas and Scikit-learn"
+            ],
+            "gaps": [
+              "Statistics missing",
+              "Matplotlib preferred skill not found",
+              "Jupyter preferred skill not found",
+              "Problem Solving preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 3 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Classification and data analysis with Pandas and Scikit-learn. The main gap is Statistics."
+          },
+          {
+            "job_id": "JOB-0066",
+            "job_title": "Data Analytics and ML Intern",
+            "company": "LogicBloom Labs",
+            "domain": "Data Science",
+            "location": "Kolkata, West Bengal",
+            "work_mode": "Hybrid",
+            "employment_type": "Internship",
+            "retrieval_score": 0.5619790211319924,
+            "match_score": 50.0,
+            "required_skills_score": 0.75,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 0.0,
+            "project_relevance_score": 0.18181818181818182,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Python",
+              "Pandas",
+              "SQL"
+            ],
+            "missing_required_skills": [
+              "Statistics"
+            ],
+            "matched_preferred_skills": [
+              "NumPy",
+              "Scikit-learn"
+            ],
+            "missing_preferred_skills": [
+              "Matplotlib",
+              "Jupyter",
+              "Problem Solving"
+            ],
+            "relevant_projects": [
+              "Classification and data analysis with Pandas and Scikit-learn"
+            ],
+            "strengths": [
+              "Python matched",
+              "Pandas matched",
+              "SQL matched",
+              "NumPy preferred skill matched",
+              "Scikit-learn preferred skill matched",
+              "Relevant project evidence: Classification and data analysis with Pandas and Scikit-learn"
+            ],
+            "gaps": [
+              "Statistics missing",
+              "Matplotlib preferred skill not found",
+              "Jupyter preferred skill not found",
+              "Problem Solving preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 3 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Classification and data analysis with Pandas and Scikit-learn. The main gap is Statistics."
+          }
+        ]
+      },
+      {
+        "profile_id": "P002",
+        "name": "Frontend Student",
+        "expected_primary_domains": [
+          "Frontend Development"
+        ],
+        "expected_secondary_domains": [
+          "Full Stack Development"
+        ],
+        "retrieved_domains": [
+          "Frontend Development",
+          "Frontend Development",
+          "Frontend Development",
+          "Frontend Development",
+          "Frontend Development"
+        ],
+        "top_match_domain": "Frontend Development",
+        "top_match_score": 71.5,
+        "top1_correct": true,
+        "top3_hit": true,
+        "top5_relaxed_hit": true,
+        "reciprocal_rank": 1.0,
+        "score_behavior_pass": true,
+        "results": [
+          {
+            "job_id": "JOB-0038",
+            "job_title": "React Developer Intern",
+            "company": "ByteBridge Innovations",
+            "domain": "Frontend Development",
+            "location": "Gurugram, Haryana",
+            "work_mode": "On-site",
+            "employment_type": "Internship",
+            "retrieval_score": 0.5176627859473228,
+            "match_score": 71.5,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.36363636363636365,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "HTML",
+              "CSS",
+              "JavaScript",
+              "Git"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "React",
+              "TypeScript"
+            ],
+            "missing_preferred_skills": [
+              "Responsive Design",
+              "REST APIs",
+              "Problem Solving"
+            ],
+            "relevant_projects": [
+              "React JavaScript responsive web application"
+            ],
+            "strengths": [
+              "HTML matched",
+              "CSS matched",
+              "JavaScript matched",
+              "Git matched",
+              "React preferred skill matched",
+              "TypeScript preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: React JavaScript responsive web application"
+            ],
+            "gaps": [
+              "Responsive Design preferred skill not found",
+              "REST APIs preferred skill not found",
+              "Problem Solving preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes React JavaScript responsive web application. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0047",
+            "job_title": "React Developer Intern",
+            "company": "LogicBloom Labs",
+            "domain": "Frontend Development",
+            "location": "Remote, India",
+            "work_mode": "Remote",
+            "employment_type": "Entry Level",
+            "retrieval_score": 0.49562223851680753,
+            "match_score": 71.5,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.36363636363636365,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "HTML",
+              "CSS",
+              "JavaScript",
+              "Git"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "React",
+              "TypeScript"
+            ],
+            "missing_preferred_skills": [
+              "Responsive Design",
+              "REST APIs",
+              "Agile"
+            ],
+            "relevant_projects": [
+              "React JavaScript responsive web application"
+            ],
+            "strengths": [
+              "HTML matched",
+              "CSS matched",
+              "JavaScript matched",
+              "Git matched",
+              "React preferred skill matched",
+              "TypeScript preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: React JavaScript responsive web application"
+            ],
+            "gaps": [
+              "Responsive Design preferred skill not found",
+              "REST APIs preferred skill not found",
+              "Agile preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes React JavaScript responsive web application. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0041",
+            "job_title": "React Developer Intern",
+            "company": "DevSphere Labs",
+            "domain": "Frontend Development",
+            "location": "Kochi, Kerala",
+            "work_mode": "Hybrid",
+            "employment_type": "Internship",
+            "retrieval_score": 0.4591682657599449,
+            "match_score": 71.5,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.36363636363636365,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "HTML",
+              "CSS",
+              "JavaScript",
+              "Git"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "React",
+              "TypeScript"
+            ],
+            "missing_preferred_skills": [
+              "Responsive Design",
+              "REST APIs",
+              "Communication"
+            ],
+            "relevant_projects": [
+              "React JavaScript responsive web application"
+            ],
+            "strengths": [
+              "HTML matched",
+              "CSS matched",
+              "JavaScript matched",
+              "Git matched",
+              "React preferred skill matched",
+              "TypeScript preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: React JavaScript responsive web application"
+            ],
+            "gaps": [
+              "Responsive Design preferred skill not found",
+              "REST APIs preferred skill not found",
+              "Communication preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes React JavaScript responsive web application. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0043",
+            "job_title": "Frontend Developer Intern",
+            "company": "DataNest Solutions",
+            "domain": "Frontend Development",
+            "location": "Ahmedabad, Gujarat",
+            "work_mode": "Hybrid",
+            "employment_type": "Internship",
+            "retrieval_score": 0.39282518774271014,
+            "match_score": 71.5,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.36363636363636365,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "HTML",
+              "CSS",
+              "JavaScript",
+              "Git"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "React",
+              "TypeScript"
+            ],
+            "missing_preferred_skills": [
+              "Responsive Design",
+              "REST APIs",
+              "Agile"
+            ],
+            "relevant_projects": [
+              "React JavaScript responsive web application"
+            ],
+            "strengths": [
+              "HTML matched",
+              "CSS matched",
+              "JavaScript matched",
+              "Git matched",
+              "React preferred skill matched",
+              "TypeScript preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: React JavaScript responsive web application"
+            ],
+            "gaps": [
+              "Responsive Design preferred skill not found",
+              "REST APIs preferred skill not found",
+              "Agile preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes React JavaScript responsive web application. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0044",
+            "job_title": "React Developer Intern",
+            "company": "VertexLoop Software",
+            "domain": "Frontend Development",
+            "location": "Kolkata, West Bengal",
+            "work_mode": "Hybrid",
+            "employment_type": "Internship",
+            "retrieval_score": 0.4432567536830902,
+            "match_score": 55.5,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 0.6,
+            "education_score": 0.0,
+            "project_relevance_score": 0.36363636363636365,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "HTML",
+              "CSS",
+              "JavaScript",
+              "Git"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "React",
+              "TypeScript"
+            ],
+            "missing_preferred_skills": [
+              "Responsive Design",
+              "REST APIs",
+              "Documentation"
+            ],
+            "relevant_projects": [
+              "React JavaScript responsive web application"
+            ],
+            "strengths": [
+              "HTML matched",
+              "CSS matched",
+              "JavaScript matched",
+              "Git matched",
+              "React preferred skill matched",
+              "TypeScript preferred skill matched",
+              "Relevant project evidence: React JavaScript responsive web application"
+            ],
+            "gaps": [
+              "Responsive Design preferred skill not found",
+              "REST APIs preferred skill not found",
+              "Documentation preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes React JavaScript responsive web application. No required skill gaps were found."
+          }
+        ]
+      },
+      {
+        "profile_id": "P003",
+        "name": "Python Backend Student",
+        "expected_primary_domains": [
+          "Python Backend"
+        ],
+        "expected_secondary_domains": [
+          "Software Development",
+          "Database / SQL"
+        ],
+        "retrieved_domains": [
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend"
+        ],
+        "top_match_domain": "Python Backend",
+        "top_match_score": 70.1,
+        "top1_correct": true,
+        "top3_hit": true,
+        "top5_relaxed_hit": true,
+        "reciprocal_rank": 1.0,
+        "score_behavior_pass": true,
+        "results": [
+          {
+            "job_id": "JOB-0032",
+            "job_title": "FastAPI Intern",
+            "company": "NovaByte Labs",
+            "domain": "Python Backend",
+            "location": "Ahmedabad, Gujarat",
+            "work_mode": "Hybrid",
+            "employment_type": "Internship",
+            "retrieval_score": 0.6281884044408799,
+            "match_score": 70.1,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.2727272727272727,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Python",
+              "SQL",
+              "REST APIs",
+              "Git"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "FastAPI",
+              "PostgreSQL"
+            ],
+            "missing_preferred_skills": [
+              "Flask",
+              "Docker",
+              "Documentation"
+            ],
+            "relevant_projects": [
+              "FastAPI REST API with PostgreSQL"
+            ],
+            "strengths": [
+              "Python matched",
+              "SQL matched",
+              "REST APIs matched",
+              "Git matched",
+              "FastAPI preferred skill matched",
+              "PostgreSQL preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: FastAPI REST API with PostgreSQL"
+            ],
+            "gaps": [
+              "Flask preferred skill not found",
+              "Docker preferred skill not found",
+              "Documentation preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes FastAPI REST API with PostgreSQL. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0035",
+            "job_title": "FastAPI Intern",
+            "company": "QuantumLeaf Technologies",
+            "domain": "Python Backend",
+            "location": "Remote, India",
+            "work_mode": "Remote",
+            "employment_type": "Entry Level",
+            "retrieval_score": 0.582534758746624,
+            "match_score": 70.1,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.2727272727272727,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Python",
+              "SQL",
+              "REST APIs",
+              "Git"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "FastAPI",
+              "PostgreSQL"
+            ],
+            "missing_preferred_skills": [
+              "Flask",
+              "Docker",
+              "Agile"
+            ],
+            "relevant_projects": [
+              "FastAPI REST API with PostgreSQL"
+            ],
+            "strengths": [
+              "Python matched",
+              "SQL matched",
+              "REST APIs matched",
+              "Git matched",
+              "FastAPI preferred skill matched",
+              "PostgreSQL preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: FastAPI REST API with PostgreSQL"
+            ],
+            "gaps": [
+              "Flask preferred skill not found",
+              "Docker preferred skill not found",
+              "Agile preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes FastAPI REST API with PostgreSQL. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0026",
+            "job_title": "FastAPI Intern",
+            "company": "TechSprout Solutions",
+            "domain": "Python Backend",
+            "location": "Chennai, Tamil Nadu",
+            "work_mode": "On-site",
+            "employment_type": "Internship",
+            "retrieval_score": 0.6646526485681534,
+            "match_score": 64.1,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 0.6,
+            "education_score": 1.0,
+            "project_relevance_score": 0.2727272727272727,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Python",
+              "SQL",
+              "REST APIs",
+              "Git"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "FastAPI",
+              "PostgreSQL"
+            ],
+            "missing_preferred_skills": [
+              "Flask",
+              "Docker",
+              "Problem Solving"
+            ],
+            "relevant_projects": [
+              "FastAPI REST API with PostgreSQL"
+            ],
+            "strengths": [
+              "Python matched",
+              "SQL matched",
+              "REST APIs matched",
+              "Git matched",
+              "FastAPI preferred skill matched",
+              "PostgreSQL preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: FastAPI REST API with PostgreSQL"
+            ],
+            "gaps": [
+              "Flask preferred skill not found",
+              "Docker preferred skill not found",
+              "Problem Solving preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes FastAPI REST API with PostgreSQL. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0034",
+            "job_title": "Python Developer Intern",
+            "company": "CloudMint Innovations",
+            "domain": "Python Backend",
+            "location": "Remote, India",
+            "work_mode": "Remote",
+            "employment_type": "Internship",
+            "retrieval_score": 0.6080888926982879,
+            "match_score": 64.1,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 0.6,
+            "education_score": 1.0,
+            "project_relevance_score": 0.2727272727272727,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Python",
+              "SQL",
+              "REST APIs",
+              "Git"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "FastAPI",
+              "PostgreSQL"
+            ],
+            "missing_preferred_skills": [
+              "Flask",
+              "Docker",
+              "Problem Solving"
+            ],
+            "relevant_projects": [
+              "FastAPI REST API with PostgreSQL"
+            ],
+            "strengths": [
+              "Python matched",
+              "SQL matched",
+              "REST APIs matched",
+              "Git matched",
+              "FastAPI preferred skill matched",
+              "PostgreSQL preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: FastAPI REST API with PostgreSQL"
+            ],
+            "gaps": [
+              "Flask preferred skill not found",
+              "Docker preferred skill not found",
+              "Problem Solving preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes FastAPI REST API with PostgreSQL. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0029",
+            "job_title": "FastAPI Intern",
+            "company": "SkyLattice Labs",
+            "domain": "Python Backend",
+            "location": "Mumbai, Maharashtra",
+            "work_mode": "Hybrid",
+            "employment_type": "Internship",
+            "retrieval_score": 0.6618773639202118,
+            "match_score": 60.1,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 0.0,
+            "project_relevance_score": 0.2727272727272727,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Python",
+              "SQL",
+              "REST APIs",
+              "Git"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "FastAPI",
+              "PostgreSQL"
+            ],
+            "missing_preferred_skills": [
+              "Flask",
+              "Docker",
+              "Communication"
+            ],
+            "relevant_projects": [
+              "FastAPI REST API with PostgreSQL"
+            ],
+            "strengths": [
+              "Python matched",
+              "SQL matched",
+              "REST APIs matched",
+              "Git matched",
+              "FastAPI preferred skill matched",
+              "PostgreSQL preferred skill matched",
+              "Relevant project evidence: FastAPI REST API with PostgreSQL"
+            ],
+            "gaps": [
+              "Flask preferred skill not found",
+              "Docker preferred skill not found",
+              "Communication preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes FastAPI REST API with PostgreSQL. No required skill gaps were found."
+          }
+        ]
+      },
+      {
+        "profile_id": "P004",
+        "name": "Java Backend Student",
+        "expected_primary_domains": [
+          "Java Backend"
+        ],
+        "expected_secondary_domains": [
+          "Software Development"
+        ],
+        "retrieved_domains": [
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend"
+        ],
+        "top_match_domain": "Java Backend",
+        "top_match_score": 71.5,
+        "top1_correct": true,
+        "top3_hit": true,
+        "top5_relaxed_hit": true,
+        "reciprocal_rank": 1.0,
+        "score_behavior_pass": true,
+        "results": [
+          {
+            "job_id": "JOB-0021",
+            "job_title": "Spring Boot Intern",
+            "company": "InsightMesh Analytics",
+            "domain": "Java Backend",
+            "location": "Remote, India",
+            "work_mode": "Remote",
+            "employment_type": "Internship",
+            "retrieval_score": 0.5601210772991181,
+            "match_score": 71.5,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.36363636363636365,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Java",
+              "OOP",
+              "SQL",
+              "Git"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "Spring Boot",
+              "REST APIs"
+            ],
+            "missing_preferred_skills": [
+              "Maven",
+              "PostgreSQL",
+              "Communication"
+            ],
+            "relevant_projects": [
+              "Spring Boot REST service with SQL"
+            ],
+            "strengths": [
+              "Java matched",
+              "OOP matched",
+              "SQL matched",
+              "Git matched",
+              "Spring Boot preferred skill matched",
+              "REST APIs preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Spring Boot REST service with SQL"
+            ],
+            "gaps": [
+              "Maven preferred skill not found",
+              "PostgreSQL preferred skill not found",
+              "Communication preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Spring Boot REST service with SQL. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0023",
+            "job_title": "Backend Engineering Intern",
+            "company": "BlueOrbit Technologies",
+            "domain": "Java Backend",
+            "location": "Remote, India",
+            "work_mode": "Remote",
+            "employment_type": "Entry Level",
+            "retrieval_score": 0.49795074909925463,
+            "match_score": 71.5,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.36363636363636365,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Java",
+              "OOP",
+              "SQL",
+              "Git"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "Spring Boot",
+              "REST APIs"
+            ],
+            "missing_preferred_skills": [
+              "Maven",
+              "PostgreSQL",
+              "Agile"
+            ],
+            "relevant_projects": [
+              "Spring Boot REST service with SQL"
+            ],
+            "strengths": [
+              "Java matched",
+              "OOP matched",
+              "SQL matched",
+              "Git matched",
+              "Spring Boot preferred skill matched",
+              "REST APIs preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Spring Boot REST service with SQL"
+            ],
+            "gaps": [
+              "Maven preferred skill not found",
+              "PostgreSQL preferred skill not found",
+              "Agile preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Spring Boot REST service with SQL. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0017",
+            "job_title": "Backend Engineering Intern",
+            "company": "OrbitCraft Software",
+            "domain": "Java Backend",
+            "location": "Noida, Uttar Pradesh",
+            "work_mode": "Hybrid",
+            "employment_type": "Internship",
+            "retrieval_score": 0.48694154918193816,
+            "match_score": 71.5,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.36363636363636365,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Java",
+              "OOP",
+              "SQL",
+              "Git"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "Spring Boot",
+              "REST APIs"
+            ],
+            "missing_preferred_skills": [
+              "Maven",
+              "PostgreSQL",
+              "Communication"
+            ],
+            "relevant_projects": [
+              "Spring Boot REST service with SQL"
+            ],
+            "strengths": [
+              "Java matched",
+              "OOP matched",
+              "SQL matched",
+              "Git matched",
+              "Spring Boot preferred skill matched",
+              "REST APIs preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Spring Boot REST service with SQL"
+            ],
+            "gaps": [
+              "Maven preferred skill not found",
+              "PostgreSQL preferred skill not found",
+              "Communication preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Spring Boot REST service with SQL. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0024",
+            "job_title": "Spring Boot Intern",
+            "company": "DataNest Solutions",
+            "domain": "Java Backend",
+            "location": "Remote, India",
+            "work_mode": "Remote",
+            "employment_type": "Entry Level",
+            "retrieval_score": 0.6172770529985427,
+            "match_score": 65.5,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 0.6,
+            "education_score": 1.0,
+            "project_relevance_score": 0.36363636363636365,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Java",
+              "OOP",
+              "SQL",
+              "Git"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "Spring Boot",
+              "REST APIs"
+            ],
+            "missing_preferred_skills": [
+              "Maven",
+              "PostgreSQL",
+              "Documentation"
+            ],
+            "relevant_projects": [
+              "Spring Boot REST service with SQL"
+            ],
+            "strengths": [
+              "Java matched",
+              "OOP matched",
+              "SQL matched",
+              "Git matched",
+              "Spring Boot preferred skill matched",
+              "REST APIs preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Spring Boot REST service with SQL"
+            ],
+            "gaps": [
+              "Maven preferred skill not found",
+              "PostgreSQL preferred skill not found",
+              "Documentation preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Spring Boot REST service with SQL. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0018",
+            "job_title": "Spring Boot Intern",
+            "company": "CoreVista Technologies",
+            "domain": "Java Backend",
+            "location": "Mumbai, Maharashtra",
+            "work_mode": "Hybrid",
+            "employment_type": "Internship",
+            "retrieval_score": 0.5822027191519737,
+            "match_score": 61.5,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 0.0,
+            "project_relevance_score": 0.36363636363636365,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Java",
+              "OOP",
+              "SQL",
+              "Git"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "Spring Boot",
+              "REST APIs"
+            ],
+            "missing_preferred_skills": [
+              "Maven",
+              "PostgreSQL",
+              "Problem Solving"
+            ],
+            "relevant_projects": [
+              "Spring Boot REST service with SQL"
+            ],
+            "strengths": [
+              "Java matched",
+              "OOP matched",
+              "SQL matched",
+              "Git matched",
+              "Spring Boot preferred skill matched",
+              "REST APIs preferred skill matched",
+              "Relevant project evidence: Spring Boot REST service with SQL"
+            ],
+            "gaps": [
+              "Maven preferred skill not found",
+              "PostgreSQL preferred skill not found",
+              "Problem Solving preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Spring Boot REST service with SQL. No required skill gaps were found."
+          }
+        ]
+      },
+      {
+        "profile_id": "P005",
+        "name": "Cybersecurity Student",
+        "expected_primary_domains": [
+          "Cybersecurity"
+        ],
+        "expected_secondary_domains": [],
+        "retrieved_domains": [
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity"
+        ],
+        "top_match_domain": "Cybersecurity",
+        "top_match_score": 51.2,
+        "top1_correct": true,
+        "top3_hit": true,
+        "top5_relaxed_hit": true,
+        "reciprocal_rank": 1.0,
+        "score_behavior_pass": true,
+        "results": [
+          {
+            "job_id": "JOB-0138",
+            "job_title": "SOC Intern",
+            "company": "ByteBridge Innovations",
+            "domain": "Cybersecurity",
+            "location": "Gurugram, Haryana",
+            "work_mode": "Hybrid",
+            "employment_type": "Internship",
+            "retrieval_score": 0.5496475264430046,
+            "match_score": 51.2,
+            "required_skills_score": 0.5,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.18181818181818182,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Linux",
+              "Cybersecurity Fundamentals"
+            ],
+            "missing_required_skills": [
+              "Networking",
+              "Security Concepts"
+            ],
+            "matched_preferred_skills": [
+              "SIEM",
+              "Python"
+            ],
+            "missing_preferred_skills": [
+              "OWASP",
+              "Incident Response",
+              "Problem Solving"
+            ],
+            "relevant_projects": [
+              "Linux SIEM security monitoring project"
+            ],
+            "strengths": [
+              "Linux matched",
+              "Cybersecurity Fundamentals matched",
+              "SIEM preferred skill matched",
+              "Python preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Linux SIEM security monitoring project"
+            ],
+            "gaps": [
+              "Networking missing",
+              "Security Concepts missing",
+              "OWASP preferred skill not found",
+              "Incident Response preferred skill not found",
+              "Problem Solving preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 2 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Linux SIEM security monitoring project. The main gap is Networking."
+          },
+          {
+            "job_id": "JOB-0135",
+            "job_title": "SOC Intern",
+            "company": "LogicBloom Labs",
+            "domain": "Cybersecurity",
+            "location": "Hyderabad, Telangana",
+            "work_mode": "On-site",
+            "employment_type": "Internship",
+            "retrieval_score": 0.5444368660449982,
+            "match_score": 51.2,
+            "required_skills_score": 0.5,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.18181818181818182,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Linux",
+              "Cybersecurity Fundamentals"
+            ],
+            "missing_required_skills": [
+              "Networking",
+              "Security Concepts"
+            ],
+            "matched_preferred_skills": [
+              "SIEM",
+              "Python"
+            ],
+            "missing_preferred_skills": [
+              "OWASP",
+              "Incident Response",
+              "Agile"
+            ],
+            "relevant_projects": [
+              "Linux SIEM security monitoring project"
+            ],
+            "strengths": [
+              "Linux matched",
+              "Cybersecurity Fundamentals matched",
+              "SIEM preferred skill matched",
+              "Python preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Linux SIEM security monitoring project"
+            ],
+            "gaps": [
+              "Networking missing",
+              "Security Concepts missing",
+              "OWASP preferred skill not found",
+              "Incident Response preferred skill not found",
+              "Agile preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 2 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Linux SIEM security monitoring project. The main gap is Networking."
+          },
+          {
+            "job_id": "JOB-0141",
+            "job_title": "SOC Intern",
+            "company": "DevSphere Labs",
+            "domain": "Cybersecurity",
+            "location": "Remote, India",
+            "work_mode": "Remote",
+            "employment_type": "Internship",
+            "retrieval_score": 0.5434362441301346,
+            "match_score": 51.2,
+            "required_skills_score": 0.5,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.18181818181818182,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Linux",
+              "Cybersecurity Fundamentals"
+            ],
+            "missing_required_skills": [
+              "Networking",
+              "Security Concepts"
+            ],
+            "matched_preferred_skills": [
+              "SIEM",
+              "Python"
+            ],
+            "missing_preferred_skills": [
+              "OWASP",
+              "Incident Response",
+              "Communication"
+            ],
+            "relevant_projects": [
+              "Linux SIEM security monitoring project"
+            ],
+            "strengths": [
+              "Linux matched",
+              "Cybersecurity Fundamentals matched",
+              "SIEM preferred skill matched",
+              "Python preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Linux SIEM security monitoring project"
+            ],
+            "gaps": [
+              "Networking missing",
+              "Security Concepts missing",
+              "OWASP preferred skill not found",
+              "Incident Response preferred skill not found",
+              "Communication preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 2 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Linux SIEM security monitoring project. The main gap is Networking."
+          },
+          {
+            "job_id": "JOB-0137",
+            "job_title": "Security Analyst Intern",
+            "company": "CoreVista Technologies",
+            "domain": "Cybersecurity",
+            "location": "Chennai, Tamil Nadu",
+            "work_mode": "Hybrid",
+            "employment_type": "Internship",
+            "retrieval_score": 0.54321848154068,
+            "match_score": 51.2,
+            "required_skills_score": 0.5,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.18181818181818182,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Linux",
+              "Cybersecurity Fundamentals"
+            ],
+            "missing_required_skills": [
+              "Networking",
+              "Security Concepts"
+            ],
+            "matched_preferred_skills": [
+              "SIEM",
+              "Python"
+            ],
+            "missing_preferred_skills": [
+              "OWASP",
+              "Incident Response",
+              "Communication"
+            ],
+            "relevant_projects": [
+              "Linux SIEM security monitoring project"
+            ],
+            "strengths": [
+              "Linux matched",
+              "Cybersecurity Fundamentals matched",
+              "SIEM preferred skill matched",
+              "Python preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Linux SIEM security monitoring project"
+            ],
+            "gaps": [
+              "Networking missing",
+              "Security Concepts missing",
+              "OWASP preferred skill not found",
+              "Incident Response preferred skill not found",
+              "Communication preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 2 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Linux SIEM security monitoring project. The main gap is Networking."
+          },
+          {
+            "job_id": "JOB-0139",
+            "job_title": "Cybersecurity Intern",
+            "company": "InfraNova Technologies",
+            "domain": "Cybersecurity",
+            "location": "Noida, Uttar Pradesh",
+            "work_mode": "Hybrid",
+            "employment_type": "Internship",
+            "retrieval_score": 0.5283565640449523,
+            "match_score": 51.2,
+            "required_skills_score": 0.5,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.18181818181818182,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Linux",
+              "Cybersecurity Fundamentals"
+            ],
+            "missing_required_skills": [
+              "Networking",
+              "Security Concepts"
+            ],
+            "matched_preferred_skills": [
+              "SIEM",
+              "Python"
+            ],
+            "missing_preferred_skills": [
+              "OWASP",
+              "Incident Response",
+              "Agile"
+            ],
+            "relevant_projects": [
+              "Linux SIEM security monitoring project"
+            ],
+            "strengths": [
+              "Linux matched",
+              "Cybersecurity Fundamentals matched",
+              "SIEM preferred skill matched",
+              "Python preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Linux SIEM security monitoring project"
+            ],
+            "gaps": [
+              "Networking missing",
+              "Security Concepts missing",
+              "OWASP preferred skill not found",
+              "Incident Response preferred skill not found",
+              "Agile preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 2 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Linux SIEM security monitoring project. The main gap is Networking."
+          }
+        ]
+      },
+      {
+        "profile_id": "P006",
+        "name": "Data Analyst Student",
+        "expected_primary_domains": [
+          "Data Analytics"
+        ],
+        "expected_secondary_domains": [
+          "Database / SQL",
+          "Data Science"
+        ],
+        "retrieved_domains": [
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Science"
+        ],
+        "top_match_domain": "Data Analytics",
+        "top_match_score": 70.1,
+        "top1_correct": true,
+        "top3_hit": true,
+        "top5_relaxed_hit": true,
+        "reciprocal_rank": 1.0,
+        "score_behavior_pass": true,
+        "results": [
+          {
+            "job_id": "JOB-0104",
+            "job_title": "Business Data Analyst Intern",
+            "company": "QuantumLeaf Technologies",
+            "domain": "Data Analytics",
+            "location": "Chennai, Tamil Nadu",
+            "work_mode": "Hybrid",
+            "employment_type": "Internship",
+            "retrieval_score": 0.4871541351079941,
+            "match_score": 70.1,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.2727272727272727,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "SQL",
+              "Excel",
+              "Data Analysis",
+              "Statistics"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "Power BI",
+              "Python"
+            ],
+            "missing_preferred_skills": [
+              "Tableau",
+              "Data Visualization",
+              "Documentation"
+            ],
+            "relevant_projects": [
+              "Power BI business dashboard using SQL"
+            ],
+            "strengths": [
+              "SQL matched",
+              "Excel matched",
+              "Data Analysis matched",
+              "Statistics matched",
+              "Power BI preferred skill matched",
+              "Python preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Power BI business dashboard using SQL"
+            ],
+            "gaps": [
+              "Tableau preferred skill not found",
+              "Data Visualization preferred skill not found",
+              "Documentation preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Power BI business dashboard using SQL. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0101",
+            "job_title": "Business Data Analyst Intern",
+            "company": "NovaByte Labs",
+            "domain": "Data Analytics",
+            "location": "Bengaluru, Karnataka",
+            "work_mode": "Hybrid",
+            "employment_type": "Internship",
+            "retrieval_score": 0.4826027676463127,
+            "match_score": 70.1,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.2727272727272727,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "SQL",
+              "Excel",
+              "Data Analysis",
+              "Statistics"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "Power BI",
+              "Python"
+            ],
+            "missing_preferred_skills": [
+              "Tableau",
+              "Data Visualization",
+              "Communication"
+            ],
+            "relevant_projects": [
+              "Power BI business dashboard using SQL"
+            ],
+            "strengths": [
+              "SQL matched",
+              "Excel matched",
+              "Data Analysis matched",
+              "Statistics matched",
+              "Power BI preferred skill matched",
+              "Python preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Power BI business dashboard using SQL"
+            ],
+            "gaps": [
+              "Tableau preferred skill not found",
+              "Data Visualization preferred skill not found",
+              "Communication preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Power BI business dashboard using SQL. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0098",
+            "job_title": "Business Data Analyst Intern",
+            "company": "SkyLattice Labs",
+            "domain": "Data Analytics",
+            "location": "Ahmedabad, Gujarat",
+            "work_mode": "On-site",
+            "employment_type": "Internship",
+            "retrieval_score": 0.5102274432778359,
+            "match_score": 64.1,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 0.6,
+            "education_score": 1.0,
+            "project_relevance_score": 0.2727272727272727,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "SQL",
+              "Excel",
+              "Data Analysis",
+              "Statistics"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "Power BI",
+              "Python"
+            ],
+            "missing_preferred_skills": [
+              "Tableau",
+              "Data Visualization",
+              "Problem Solving"
+            ],
+            "relevant_projects": [
+              "Power BI business dashboard using SQL"
+            ],
+            "strengths": [
+              "SQL matched",
+              "Excel matched",
+              "Data Analysis matched",
+              "Statistics matched",
+              "Power BI preferred skill matched",
+              "Python preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Power BI business dashboard using SQL"
+            ],
+            "gaps": [
+              "Tableau preferred skill not found",
+              "Data Visualization preferred skill not found",
+              "Problem Solving preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Power BI business dashboard using SQL. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0107",
+            "job_title": "Business Data Analyst Intern",
+            "company": "TechSprout Solutions",
+            "domain": "Data Analytics",
+            "location": "Remote, India",
+            "work_mode": "Remote",
+            "employment_type": "Entry Level",
+            "retrieval_score": 0.4864329695701599,
+            "match_score": 60.1,
+            "required_skills_score": 1.0,
+            "preferred_skills_score": 0.4,
+            "experience_score": 1.0,
+            "education_score": 0.0,
+            "project_relevance_score": 0.2727272727272727,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "SQL",
+              "Excel",
+              "Data Analysis",
+              "Statistics"
+            ],
+            "missing_required_skills": [],
+            "matched_preferred_skills": [
+              "Power BI",
+              "Python"
+            ],
+            "missing_preferred_skills": [
+              "Tableau",
+              "Data Visualization",
+              "Agile"
+            ],
+            "relevant_projects": [
+              "Power BI business dashboard using SQL"
+            ],
+            "strengths": [
+              "SQL matched",
+              "Excel matched",
+              "Data Analysis matched",
+              "Statistics matched",
+              "Power BI preferred skill matched",
+              "Python preferred skill matched",
+              "Relevant project evidence: Power BI business dashboard using SQL"
+            ],
+            "gaps": [
+              "Tableau preferred skill not found",
+              "Data Visualization preferred skill not found",
+              "Agile preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 4 of 4 required skills and 2 of 5 preferred skills. Relevant project evidence includes Power BI business dashboard using SQL. No required skill gaps were found."
+          },
+          {
+            "job_id": "JOB-0071",
+            "job_title": "Junior Data Science Intern",
+            "company": "InsightMesh Analytics",
+            "domain": "Data Science",
+            "location": "Remote, India",
+            "work_mode": "Remote",
+            "employment_type": "Entry Level",
+            "retrieval_score": 0.47092204689979555,
+            "match_score": 52.6,
+            "required_skills_score": 0.75,
+            "preferred_skills_score": 0.0,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.09090909090909091,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Python",
+              "Statistics",
+              "SQL"
+            ],
+            "missing_required_skills": [
+              "Pandas"
+            ],
+            "matched_preferred_skills": [],
+            "missing_preferred_skills": [
+              "NumPy",
+              "Scikit-learn",
+              "Matplotlib",
+              "Jupyter",
+              "Agile"
+            ],
+            "relevant_projects": [
+              "Power BI business dashboard using SQL"
+            ],
+            "strengths": [
+              "Python matched",
+              "Statistics matched",
+              "SQL matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Power BI business dashboard using SQL"
+            ],
+            "gaps": [
+              "Pandas missing",
+              "NumPy preferred skill not found",
+              "Scikit-learn preferred skill not found",
+              "Matplotlib preferred skill not found",
+              "Jupyter preferred skill not found",
+              "Agile preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 3 of 4 required skills and 0 of 5 preferred skills. Relevant project evidence includes Power BI business dashboard using SQL. The main gap is Pandas."
+          }
+        ]
+      },
+      {
+        "profile_id": "P007",
+        "name": "Cloud DevOps Student",
+        "expected_primary_domains": [
+          "Cloud Computing",
+          "DevOps"
+        ],
+        "expected_secondary_domains": [],
+        "retrieved_domains": [
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "DevOps"
+        ],
+        "top_match_domain": "Cloud Computing",
+        "top_match_score": 54.2,
+        "top1_correct": true,
+        "top3_hit": true,
+        "top5_relaxed_hit": true,
+        "reciprocal_rank": 1.0,
+        "score_behavior_pass": false,
+        "results": [
+          {
+            "job_id": "JOB-0119",
+            "job_title": "AWS Cloud Intern",
+            "company": "ByteBridge Innovations",
+            "domain": "Cloud Computing",
+            "location": "Remote, India",
+            "work_mode": "Remote",
+            "employment_type": "Entry Level",
+            "retrieval_score": 0.604287464916706,
+            "match_score": 54.2,
+            "required_skills_score": 0.5,
+            "preferred_skills_score": 0.6,
+            "experience_score": 1.0,
+            "education_score": 1.0,
+            "project_relevance_score": 0.18181818181818182,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Linux",
+              "Git"
+            ],
+            "missing_required_skills": [
+              "Networking",
+              "Cloud Fundamentals"
+            ],
+            "matched_preferred_skills": [
+              "AWS",
+              "Docker",
+              "Terraform"
+            ],
+            "missing_preferred_skills": [
+              "Python",
+              "Agile"
+            ],
+            "relevant_projects": [
+              "Docker AWS CI/CD deployment infrastructure"
+            ],
+            "strengths": [
+              "Linux matched",
+              "Git matched",
+              "AWS preferred skill matched",
+              "Docker preferred skill matched",
+              "Terraform preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Docker AWS CI/CD deployment infrastructure"
+            ],
+            "gaps": [
+              "Networking missing",
+              "Cloud Fundamentals missing",
+              "Python preferred skill not found",
+              "Agile preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 2 of 4 required skills and 3 of 5 preferred skills. Relevant project evidence includes Docker AWS CI/CD deployment infrastructure. The main gap is Networking."
+          },
+          {
+            "job_id": "JOB-0112",
+            "job_title": "Cloud Engineering Intern",
+            "company": "DataNest Solutions",
+            "domain": "Cloud Computing",
+            "location": "Bengaluru, Karnataka",
+            "work_mode": "On-site",
+            "employment_type": "Internship",
+            "retrieval_score": 0.5968976855278015,
+            "match_score": 48.2,
+            "required_skills_score": 0.5,
+            "preferred_skills_score": 0.6,
+            "experience_score": 0.6,
+            "education_score": 1.0,
+            "project_relevance_score": 0.18181818181818182,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Linux",
+              "Git"
+            ],
+            "missing_required_skills": [
+              "Networking",
+              "Cloud Fundamentals"
+            ],
+            "matched_preferred_skills": [
+              "AWS",
+              "Docker",
+              "Terraform"
+            ],
+            "missing_preferred_skills": [
+              "Python",
+              "Documentation"
+            ],
+            "relevant_projects": [
+              "Docker AWS CI/CD deployment infrastructure"
+            ],
+            "strengths": [
+              "Linux matched",
+              "Git matched",
+              "AWS preferred skill matched",
+              "Docker preferred skill matched",
+              "Terraform preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Docker AWS CI/CD deployment infrastructure"
+            ],
+            "gaps": [
+              "Networking missing",
+              "Cloud Fundamentals missing",
+              "Python preferred skill not found",
+              "Documentation preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 2 of 4 required skills and 3 of 5 preferred skills. Relevant project evidence includes Docker AWS CI/CD deployment infrastructure. The main gap is Networking."
+          },
+          {
+            "job_id": "JOB-0110",
+            "job_title": "AWS Cloud Intern",
+            "company": "DevSphere Labs",
+            "domain": "Cloud Computing",
+            "location": "Kolkata, West Bengal",
+            "work_mode": "On-site",
+            "employment_type": "Internship",
+            "retrieval_score": 0.6384167313575745,
+            "match_score": 44.2,
+            "required_skills_score": 0.5,
+            "preferred_skills_score": 0.6,
+            "experience_score": 1.0,
+            "education_score": 0.0,
+            "project_relevance_score": 0.18181818181818182,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Linux",
+              "Git"
+            ],
+            "missing_required_skills": [
+              "Networking",
+              "Cloud Fundamentals"
+            ],
+            "matched_preferred_skills": [
+              "AWS",
+              "Docker",
+              "Terraform"
+            ],
+            "missing_preferred_skills": [
+              "Python",
+              "Problem Solving"
+            ],
+            "relevant_projects": [
+              "Docker AWS CI/CD deployment infrastructure"
+            ],
+            "strengths": [
+              "Linux matched",
+              "Git matched",
+              "AWS preferred skill matched",
+              "Docker preferred skill matched",
+              "Terraform preferred skill matched",
+              "Relevant project evidence: Docker AWS CI/CD deployment infrastructure"
+            ],
+            "gaps": [
+              "Networking missing",
+              "Cloud Fundamentals missing",
+              "Python preferred skill not found",
+              "Problem Solving preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 2 of 4 required skills and 3 of 5 preferred skills. Relevant project evidence includes Docker AWS CI/CD deployment infrastructure. The main gap is Networking."
+          },
+          {
+            "job_id": "JOB-0118",
+            "job_title": "Cloud Engineering Intern",
+            "company": "CoreVista Technologies",
+            "domain": "Cloud Computing",
+            "location": "Remote, India",
+            "work_mode": "Remote",
+            "employment_type": "Internship",
+            "retrieval_score": 0.6072710588574409,
+            "match_score": 44.2,
+            "required_skills_score": 0.5,
+            "preferred_skills_score": 0.6,
+            "experience_score": 1.0,
+            "education_score": 0.0,
+            "project_relevance_score": 0.18181818181818182,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Linux",
+              "Git"
+            ],
+            "missing_required_skills": [
+              "Networking",
+              "Cloud Fundamentals"
+            ],
+            "matched_preferred_skills": [
+              "AWS",
+              "Docker",
+              "Terraform"
+            ],
+            "missing_preferred_skills": [
+              "Python",
+              "Problem Solving"
+            ],
+            "relevant_projects": [
+              "Docker AWS CI/CD deployment infrastructure"
+            ],
+            "strengths": [
+              "Linux matched",
+              "Git matched",
+              "AWS preferred skill matched",
+              "Docker preferred skill matched",
+              "Terraform preferred skill matched",
+              "Relevant project evidence: Docker AWS CI/CD deployment infrastructure"
+            ],
+            "gaps": [
+              "Networking missing",
+              "Cloud Fundamentals missing",
+              "Python preferred skill not found",
+              "Problem Solving preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 2 of 4 required skills and 3 of 5 preferred skills. Relevant project evidence includes Docker AWS CI/CD deployment infrastructure. The main gap is Networking."
+          },
+          {
+            "job_id": "JOB-0122",
+            "job_title": "Platform Engineering Intern",
+            "company": "CloudMint Innovations",
+            "domain": "DevOps",
+            "location": "Hyderabad, Telangana",
+            "work_mode": "On-site",
+            "employment_type": "Internship",
+            "retrieval_score": 0.6481760501861572,
+            "match_score": 40.9,
+            "required_skills_score": 0.5,
+            "preferred_skills_score": 0.2,
+            "experience_score": 0.6,
+            "education_score": 1.0,
+            "project_relevance_score": 0.09090909090909091,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "Linux",
+              "Git"
+            ],
+            "missing_required_skills": [
+              "Scripting",
+              "Networking"
+            ],
+            "matched_preferred_skills": [
+              "Docker"
+            ],
+            "missing_preferred_skills": [
+              "Jenkins",
+              "GitHub Actions",
+              "Kubernetes",
+              "Problem Solving"
+            ],
+            "relevant_projects": [
+              "Docker AWS CI/CD deployment infrastructure"
+            ],
+            "strengths": [
+              "Linux matched",
+              "Git matched",
+              "Docker preferred skill matched",
+              "Education requirement satisfied",
+              "Relevant project evidence: Docker AWS CI/CD deployment infrastructure"
+            ],
+            "gaps": [
+              "Scripting missing",
+              "Networking missing",
+              "Jenkins preferred skill not found",
+              "GitHub Actions preferred skill not found",
+              "Kubernetes preferred skill not found",
+              "Problem Solving preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 2 of 4 required skills and 1 of 5 preferred skills. Relevant project evidence includes Docker AWS CI/CD deployment infrastructure. The main gap is Scripting."
+          }
+        ]
+      },
+      {
+        "profile_id": "P008",
+        "name": "Weak General Student",
+        "expected_primary_domains": [],
+        "expected_secondary_domains": [],
+        "retrieved_domains": [
+          "Full Stack Development",
+          "Frontend Development",
+          "Frontend Development",
+          "Full Stack Development",
+          "Frontend Development"
+        ],
+        "top_match_domain": "Full Stack Development",
+        "top_match_score": 36.5,
+        "top1_correct": false,
+        "top3_hit": false,
+        "top5_relaxed_hit": false,
+        "reciprocal_rank": 0.0,
+        "score_behavior_pass": true,
+        "results": [
+          {
+            "job_id": "JOB-0056",
+            "job_title": "Web Application Intern",
+            "company": "AsterWave Technologies",
+            "domain": "Full Stack Development",
+            "location": "Hyderabad, Telangana",
+            "work_mode": "Hybrid",
+            "employment_type": "Internship",
+            "retrieval_score": 0.27650285959243776,
+            "match_score": 36.5,
+            "required_skills_score": 0.25,
+            "preferred_skills_score": 0.0,
+            "experience_score": 1.0,
+            "education_score": 0.0,
+            "project_relevance_score": 0.0,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "HTML"
+            ],
+            "missing_required_skills": [
+              "JavaScript",
+              "CSS",
+              "Git"
+            ],
+            "matched_preferred_skills": [],
+            "missing_preferred_skills": [
+              "React",
+              "Node.js",
+              "MongoDB",
+              "REST APIs",
+              "Documentation"
+            ],
+            "relevant_projects": [],
+            "strengths": [
+              "HTML matched"
+            ],
+            "gaps": [
+              "JavaScript missing",
+              "CSS missing",
+              "Git missing",
+              "React preferred skill not found",
+              "Node.js preferred skill not found",
+              "MongoDB preferred skill not found",
+              "REST APIs preferred skill not found",
+              "Documentation preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 1 of 4 required skills and 0 of 5 preferred skills. No directly overlapping project evidence was found. The main gap is JavaScript."
+          },
+          {
+            "job_id": "JOB-0043",
+            "job_title": "Frontend Developer Intern",
+            "company": "DataNest Solutions",
+            "domain": "Frontend Development",
+            "location": "Ahmedabad, Gujarat",
+            "work_mode": "Hybrid",
+            "employment_type": "Internship",
+            "retrieval_score": 0.24025510251522064,
+            "match_score": 36.5,
+            "required_skills_score": 0.25,
+            "preferred_skills_score": 0.0,
+            "experience_score": 1.0,
+            "education_score": 0.0,
+            "project_relevance_score": 0.0,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "HTML"
+            ],
+            "missing_required_skills": [
+              "CSS",
+              "JavaScript",
+              "Git"
+            ],
+            "matched_preferred_skills": [],
+            "missing_preferred_skills": [
+              "React",
+              "TypeScript",
+              "Responsive Design",
+              "REST APIs",
+              "Agile"
+            ],
+            "relevant_projects": [],
+            "strengths": [
+              "HTML matched"
+            ],
+            "gaps": [
+              "CSS missing",
+              "JavaScript missing",
+              "Git missing",
+              "React preferred skill not found",
+              "TypeScript preferred skill not found",
+              "Responsive Design preferred skill not found",
+              "REST APIs preferred skill not found",
+              "Agile preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 1 of 4 required skills and 0 of 5 preferred skills. No directly overlapping project evidence was found. The main gap is CSS."
+          },
+          {
+            "job_id": "JOB-0037",
+            "job_title": "Frontend Developer Intern",
+            "company": "CoreVista Technologies",
+            "domain": "Frontend Development",
+            "location": "Chennai, Tamil Nadu",
+            "work_mode": "On-site",
+            "employment_type": "Internship",
+            "retrieval_score": 0.24503595307469367,
+            "match_score": 18.1,
+            "required_skills_score": 0.25,
+            "preferred_skills_score": 0.2,
+            "experience_score": 0.0,
+            "education_score": 0.0,
+            "project_relevance_score": 0.0,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "HTML"
+            ],
+            "missing_required_skills": [
+              "CSS",
+              "JavaScript",
+              "Git"
+            ],
+            "matched_preferred_skills": [
+              "Communication"
+            ],
+            "missing_preferred_skills": [
+              "React",
+              "TypeScript",
+              "Responsive Design",
+              "REST APIs"
+            ],
+            "relevant_projects": [],
+            "strengths": [
+              "HTML matched",
+              "Communication preferred skill matched"
+            ],
+            "gaps": [
+              "CSS missing",
+              "JavaScript missing",
+              "Git missing",
+              "React preferred skill not found",
+              "TypeScript preferred skill not found",
+              "Responsive Design preferred skill not found",
+              "REST APIs preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 1 of 4 required skills and 1 of 5 preferred skills. No directly overlapping project evidence was found. The main gap is CSS."
+          },
+          {
+            "job_id": "JOB-0059",
+            "job_title": "Web Application Intern",
+            "company": "SignalPeak Systems",
+            "domain": "Full Stack Development",
+            "location": "Remote, India",
+            "work_mode": "Remote",
+            "employment_type": "Entry Level",
+            "retrieval_score": 0.28878632709383967,
+            "match_score": 13.5,
+            "required_skills_score": 0.25,
+            "preferred_skills_score": 0.0,
+            "experience_score": 0.0,
+            "education_score": 0.0,
+            "project_relevance_score": 0.0,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "HTML"
+            ],
+            "missing_required_skills": [
+              "JavaScript",
+              "CSS",
+              "Git"
+            ],
+            "matched_preferred_skills": [],
+            "missing_preferred_skills": [
+              "React",
+              "Node.js",
+              "MongoDB",
+              "REST APIs",
+              "Agile"
+            ],
+            "relevant_projects": [],
+            "strengths": [
+              "HTML matched"
+            ],
+            "gaps": [
+              "JavaScript missing",
+              "CSS missing",
+              "Git missing",
+              "React preferred skill not found",
+              "Node.js preferred skill not found",
+              "MongoDB preferred skill not found",
+              "REST APIs preferred skill not found",
+              "Agile preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 1 of 4 required skills and 0 of 5 preferred skills. No directly overlapping project evidence was found. The main gap is JavaScript."
+          },
+          {
+            "job_id": "JOB-0040",
+            "job_title": "Frontend Developer Intern",
+            "company": "InsightMesh Analytics",
+            "domain": "Frontend Development",
+            "location": "Mumbai, Maharashtra",
+            "work_mode": "On-site",
+            "employment_type": "Internship",
+            "retrieval_score": 0.2416224330663681,
+            "match_score": 13.5,
+            "required_skills_score": 0.25,
+            "preferred_skills_score": 0.0,
+            "experience_score": 0.0,
+            "education_score": 0.0,
+            "project_relevance_score": 0.0,
+            "qualification_score": 0.0,
+            "matched_required_skills": [
+              "HTML"
+            ],
+            "missing_required_skills": [
+              "CSS",
+              "JavaScript",
+              "Git"
+            ],
+            "matched_preferred_skills": [],
+            "missing_preferred_skills": [
+              "React",
+              "TypeScript",
+              "Responsive Design",
+              "REST APIs",
+              "Documentation"
+            ],
+            "relevant_projects": [],
+            "strengths": [
+              "HTML matched"
+            ],
+            "gaps": [
+              "CSS missing",
+              "JavaScript missing",
+              "Git missing",
+              "React preferred skill not found",
+              "TypeScript preferred skill not found",
+              "Responsive Design preferred skill not found",
+              "REST APIs preferred skill not found",
+              "Documentation preferred skill not found"
+            ],
+            "reasoning": "The candidate matches 1 of 4 required skills and 0 of 5 preferred skills. No directly overlapping project evidence was found. The main gap is CSS."
+          }
+        ]
+      }
+    ]
+  },
+  "skill_matching": {
+    "cases": 4,
+    "correct_classifications": 10,
+    "total_classifications": 10,
+    "accuracy": 1.0,
+    "alias_cases": 1,
+    "negative_alias_cases": 1,
+    "case_results": [
+      {
+        "case_id": "SC001",
+        "matched_ok": true,
+        "missing_ok": true,
+        "actual_matched": [
+          "Git",
+          "Python",
+          "SQL"
+        ],
+        "actual_missing": [
+          "FastAPI"
+        ]
+      },
+      {
+        "case_id": "SC002",
+        "matched_ok": true,
+        "missing_ok": true,
+        "actual_matched": [
+          "FastAPI",
+          "PostgreSQL",
+          "React"
+        ],
+        "actual_missing": []
+      },
+      {
+        "case_id": "SC003",
+        "matched_ok": true,
+        "missing_ok": true,
+        "actual_matched": [],
+        "actual_missing": [
+          "JavaScript"
+        ]
+      },
+      {
+        "case_id": "SC004",
+        "matched_ok": true,
+        "missing_ok": true,
+        "actual_matched": [
+          "Python",
+          "SQL"
+        ],
+        "actual_missing": []
+      }
+    ]
+  },
+  "consistency": {
+    "base_score": 60.7,
+    "added_score": 60.7,
+    "removed_score": 56.7,
+    "unrelated_score": 60.7,
+    "repeat_score": 60.7,
+    "determinism": true,
+    "addition_monotonic": true,
+    "removal_monotonic": true,
+    "unrelated_robust": true
+  },
+  "explanations": {
+    "checked": 40,
+    "failures": [],
+    "unsupported_claims": 0,
+    "factuality_pass_rate": 1.0
+  },
+  "expectation_failures": [
+    "P007 score behavior threshold"
+  ],
+  "framework_checks_pass": true,
+  "overall_pass": true
+}

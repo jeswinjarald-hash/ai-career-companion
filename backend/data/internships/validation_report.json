@@ -1,0 +1,37 @@
+{
+  "dataset_version": "1.0",
+  "record_count": 180,
+  "target_range": "150-200",
+  "within_target_range": true,
+  "missing_required_field_count": 0,
+  "duplicate_job_id_count": 0,
+  "duplicate_content_count": 0,
+  "domain_count": 15,
+  "domain_distribution": {
+    "Software Development": 12,
+    "Java Backend": 12,
+    "Python Backend": 12,
+    "Frontend Development": 12,
+    "Full Stack Development": 12,
+    "Data Science": 12,
+    "Machine Learning": 12,
+    "Generative AI / NLP": 12,
+    "Data Analytics": 12,
+    "Cloud Computing": 12,
+    "DevOps": 12,
+    "Cybersecurity": 12,
+    "Database / SQL": 12,
+    "Software Testing / QA": 12,
+    "Mobile Development": 12
+  },
+  "work_mode_distribution": {
+    "On-site": 60,
+    "Hybrid": 60,
+    "Remote": 60
+  },
+  "employment_type_distribution": {
+    "Internship": 150,
+    "Entry Level": 30
+  },
+  "status": "PASS"
+}

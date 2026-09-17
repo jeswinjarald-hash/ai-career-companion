@@ -1,0 +1,12 @@
+{
+  "version": "1.0",
+  "skill_cases": [
+    {"case_id":"SC001","student_skills":["Python","SQL","Git"],"job_required_skills":["Python","SQL","FastAPI","Git"],"expected_matched":["Python","SQL","Git"],"expected_missing":["FastAPI"]},
+    {"case_id":"SC002","student_skills":["React.js","Postgres","Fast API"],"job_required_skills":["React","PostgreSQL","FastAPI"],"expected_matched":["React","PostgreSQL","FastAPI"],"expected_missing":[]},
+    {"case_id":"SC003","student_skills":["Java"],"job_required_skills":["JavaScript"],"expected_matched":[],"expected_missing":["JavaScript"]},
+    {"case_id":"SC004","student_skills":["Python","python","SQL"],"job_required_skills":["Python","SQL"],"expected_matched":["Python","SQL"],"expected_missing":[]}
+  ],
+  "consistency_pairs": [
+    {"case_id":"CC001","base_skills":["Python","SQL","Git"],"added_skill":"FastAPI","removed_skill":"SQL","unrelated_skill":"Photoshop","job_required_skills":["Python","SQL","FastAPI","Git"]}
+  ]
+}

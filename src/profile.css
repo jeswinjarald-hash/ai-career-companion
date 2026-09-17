@@ -1,0 +1,10 @@
+.form-grid textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.form-grid input:disabled,
+.form-grid textarea:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}

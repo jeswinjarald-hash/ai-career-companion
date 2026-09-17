@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "queries": [
+    {"query_id":"RQ001","query":"Python machine learning internship","primary_relevant_domains":["Machine Learning"],"secondary_relevant_domains":["Data Science","Generative AI / NLP"]},
+    {"query_id":"RQ002","query":"React JavaScript frontend internship","primary_relevant_domains":["Frontend Development"],"secondary_relevant_domains":["Full Stack Development"]},
+    {"query_id":"RQ003","query":"Java Spring Boot backend internship","primary_relevant_domains":["Java Backend"],"secondary_relevant_domains":["Software Development"]},
+    {"query_id":"RQ004","query":"Python FastAPI REST API internship","primary_relevant_domains":["Python Backend"],"secondary_relevant_domains":["Software Development"]},
+    {"query_id":"RQ005","query":"full stack React Node MongoDB internship","primary_relevant_domains":["Full Stack Development"],"secondary_relevant_domains":["Frontend Development","Software Development"]},
+    {"query_id":"RQ006","query":"data science Python Pandas statistics internship","primary_relevant_domains":["Data Science"],"secondary_relevant_domains":["Data Analytics","Machine Learning"]},
+    {"query_id":"RQ007","query":"NLP transformers embeddings RAG internship","primary_relevant_domains":["Generative AI / NLP"],"secondary_relevant_domains":["Machine Learning","Data Science"]},
+    {"query_id":"RQ008","query":"SQL Excel Power BI data analyst internship","primary_relevant_domains":["Data Analytics"],"secondary_relevant_domains":["Database / SQL"]},
+    {"query_id":"RQ009","query":"AWS cloud Docker Terraform internship","primary_relevant_domains":["Cloud Computing"],"secondary_relevant_domains":["DevOps"]},
+    {"query_id":"RQ010","query":"DevOps Linux CI CD Docker internship","primary_relevant_domains":["DevOps"],"secondary_relevant_domains":["Cloud Computing"]},
+    {"query_id":"RQ011","query":"cybersecurity SOC Linux SIEM internship","primary_relevant_domains":["Cybersecurity"],"secondary_relevant_domains":["Cloud Computing"]},
+    {"query_id":"RQ012","query":"database SQL PostgreSQL internship","primary_relevant_domains":["Database / SQL"],"secondary_relevant_domains":["Data Analytics","Python Backend"]},
+    {"query_id":"RQ013","query":"QA Selenium API testing internship","primary_relevant_domains":["Software Testing / QA"],"secondary_relevant_domains":["Software Development"]},
+    {"query_id":"RQ014","query":"Flutter mobile developer internship","primary_relevant_domains":["Mobile Development"],"secondary_relevant_domains":["Software Development"]},
+    {"query_id":"RQ015","query":"software developer algorithms Python internship","primary_relevant_domains":["Software Development"],"secondary_relevant_domains":["Python Backend"]},
+    {"query_id":"RQ016","query":"I want an internship working with AI and text data","primary_relevant_domains":["Generative AI / NLP"],"secondary_relevant_domains":["Machine Learning","Data Science"]},
+    {"query_id":"RQ017","query":"I want to build dashboards and analyze business data","primary_relevant_domains":["Data Analytics"],"secondary_relevant_domains":["Database / SQL","Data Science"]},
+    {"query_id":"RQ018","query":"I want to work with cloud deployments and containers","primary_relevant_domains":["Cloud Computing","DevOps"],"secondary_relevant_domains":[]},
+    {"query_id":"RQ019","query":"Java Android application development internship","primary_relevant_domains":["Mobile Development"],"secondary_relevant_domains":["Java Backend"]},
+    {"query_id":"RQ020","query":"Python backend APIs databases and testing","primary_relevant_domains":["Python Backend"],"secondary_relevant_domains":["Software Development","Database / SQL"]}
+  ]
+}

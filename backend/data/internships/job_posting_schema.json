@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0",
+  "description": "Standard schema for curated internship/job postings used by the AI Career Companion Milestone 2 knowledge base.",
+  "required_fields": [
+    "job_id",
+    "job_title",
+    "company",
+    "location",
+    "work_mode",
+    "employment_type",
+    "domain",
+    "job_description",
+    "responsibilities",
+    "required_skills",
+    "preferred_skills",
+    "qualifications",
+    "experience_requirements",
+    "education_requirements",
+    "source_type",
+    "posted_date",
+    "raw_text"
+  ],
+  "fields": {
+    "job_id": {
+      "type": "string",
+      "description": "Unique stable identifier."
+    },
+    "job_title": {
+      "type": "string"
+    },
+    "company": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "work_mode": {
+      "type": "string",
+      "allowed": [
+        "On-site",
+        "Hybrid",
+        "Remote"
+      ]
+    },
+    "employment_type": {
+      "type": "string",
+      "allowed": [
+        "Internship",
+        "Entry Level"
+      ]
+    },
+    "domain": {
+      "type": "string"
+    },
+    "job_description": {
+      "type": "string"
+    },
+    "responsibilities": {
+      "type": "array[string]"
+    },
+    "required_skills": {
+      "type": "array[string]"
+    },
+    "preferred_skills": {
+      "type": "array[string]"
+    },
+    "qualifications": {
+      "type": "array[string]"
+    },
+    "experience_requirements": {
+      "type": "string"
+    },
+    "education_requirements": {
+      "type": "string"
+    },
+    "source_type": {
+      "type": "string",
+      "allowed": [
+        "synthetic_curated"
+      ]
+    },
+    "posted_date": {
+      "type": "string",
+      "format": "YYYY-MM-DD"
+    },
+    "raw_text": {
+      "type": "string",
+      "description": "Canonical concatenated text used for chunking/embedding in M2.2."
+    }
+  }
+}
