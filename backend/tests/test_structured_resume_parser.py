@@ -81,6 +81,110 @@ def test_dash_bulleted_projects_stay_two_projects_with_technologies_and_descript
 
 
 # ---------------------------------------------------------------------------
+# Projects: three blank-line-separated entries, each with a technology line
+# placed AFTER its bullets (a very common real-resume layout the old parser
+# mishandled by treating the trailing tech line as a fourth/sixth/eighth
+# "project"). Mirrors the structure of the M3.1 manual-test resume that
+# surfaced this bug (3 real projects were being reported as 8).
+# ---------------------------------------------------------------------------
+
+THREE_PROJECTS_WITH_TRAILING_TECH_LINES = """AI Career Companion
+- Built backend REST APIs using FastAPI and PostgreSQL for candidate profile management.
+- Implemented resume upload and structured parsing pipeline.
+Technologies: Python, FastAPI, PostgreSQL
+
+Student Performance Prediction System
+- Built a machine learning model to predict student performance using Scikit-learn.
+- Cleaned and processed datasets using Pandas.
+Technologies: Python, Scikit-learn, Pandas
+
+Library Management System
+- Developed a library management system with issue/return tracking.
+- Used MySQL for persistent storage.
+Technologies: Java, MySQL"""
+
+
+def test_three_projects_with_trailing_tech_lines_produce_exactly_three_projects() -> None:
+    projects = _projects([section("projects", THREE_PROJECTS_WITH_TRAILING_TECH_LINES)])
+
+    assert len(projects) == 3
+    assert [project["title"] for project in projects] == [
+        "AI Career Companion",
+        "Student Performance Prediction System",
+        "Library Management System",
+    ]
+    assert set(projects[0]["technologies"]) == {"Python", "FastAPI", "PostgreSQL"}
+    assert set(projects[1]["technologies"]) == {"Python", "Scikit-learn", "Pandas"}
+    assert set(projects[2]["technologies"]) == {"Java", "MySQL"}
+    for project in projects:
+        # The trailing "Technologies: ..." line must never appear as a title or
+        # bleed into the description — it belongs only in `technologies`.
+        assert not project["title"].startswith("Technologies")
+        assert "Technologies:" not in project["description"]
+
+
+def test_project_with_a_single_bullet_is_one_project() -> None:
+    content = "Solo Utility Script\n- Wrote a Python script to automate resume backups."
+
+    projects = _projects([section("projects", content)])
+
+    assert len(projects) == 1
+    assert projects[0]["title"] == "Solo Utility Script"
+    assert "automate resume backups" in projects[0]["description"]
+
+
+def test_project_with_several_bullets_stays_one_project() -> None:
+    content = "\n".join([
+        "Library Management System",
+        "- Developed a library management system with issue/return tracking.",
+        "- Used MySQL for persistent storage.",
+        "- Added a Java Swing desktop client for librarians.",
+        "- Wrote unit tests covering checkout and return flows.",
+    ])
+
+    projects = _projects([section("projects", content)])
+
+    assert len(projects) == 1
+    assert projects[0]["title"] == "Library Management System"
+    for bullet in ["issue/return tracking", "persistent storage", "Swing desktop client", "checkout and return flows"]:
+        assert bullet in projects[0]["description"]
+
+
+def test_bullets_are_never_miscounted_as_separate_projects() -> None:
+    # A bullet that itself mentions two or more technologies in prose (not a
+    # dedicated "Technologies:" line) must stay a description line, not be
+    # reclassified as a tech-stack line or, worse, a new project.
+    content = "\n".join([
+        "AI Career Companion",
+        "- Used Python, FastAPI, SQL, PostgreSQL, REST APIs, Git and Postman.",
+        "- Implemented resume upload and structured parsing pipeline.",
+    ])
+
+    projects = _projects([section("projects", content)])
+
+    assert len(projects) == 1
+    assert "Used Python, FastAPI, SQL, PostgreSQL, REST APIs, Git and Postman." in projects[0]["description"]
+
+
+def test_multiple_projects_with_multiple_bullets_each_and_no_tech_line() -> None:
+    content = "\n\n".join([
+        "AI Career Companion\n- Built REST APIs using FastAPI.\n- Implemented PostgreSQL persistence.",
+        "Student Performance Prediction System\n- Trained a model with Scikit-learn.\n- Cleaned data with Pandas.",
+        "Library Management System\n- Tracked book issue and return.\n- Stored records in MySQL.",
+    ])
+
+    projects = _projects([section("projects", content)])
+
+    assert len(projects) == 3
+    assert [project["title"] for project in projects] == [
+        "AI Career Companion",
+        "Student Performance Prediction System",
+        "Library Management System",
+    ]
+    assert all(len(project["description"]) > 0 for project in projects)
+
+
+# ---------------------------------------------------------------------------
 # Education: degree + institution/graduation/CGPA metadata split across lines,
 # including a "start - end" year range, must group into one entry.
 # ---------------------------------------------------------------------------

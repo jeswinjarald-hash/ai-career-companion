@@ -3,12 +3,12 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-MatchType = Literal["demonstrated", "partial", "missing"]
+MatchType = Literal["demonstrated", "partial", "learning_only", "missing"]
 RequirementType = Literal["required_skill", "preferred_skill", "qualification", "education", "experience"]
 Priority = Literal["high", "medium", "low"]
 EvidenceSource = Literal[
     "profile_skills", "resume_skills", "project", "experience", "internship",
-    "certification", "achievement", "qualification", "education", "profile",
+    "certification", "achievement", "qualification", "education", "learning", "profile",
 ]
 
 

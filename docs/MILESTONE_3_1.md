@@ -1,5 +1,9 @@
 # Milestone 3.1 — Skill Gap Analysis Agent
 
+> **Manual-review fixes (2026-09-19):** a manual review against a real resume
+> surfaced four issues, all fixed and regression-tested — see
+> [Manual-review fixes](#manual-review-fixes-2026-09-19) at the end of this document.
+
 The Skill Gap Analysis Agent compares a student's structured resume/profile against a
 selected internship and produces a grounded, evidence-backed report: what is already
 demonstrated, what is missing, what is only partially demonstrated, and what to do about
@@ -183,3 +187,113 @@ internship first"), loading, and error states are all handled — nothing render
   (a second user cannot analyze or read another user's resume), 404/409 error states, and
   a full real-pipeline test (upload -> extract -> section-detect -> structure -> analyze)
   asserting every reported requirement traces back to the real job posting's own fields.
+
+## Manual-review fixes (2026-09-19)
+
+A manual review against a real test resume surfaced four issues, all root-caused,
+fixed, and covered by regression tests (`test_structured_resume_parser.py`,
+`test_skill_gap_evidence.py`, `test_skill_gap_service.py`).
+
+### 1. Project count was wrong (8 instead of 3)
+
+Root cause, in `app/services/structured_resume.py`'s `_projects()`: (a) a "Technologies:
+..." line was only recognized as belonging to the current project when it was the very
+first line after the title — a trailing tech-stack line (a very common real-resume
+layout) was misclassified as a new project's title; (b) blank lines between project
+entries, the most reliable resume-format-agnostic boundary signal, were discarded
+entirely by `_reflow_lines` and never used.
+
+Fix: `_split_into_project_blocks` now splits a section on blank lines first (a no-op for
+content with no blank lines, preserving existing single-block behavior exactly), and
+`_technology_terms` recognizes a tech-stack line — labeled ("Technologies:"/"Tech
+Stack:"/"Tools:") or an unlabeled comma/pipe/slash list of 2+ recognized skills —
+anywhere in a project block, not only as the first line. A bulleted *sentence* that
+merely mentions two technologies in prose is still correctly treated as a description
+line, never reclassified as a tech-stack line (checked via bullet/indent status first).
+
+### 2. A "teamwork" qualification was falsely reported as fully missing
+
+Two compounding root causes: a "Soft Skills" heading wasn't a recognized section alias
+(became an opaque `custom` section, entirely dropped from structured output), and even
+recognized skill text was only matched against a closed *technical* vocabulary
+(`SKILL_ALIASES`), which has no soft-skill terms.
+
+Fix: `section_detection.py` now maps "soft skills" (and close variants) to the
+canonical `skills` section. `structured_resume.py` adds a small, explicit
+`SOFT_SKILL_ALIASES` vocabulary (Problem Solving, Team Collaboration, Communication,
+Adaptability, Time Management, Leadership, Critical Thinking, Attention to Detail,
+Collaboration) extracted via a new `_soft_skills()` function — kept deliberately
+separate from `_skills()` so soft-skill terms never leak into project
+technology-line detection. `skill_gap_evidence.py` adds a conservative,
+explicitly-scoped `qualification_related_terms()` bridge: a qualification whose text
+mentions "team"/"teamwork"/"collaborat..." can be satisfied (as `partial`, never
+`demonstrated`) by "Team Collaboration" or a collaboration-flavored experience bullet.
+**No other soft-skill concept is bridged** — leadership, ownership, communication, and
+problem-solving still require exact or verbatim evidence, per explicit instruction not
+to infer them.
+
+### 3. Docker (learning-only exposure) was overstated as "partially demonstrated"
+
+Root cause: once "Areas Currently Learning"-type content reached the evidence layer, it
+was indistinguishable from any other evidence source, so `RELATED_TERMS["docker"]`
+matching "Containerization" produced an ordinary `partial` match — the same confidence
+and wording as genuine hands-on related evidence.
+
+Fix: a new `MatchType` value, `"learning_only"`, and a new evidence source, `"learning"`
+(fed by a new `section_detection.py` "learning" canonical section — aliases include
+"areas currently learning", "currently learning" — and `structured_resume.py`'s new
+`structured_data["learning"]` field, kept entirely separate from `skills`).
+`match_requirement()` now checks non-learning evidence first for both exact and related
+matches; only when nothing but "learning" evidence exists (exact term *or* a related
+term) does it return `"learning_only"`, with evidence and reason text that explicitly
+says the term "appears under Areas Currently Learning" and that "there is no direct
+evidence of hands-on ... usage." Learning-only evidence can never upgrade a match to
+`demonstrated`. In scoring, `learning_only` earns 0.1 credit (vs. 1.0 demonstrated / 0.5
+partial / 0.0 missing) — enough to acknowledge genuine initiative without materially
+inflating readiness. `MatchType` is used in `schemas/skill_gap.py`,
+`skill_gap_service.py`'s classification branches, and the frontend
+(`skillGapService.ts`, `App.tsx`'s `GapCard`, which renders it as "Currently learning /
+not yet demonstrated" in a visually distinct amber badge, never the same red used for
+"Missing").
+
+### 4. Evidence snippets were noisy (e.g. SQL evidence citing unrelated certifications)
+
+Root cause: `_entries()` in `structured_resume.py` folds an entire section's content
+into a **single** entry — correct for a genuinely multi-line block like one job's
+title + bullets (experience/internships), but wrong for certifications/achievements/
+interests, which are conventionally one item per line. A multi-certification section
+became one giant `raw_text` blob; any term found anywhere inside it cited the *whole*
+blob (every other certification's title included) as "evidence."
+
+Fix: a new `_line_entries()` splits a section into one entry per non-blank line
+(bullet-prefix stripped), used for `certifications`, `achievements`, and `interests`.
+`experience`/`internships`/`qualifications` keep using `_entries()` unchanged (those
+genuinely need multi-line grouping, and no noise was observed there). Combined with the
+existing per-requirement evidence citation (already scoped to the specific matched
+unit, not a global dump), evidence is now short and directly relevant.
+
+### Also fixed while investigating: `RELATED_TERMS` over-crediting Python
+
+`RELATED_TERMS["pandas"]` and `["numpy"]` included `"python"`, so *any* resume with just
+"Python" (no data-science signal at all) got `partial` credit toward Pandas/NumPy/
+Scikit-learn requirements. `"python"` was removed from all three — a sibling
+data-science library or an explicit "data science" mention is still valid related
+evidence; Python alone is not.
+
+### M2 UI label clarity
+
+The Job Details page's Resume Match card showed "Missing Skills" while M3.1 could
+separately list preferred gaps — ambiguous, since the M2 field is actually
+`missing_required_skills`. Relabeled to "Missing Required Skills" (and the Career
+Recommendations list's "Missing:" to "Missing required:"). UI text only; M2 scoring is
+unchanged.
+
+### Investigated, no change needed: Career Profile vs. resume-derived context
+
+`analyze_skill_gap` already builds evidence from `structured_data` (parsed from the
+resume) independently of whether the manually-saved `CandidateProfile` fields are
+filled in — `build_evidence_units` adds a "profile_skills" unit only if
+`profile.skills` is non-empty, but always adds "resume_skills"/"project"/etc. units
+from the structured resume regardless. Verified end-to-end with a freshly-registered
+account that never touched the Career Profile form: skill gap analysis worked
+correctly from the resume alone.

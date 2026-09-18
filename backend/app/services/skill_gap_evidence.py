@@ -42,10 +42,36 @@ RELATED_TERMS: dict[str, set[str]] = {
     "spring boot": {"java", "backend framework", "rest apis"},
     "graphql": {"rest apis", "api development"},
     "ci/cd": {"devops", "automation", "deployment"},
-    "scikit-learn": {"machine learning", "python", "data science"},
-    "pandas": {"data science", "python", "numpy"},
-    "numpy": {"data science", "python", "pandas"},
+    # Deliberately excludes "python": Python alone is far too general-purpose to imply
+    # hands-on Pandas/NumPy/Scikit-learn work — only an explicit data-science/ML signal
+    # (or the sibling library itself) counts as related evidence for these.
+    "scikit-learn": {"machine learning", "data science"},
+    "pandas": {"data science", "numpy"},
+    "numpy": {"data science", "pandas"},
 }
+
+# A conservative, explicitly-curated bridge from a qualification requirement's stated
+# concept to related (but not verbatim) student evidence phrases — scoped only to
+# concepts a human has explicitly validated as safe to bridge. Never generalized to
+# infer traits like leadership, communication, ownership, or problem-solving without
+# direct evidence: those stay strictly exact-match-or-missing.
+QUALIFICATION_CONCEPT_TERMS: list[tuple[re.Pattern[str], set[str]]] = [
+    (
+        re.compile(r"\bteam\b|\bteamwork\b|\bcollaborat", re.I),
+        {
+            "teamwork", "team collaboration", "collaboration", "collaborative",
+            "worked with team", "worked with classmates", "collaborated with team",
+            "collaborated with classmates", "team player",
+        },
+    ),
+]
+
+
+def qualification_related_terms(requirement: str) -> set[str]:
+    for pattern, related in QUALIFICATION_CONCEPT_TERMS:
+        if pattern.search(requirement):
+            return related
+    return set()
 
 EvidenceSource = str
 
@@ -132,6 +158,15 @@ def build_evidence_units(profile: CandidateProfile, structured_data: dict) -> li
             if unit:
                 units.append(unit)
 
+    for item in structured_data.get("learning", []) or []:
+        if not isinstance(item, dict):
+            continue
+        raw = str(item.get("raw_text") or "")
+        unit = _unit_from_text("learning", "Areas Currently Learning", raw)
+        if unit:
+            terms = {normalize_term(part) for part in raw.split(",") if normalize_term(part)}
+            units.append(EvidenceUnit(unit.source, unit.source_name, unit.raw_text, unit.normalized_text, terms))
+
     if profile.career_goals:
         unit = _unit_from_text("qualification", "Career goals", profile.career_goals)
         if unit:
@@ -164,22 +199,38 @@ def related_evidence_item(unit: EvidenceUnit, related_pool: set[str]) -> Evidenc
     return EvidenceItem(source=unit.source, source_name=unit.source_name, evidence=snippet or unit.source_name)
 
 
+def _find_hits(units: list[EvidenceUnit], term_pool: set[str]) -> list[EvidenceUnit]:
+    return [unit for unit in units if unit.explicit_terms & term_pool or any(mentions_term(term, unit.normalized_text) for term in term_pool)]
+
+
 def match_requirement(requirement: str, units: list[EvidenceUnit]) -> tuple[MatchType, float, list[EvidenceItem], str]:
     """Classifies a single job requirement against the student's evidence.
 
-    Layered matching, in order: (1) normalized exact/alias term match against explicitly
-    declared skills (profile + resume skills section + project technologies), (2) exact
-    term mention found in free-text evidence (project/experience descriptions), (3) related
-    -but-not-equivalent technology found via `RELATED_TERMS` -> partial, (4) no evidence at
-    all -> missing. Confidence is a fixed, documented value per branch, never LLM-guessed.
+    Layered matching, in order:
+      1. Normalized exact/alias term match against explicitly declared skills (profile
+         + resume skills section + project technologies) or an exact mention in
+         free-text evidence -> `demonstrated`.
+      2. A related-but-not-equivalent technology (`RELATED_TERMS`) or, for a
+         qualification-style requirement, a conservatively-bridged related concept
+         (`qualification_related_terms`) -> `partial`.
+      3. The requirement (or a related concept) appears only under "Areas Currently
+         Learning" (or similar) -> `learning_only` — exposure is acknowledged without
+         ever being reported as demonstrated or even as a normal hands-on partial match.
+      4. No evidence at all -> `missing`.
+
+    Confidence is a fixed, documented value per branch, never LLM-guessed. Evidence
+    found only in a "learning" source never promotes a match past `learning_only`,
+    even for an otherwise-exact term mention.
     """
     req_term = normalize_term(requirement)
     if not req_term:
         return "missing", 0.5, [], "This requirement could not be normalized for comparison."
 
-    explicit_hits = [unit for unit in units if req_term in unit.explicit_terms]
-    text_hits = [unit for unit in units if unit not in explicit_hits and mentions_term(req_term, unit.normalized_text)]
-    exact_hits = explicit_hits + text_hits
+    real_units = [unit for unit in units if unit.source != "learning"]
+    learning_units = [unit for unit in units if unit.source == "learning"]
+
+    exact_hits = [unit for unit in real_units if req_term in unit.explicit_terms]
+    exact_hits += [unit for unit in real_units if unit not in exact_hits and mentions_term(req_term, unit.normalized_text)]
     if exact_hits:
         evidence = [evidence_item(unit, requirement) for unit in exact_hits[:3]]
         confidence = 0.95 if any(unit.source in ("profile_skills", "resume_skills") for unit in exact_hits) else 0.85
@@ -187,12 +238,9 @@ def match_requirement(requirement: str, units: list[EvidenceUnit]) -> tuple[Matc
         reason = f'"{requirement}" is explicitly demonstrated, evidenced in your {location}.'
         return "demonstrated", confidence, evidence, reason
 
-    related_pool = RELATED_TERMS.get(req_term, set())
-    partial_hits: list[EvidenceUnit] = []
-    if related_pool:
-        for unit in units:
-            if unit.explicit_terms & related_pool or any(mentions_term(term, unit.normalized_text) for term in related_pool):
-                partial_hits.append(unit)
+    related_pool = RELATED_TERMS.get(req_term, set()) | qualification_related_terms(requirement)
+
+    partial_hits = _find_hits(real_units, related_pool) if related_pool else []
     if partial_hits:
         evidence = [related_evidence_item(unit, related_pool) for unit in partial_hits[:3]]
         reason = (
@@ -200,5 +248,16 @@ def match_requirement(requirement: str, units: list[EvidenceUnit]) -> tuple[Matc
             f'but "{requirement}" itself is not explicitly demonstrated. Treated as partially demonstrated, not a confirmed match.'
         )
         return "partial", 0.6, evidence, reason
+
+    learning_exact_hits = [unit for unit in learning_units if req_term in unit.explicit_terms or mentions_term(req_term, unit.normalized_text)]
+    learning_related_hits = _find_hits(learning_units, related_pool) if related_pool else []
+    learning_hits = learning_exact_hits or learning_related_hits
+    if learning_hits:
+        evidence = [evidence_item(unit) for unit in learning_hits[:3]]
+        reason = (
+            f'"{requirement}" appears under {learning_hits[0].source_name} — related learning exposure is present, '
+            f'but there is no direct evidence of hands-on {requirement} usage.'
+        )
+        return "learning_only", 0.5, evidence, reason
 
     return "missing", 0.95, [], "No explicit evidence found in the current resume/profile."

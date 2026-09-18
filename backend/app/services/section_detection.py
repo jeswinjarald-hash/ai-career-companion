@@ -10,7 +10,10 @@ from app.models import Resume, ResumeSection
 ALIASES = {
     "summary": {"summary", "professional summary", "profile", "about me", "career summary"},
     "objective": {"objective", "career objective", "professional objective"},
-    "skills": {"skills", "technical skills", "core skills", "key skills", "technologies", "technical proficiencies"},
+    "skills": {
+        "skills", "technical skills", "core skills", "key skills", "technologies", "technical proficiencies",
+        "soft skills", "soft skill", "interpersonal skills", "personal skills", "core competencies",
+    },
     "education": {"education", "academic background", "academic qualifications", "educational qualifications", "academics"},
     "experience": {"experience", "work experience", "professional experience", "employment history", "work history"},
     "internships": {"internship", "internships", "internship experience"},
@@ -20,6 +23,10 @@ ALIASES = {
     "interests": {"interests", "career interests", "areas of interest"},
     "publications": {"publications", "papers", "research publications"},
     "activities": {"activities", "extracurricular activities", "co-curricular activities"},
+    "learning": {
+        "areas currently learning", "currently learning", "areas of learning", "learning goals",
+        "skills in progress", "learning in progress", "currently exploring",
+    },
 }
 
 _ALIAS_TO_CANONICAL = {alias.casefold(): name for name, aliases in ALIASES.items() for alias in aliases}

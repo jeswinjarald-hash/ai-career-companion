@@ -304,7 +304,7 @@ function CareersView({ resumeId, onOpenJob }: { resumeId: number | null; onOpenJ
         : resumeId === null ? <div className="architecture-note">Process a resume to see recommendations ranked for you.</div>
         : matches === null ? <p className="muted">Loading your recommendations...</p>
         : matches.length === 0 ? <p className="muted">No job matches were found for your resume yet.</p>
-        : <section className="career-list">{matches.map((match) => <article className="card career-card" key={match.job_id}><div className="career-card-top"><span className="role-mark">{match.job_title.slice(0, 1)}</span><span className="match-badge">{Math.round(match.match_score)}% match</span></div><h3>{match.job_title}</h3><p>{match.company} · {match.domain}</p><div className="tag-row">{match.matched_required_skills.slice(0, 3).map((skill) => <span key={skill}>{skill}</span>)}</div><p className="muted">{match.reasoning}</p><p className="result-bullet">Missing: {match.missing_required_skills.join(', ') || 'None'}</p><button className="text-button" onClick={() => onOpenJob(match.job_id)}>View job details -&gt;</button></article>)}</section>}
+        : <section className="career-list">{matches.map((match) => <article className="card career-card" key={match.job_id}><div className="career-card-top"><span className="role-mark">{match.job_title.slice(0, 1)}</span><span className="match-badge">{Math.round(match.match_score)}% match</span></div><h3>{match.job_title}</h3><p>{match.company} · {match.domain}</p><div className="tag-row">{match.matched_required_skills.slice(0, 3).map((skill) => <span key={skill}>{skill}</span>)}</div><p className="muted">{match.reasoning}</p><p className="result-bullet">Missing required: {match.missing_required_skills.join(', ') || 'None'}</p><button className="text-button" onClick={() => onOpenJob(match.job_id)}>View job details -&gt;</button></article>)}</section>}
     </section>
   </>
 }
@@ -353,15 +353,17 @@ function JobDetailsView({ jobId, resumeId, onBack, onAnalyzeSkillGap }: { jobId:
       <div className="card-heading"><div><p className="eyebrow">RESUME MATCH</p><h3>Your match for this role</h3></div>{resumeId !== null && matches === null && <button className="primary-button" onClick={() => void loadMatch()} disabled={matchStatus === 'loading'}>{matchStatus === 'loading' ? 'Checking...' : 'Check my match'}</button>}</div>
       {resumeId === null && <div className="architecture-note">Process a resume to see your match for this role.</div>}
       {matchStatus === 'error' && <div className="error-notice" role="alert">{matchError}</div>}
-      {matchResult && <div className="results-grid resume-result-grid"><article className="card result-card"><p className="eyebrow">MATCH SCORE</p><strong>{Math.round(matchResult.match_score)}%</strong><p className="muted">{matchResult.reasoning}</p></article><article className="card result-card"><p className="eyebrow">MATCHED SKILLS</p>{matchResult.matched_required_skills.length > 0 ? <div className="chip-list">{matchResult.matched_required_skills.map((skill) => <span className="skill-chip" key={skill}>{skill}</span>)}</div> : <p className="muted">None</p>}</article><article className="card result-card"><p className="eyebrow">MISSING SKILLS</p>{matchResult.missing_required_skills.length > 0 ? <div className="chip-list">{matchResult.missing_required_skills.map((skill) => <span className="warning-chip" key={skill}>{skill}</span>)}</div> : <p className="muted">None</p>}</article></div>}
+      {matchResult && <div className="results-grid resume-result-grid"><article className="card result-card"><p className="eyebrow">MATCH SCORE</p><strong>{Math.round(matchResult.match_score)}%</strong><p className="muted">{matchResult.reasoning}</p></article><article className="card result-card"><p className="eyebrow">MATCHED SKILLS</p>{matchResult.matched_required_skills.length > 0 ? <div className="chip-list">{matchResult.matched_required_skills.map((skill) => <span className="skill-chip" key={skill}>{skill}</span>)}</div> : <p className="muted">None</p>}</article><article className="card result-card"><p className="eyebrow">MISSING REQUIRED SKILLS</p>{matchResult.missing_required_skills.length > 0 ? <div className="chip-list">{matchResult.missing_required_skills.map((skill) => <span className="warning-chip" key={skill}>{skill}</span>)}</div> : <p className="muted">None</p>}</article></div>}
       {matches !== null && matches.length === 0 && <p className="muted">This job was not found in your ranked matches. It may not currently be among your top retrieval candidates.</p>}
       {resumeId !== null && <div className="detail-actions"><button className="primary-button" onClick={onAnalyzeSkillGap}>Analyze Skill Gaps -&gt;</button></div>}
     </section>
   </>
 }
+const GAP_TONE: Record<GapItem['match_type'], string> = { missing: 'missing', partial: 'needs-improvement', learning_only: 'adequate', demonstrated: 'strong' }
+const GAP_LABEL: Record<GapItem['match_type'], string> = { missing: 'Missing', partial: 'Partially demonstrated', learning_only: 'Currently learning / not yet demonstrated', demonstrated: 'Matched' }
 function GapCard({ item }: { item: GapItem }) {
-  const tone = item.match_type === 'missing' ? 'missing' : 'needs-improvement'
-  const label = item.match_type === 'missing' ? 'Missing' : 'Partially demonstrated'
+  const tone = GAP_TONE[item.match_type]
+  const label = GAP_LABEL[item.match_type]
   return <article className="card result-card">
     <div className="card-heading"><strong>{item.requirement}</strong><span className={`skill-status ${tone}`}>{label} · {item.priority}</span></div>
     <p className="muted">{item.importance}</p>

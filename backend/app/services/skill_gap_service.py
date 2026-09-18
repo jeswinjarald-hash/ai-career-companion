@@ -4,7 +4,7 @@ Orchestrates the deterministic pipeline:
 
     structured resume + candidate profile
         -> evidence extraction (app.services.skill_gap_evidence)
-        -> requirement classification (demonstrated / partial / missing)
+        -> requirement classification (demonstrated / partial / learning_only / missing)
         -> deterministic readiness scoring
         -> template-based, job-grounded recommendations
         -> persisted SkillGapAnalysis
@@ -56,7 +56,7 @@ COMPONENT_LABELS: dict[str, str] = {
     "education": "Education",
     "qualifications": "Qualifications",
 }
-_PARTIAL_CREDIT: dict[MatchType, float] = {"demonstrated": 1.0, "partial": 0.5, "missing": 0.0}
+_PARTIAL_CREDIT: dict[MatchType, float] = {"demonstrated": 1.0, "partial": 0.5, "learning_only": 0.1, "missing": 0.0}
 _PRIORITY_ORDER: dict[Priority, int] = {"high": 0, "medium": 1, "low": 2}
 
 
@@ -340,7 +340,10 @@ def analyze_skill_gap(db: Session, resume_id: int, job_id: str, user_id: int) ->
         required_matches.append(match_type)
         if match_type == "demonstrated":
             strengths.append(StrengthItem(requirement=skill, requirement_type="required_skill", evidence=evidence, reason=reason))
-        elif match_type == "partial":
+        elif match_type in ("partial", "learning_only"):
+            # Learning-only exposure for a required skill is a real gap, but a
+            # meaningfully smaller one than no evidence at all — grouped with partial
+            # matches (distinguished by `match_type`) rather than the critical list.
             partial_gaps.append(_gap_item(skill, "required_skill", match_type, confidence, evidence, reason, job, "medium"))
         else:
             critical_gaps.append(_gap_item(skill, "required_skill", match_type, confidence, evidence, reason, job, "high"))

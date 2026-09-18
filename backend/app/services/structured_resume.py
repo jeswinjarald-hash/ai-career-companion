@@ -28,8 +28,54 @@ def _skills(text: str) -> list[str]:
     return found
 
 
+# Deliberately small and conservative: only well-established, unambiguous soft-skill
+# terms a resume states about itself (never inferred from unrelated evidence). Kept
+# separate from SKILL_ALIASES/_skills() so soft-skill terms never leak into project
+# "technologies" detection (`_technology_terms`), which must stay strictly technical.
+SOFT_SKILL_ALIASES = {
+    "problem solving": "Problem Solving", "problem-solving": "Problem Solving",
+    "team collaboration": "Team Collaboration", "teamwork": "Team Collaboration", "team work": "Team Collaboration",
+    "communication": "Communication", "verbal communication": "Communication", "written communication": "Communication",
+    "adaptability": "Adaptability", "adaptable": "Adaptability",
+    "time management": "Time Management",
+    "leadership": "Leadership",
+    "critical thinking": "Critical Thinking",
+    "attention to detail": "Attention to Detail",
+    "collaboration": "Collaboration",
+}
+
+
+def _soft_skills(text: str) -> list[str]:
+    lowered = text.casefold()
+    found = []
+    for alias, canonical in sorted(SOFT_SKILL_ALIASES.items(), key=lambda item: len(item[0]), reverse=True):
+        if re.search(r"(?<!\w)" + re.escape(alias) + r"(?!\w)", lowered) and canonical not in found:
+            found.append(canonical)
+    return found
+
+
 def _entries(sections: list[ResumeSection], names: set[str]) -> list[dict]:
     return [{"raw_text": section.content} for section in sections if section.name in names and section.content.strip()]
+
+
+def _line_entries(sections: list[ResumeSection], names: set[str]) -> list[dict]:
+    """Splits a section's content into one entry per non-blank line.
+
+    Certifications, achievements, and areas-currently-learning are conventionally one
+    item per line. Grouping a whole such section into a single blob (as `_entries`
+    correctly does for genuinely multi-line entries like a job's title + bullets)
+    would cite an unrelated certification's title as "evidence" for a different,
+    unrelated skill match downstream.
+    """
+    entries: list[dict] = []
+    for section in sections:
+        if section.name not in names:
+            continue
+        for raw_line in section.content.splitlines():
+            line = _strip_bullet_prefix(raw_line.strip()).strip()
+            if line:
+                entries.append({"raw_text": line})
+    return entries
 
 
 _DEGREE_PATTERN = re.compile(
@@ -135,51 +181,105 @@ def _strip_bullet_prefix(line: str) -> str:
     return line.lstrip("".join(_BULLET_PREFIXES) + " \t")
 
 
+_TECH_LABEL_PATTERN = re.compile(r"(?i)^(technologies(?:\s+used)?|tech(?:nical)?\s*stack|tools?(?:\s+used)?|stack)\s*[:\-]\s*(.+)$")
+
+
+def _technology_terms(line: str) -> list[str] | None:
+    """Returns this line's technology terms if it reads as a tech-stack line, else None.
+
+    A tech-stack line is either an explicit label ("Technologies:", "Tech Stack:",
+    "Tools:", ...) or an unlabeled comma/pipe/slash-separated list containing at least
+    two recognized skills. It can appear anywhere in a project entry — many resumes put
+    it after the bullet list, not only directly under the title — so callers must check
+    for it on every line, not just the first.
+    """
+    stripped = line.strip()
+    label_match = _TECH_LABEL_PATTERN.match(stripped)
+    candidate = label_match.group(2) if label_match else stripped
+    if not label_match and not any(separator in candidate for separator in (",", "|", "/")):
+        return None
+    terms = _skills(candidate)
+    if label_match:
+        return terms
+    return terms if len(terms) >= 2 else None
+
+
+def _split_into_project_blocks(content: str) -> list[str]:
+    """Splits project-section content on blank lines.
+
+    A blank line between entries is the most reliable, resume-format-agnostic signal
+    that one project has ended and the next begins — it doesn't depend on a bullet
+    glyph or a specific tech-list wording surviving PDF/DOCX text extraction. Content
+    with no blank lines (or where extraction collapsed them) comes back as one block,
+    and `_group_project_block` falls back to per-line heuristics for that block.
+    """
+    blocks = re.split(r"\n[ \t]*\n", content)
+    return [block for block in blocks if block.strip()]
+
+
+def _group_project_block(lines: list[tuple[str, bool]]) -> list[dict]:
+    projects: list[dict] = []
+    current: dict | None = None
+    description_lines: list[str] = []
+    for line, indented in lines:
+        if current is None:
+            # The first line of a project block is always its heading.
+            current = {"title": line, "description": "", "technologies": [], "raw_text": line}
+            continue
+        technologies = _technology_terms(line)
+        # An explicit label ("Technologies:", "Tech Stack:", ...) is unambiguous even on
+        # an indented/bulleted line. Without a label, only treat an unindented line as a
+        # tech-stack line — a bulleted sentence that merely *mentions* two technologies
+        # in prose ("Used Python, FastAPI and Git.") is still a description line, not a
+        # dedicated tech-stack line, and must stay part of the description.
+        if technologies is not None and (not indented or _TECH_LABEL_PATTERN.match(line.strip())):
+            current["technologies"] = technologies
+            continue
+        if indented:
+            description_lines.append(_strip_bullet_prefix(line))
+            continue
+        current["description"] = " ".join(description_lines)
+        current["raw_text"] = current["title"] + (f" - {current['description']}" if current["description"] else "")
+        projects.append(current)
+        current = {"title": line, "description": "", "technologies": [], "raw_text": line}
+        description_lines = []
+    if current is not None:
+        current["description"] = " ".join(description_lines)
+        current["raw_text"] = current["title"] + (f" - {current['description']}" if current["description"] else "")
+        projects.append(current)
+    return projects
+
+
 def _projects(sections: list[ResumeSection]) -> list[dict]:
     projects = []
     for section in sections:
         if section.name != "projects":
             continue
-        current: dict | None = None
-        description_lines: list[str] = []
-        for line, indented in _reflow_lines(section.content.splitlines()):
-            if current is None:
-                # The first line of the section is always a project heading.
-                current = {"title": line, "description": "", "technologies": [], "raw_text": line}
-            elif indented:
-                description_lines.append(_strip_bullet_prefix(line))
-            elif not description_lines and "," in line and len(_skills(line)) >= 2:
-                # An unbulleted, un-indented line directly under a title that reads
-                # like a technology list ("Python, FastAPI, ...") describes the
-                # current project rather than starting a new one.
-                current["technologies"] = _skills(line)
-            else:
-                current["description"] = " ".join(description_lines)
-                current["raw_text"] = current["title"] + (f" - {current['description']}" if current["description"] else "")
-                projects.append(current)
-                current = {"title": line, "description": "", "technologies": [], "raw_text": line}
-                description_lines = []
-        if current is not None:
-            current["description"] = " ".join(description_lines)
-            current["raw_text"] = current["title"] + (f" - {current['description']}" if current["description"] else "")
-            projects.append(current)
+        for block in _split_into_project_blocks(section.content):
+            projects.extend(_group_project_block(_reflow_lines(block.splitlines())))
     return projects
 
 
 def build_structured_data(sections: list[ResumeSection]) -> dict:
     all_text = "\n".join(section.content for section in sections)
+    skills_text = "\n".join(section.content for section in sections if section.name == "skills") or all_text
+    technical_skills = _skills(skills_text)
+    soft_skills = [skill for skill in _soft_skills(skills_text) if skill not in technical_skills]
     return {
         "header": next((section.content for section in sections if section.name == "header"), ""),
         "summary": next((section.content for section in sections if section.name == "summary"), None),
-        "skills": _skills("\n".join(section.content for section in sections if section.name == "skills") or all_text),
+        "skills": technical_skills + soft_skills,
         "education": _education(sections),
         "experience": _entries(sections, {"experience"}),
         "internships": _entries(sections, {"internships"}),
         "projects": _projects(sections),
-        "certifications": _entries(sections, {"certifications"}),
-        "achievements": _entries(sections, {"achievements"}),
+        "certifications": _line_entries(sections, {"certifications"}),
+        "achievements": _line_entries(sections, {"achievements"}),
         "qualifications": _entries(sections, {"qualifications"}),
-        "interests": _entries(sections, {"interests"}),
+        "interests": _line_entries(sections, {"interests"}),
+        # Learning-only exposure (e.g. an "Areas Currently Learning" heading) is kept
+        # entirely separate from `skills` — it must never be reported as demonstrated.
+        "learning": _line_entries(sections, {"learning"}),
         "sections": [{"name": s.name, "original_heading": s.original_heading, "content": s.content, "position": s.position} for s in sections],
     }
 

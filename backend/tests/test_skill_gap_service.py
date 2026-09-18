@@ -202,3 +202,123 @@ def test_assess_education_excludes_component_when_no_evidence_available() -> Non
 
     assert match_type == "missing"
     assert evidence_available is False
+
+
+# ---------------------------------------------------------------------------
+# Full-pipeline regression test for the M3.1 manual-review findings: a resume
+# shaped like the real "Sam" test resume (3 projects, technical + soft skills,
+# an "Areas Currently Learning" section, one collaboration-flavored experience
+# bullet) run through real section detection + structuring against the real
+# JOB-0035 "FastAPI Intern" posting.
+# ---------------------------------------------------------------------------
+
+SAM_LIKE_RESUME_TEXT = """TECHNICAL SKILLS
+Python, Java, JavaScript, SQL, FastAPI, REST API Development, PostgreSQL, MySQL, Scikit-learn, Pandas, Git, GitHub, Postman, VS Code, HTML, CSS
+
+SOFT SKILLS
+Problem Solving, Team Collaboration, Communication, Adaptability, Time Management
+
+AREAS CURRENTLY LEARNING
+Advanced Backend Development, Cloud Deployment, Containerization, System Design
+
+EXPERIENCE
+Collaborated with classmates during project development, testing, and version control.
+
+EDUCATION
+B.Tech in Information Technology
+Demo Institute of Technology | 2023 - 2027
+
+PROJECTS
+AI Career Companion
+- Built backend REST APIs using FastAPI and PostgreSQL for candidate profile management.
+- Implemented resume upload and structured parsing pipeline.
+Technologies: Python, FastAPI, PostgreSQL
+
+Student Performance Prediction System
+- Built a machine learning model to predict student performance using Scikit-learn.
+- Cleaned and processed datasets using Pandas.
+Technologies: Python, Scikit-learn, Pandas
+
+Library Management System
+- Developed a library management system with issue/return tracking.
+- Used MySQL for persistent storage.
+Technologies: Java, MySQL
+"""
+
+
+def _structured_data_from_text(text: str) -> dict:
+    from app.models import ResumeSection
+    from app.services.section_detection import detect_resume_sections
+    from app.services.structured_resume import build_structured_data
+
+    detected = detect_resume_sections(text)
+    sections = [
+        ResumeSection(resume_id=1, name=d.name, original_heading=d.original_heading, content=d.content, position=i)
+        for i, d in enumerate(detected)
+    ]
+    return build_structured_data(sections)
+
+
+def test_full_pipeline_sam_like_resume_against_real_fastapi_intern_job() -> None:
+    from app.models import ResumeSection
+
+    data = _structured_data_from_text(SAM_LIKE_RESUME_TEXT)
+
+    # Issue #1: exactly 3 projects, not 8, with technologies correctly attached.
+    assert len(data["projects"]) == 3
+    assert [p["title"] for p in data["projects"]] == [
+        "AI Career Companion", "Student Performance Prediction System", "Library Management System",
+    ]
+
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(bind=engine)
+    with sessionmaker(bind=engine)() as db:
+        profile = CandidateProfile(user_id=1, full_name="Sam", email="sam@example.com", skills=[], career_interests=[], target_roles=[])
+        db.add(profile)
+        db.flush()
+        resume = Resume(candidate_profile_id=profile.id, original_filename="sam.pdf", stored_filename="sam.pdf", file_type="pdf", mime_type="application/pdf", file_size=1, storage_path="/tmp/sam.pdf", status="structured")
+        db.add(resume)
+        db.flush()
+        db.add(StructuredResume(resume_id=resume.id, data=data))
+        db.commit()
+
+        result = analyze_skill_gap(db, resume.id, "JOB-0035", profile.user_id)
+
+    strengths = {s.requirement for s in result.strengths}
+
+    # Required skills: Python, SQL, REST APIs, Git — all 4 present in the resume.
+    assert result.summary.required_requirements_met == 4
+    assert result.summary.required_requirements_total == 4
+    assert result.critical_gaps == []
+
+    # Preferred skills: FastAPI and PostgreSQL genuinely demonstrated.
+    assert "FastAPI" in strengths
+    assert "PostgreSQL" in strengths
+
+    # Issue #3: Docker is learning-only exposure, never a normal partial/demonstrated match.
+    docker_gaps = [g for g in result.preferred_gaps if g.requirement == "Docker"]
+    assert len(docker_gaps) == 1
+    assert docker_gaps[0].match_type == "learning_only"
+
+    # Flask itself was never mentioned, but the student's genuine FastAPI experience is
+    # valid related evidence for another Python web micro-framework — "missing" or a
+    # genuinely-related "partial" are both acceptable, but never a confirmed match.
+    flask_gaps = [g for g in result.preferred_gaps if g.requirement == "Flask"]
+    assert len(flask_gaps) == 1
+    assert flask_gaps[0].match_type in ("missing", "partial")
+    assert flask_gaps[0].requirement not in strengths
+
+    # Issue #2: the teamwork qualification is not falsely "missing".
+    teamwork_gaps = [g for g in result.qualification_gaps if "team" in g.requirement.lower()]
+    assert len(teamwork_gaps) == 1
+    assert teamwork_gaps[0].match_type != "missing"
+    assert teamwork_gaps[0].match_type == "partial"
+    evidence_text = " ".join(e.evidence for e in teamwork_gaps[0].student_evidence)
+    assert "collaborat" in evidence_text.lower()
+
+    # Issue #4: every reported requirement traces to real job fields (no fabrication).
+    job = next(j for j in load_job_postings() if j.job_id == "JOB-0035")
+    all_job_requirements = set(job.required_skills) | set(job.preferred_skills) | set(job.qualifications) | {job.experience_requirements, job.education_requirements}
+    all_reported = strengths | {g.requirement for g in result.critical_gaps + result.partial_gaps + result.preferred_gaps + result.experience_gaps + result.qualification_gaps}
+    assert all_reported <= all_job_requirements
+    engine.dispose()

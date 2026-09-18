@@ -1,7 +1,7 @@
 import { API_BASE_URL } from '../config/api'
 
 export type EvidenceItem = { source: string; source_name: string; evidence: string }
-export type MatchType = 'demonstrated' | 'partial' | 'missing'
+export type MatchType = 'demonstrated' | 'partial' | 'learning_only' | 'missing'
 export type RequirementType = 'required_skill' | 'preferred_skill' | 'qualification' | 'education' | 'experience'
 export type Priority = 'high' | 'medium' | 'low'
 
