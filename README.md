@@ -14,7 +14,7 @@ The React + Vite + TypeScript frontend currently represents the documented candi
 - structured extraction preview for skills, projects, and education
 - responsive workspace navigation
 
-The Career Profile and Resume Analyzer pages use the FastAPI profile/resume services, and Career Recommendations uses the active structured resume for semantic retrieval and job-resume matching. Later architecture modules such as skill gaps, roadmaps, cover letters, interviews, and application tracking remain mock-backed and are not integrated.
+The Career Profile and Resume Analyzer pages use the FastAPI profile/resume services, and Career Recommendations uses the active structured resume for semantic retrieval and job-resume matching. The Skill Gap Analysis page (Milestone 3.1) runs a deterministic, evidence-grounded comparison of the active resume against a selected internship — see `docs/MILESTONE_3_1.md`. Later architecture modules such as resume/cover-letter customization, interview preparation, roadmaps, and the conversational career assistant remain mock-backed or not yet implemented.
 
 ## Run the frontend
 

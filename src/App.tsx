@@ -6,6 +6,7 @@ import { getCurrentSession, login, logout, registerAccount, type AuthSession, ty
 import { updateProfile, type CandidateProfile, type CandidateProfilePayload } from './services/profileService'
 import { createCandidateContext, detectResumeSections, extractResumeText, getJobMatches, getResumeExtraction, getStructuredResume, listProfileResumes, structureResume, uploadResume, type JobMatchResult, type ResumeRecord, type StructuredResume } from './services/resumeService'
 import { getJobDetails, searchJobs, type JobPosting, type JobSearchResult } from './services/jobService'
+import { analyzeSkillGap, type GapItem, type SkillGapAnalysis } from './services/skillGapService'
 
 type ResumeLifecycle = 'no_resume' | 'uploading' | 'processing' | 'processed' | 'failed'
 
@@ -139,7 +140,7 @@ function App() {
     }
   }
   const activeResumeId = resumeLifecycle === 'processed' ? resumeRecord?.id ?? null : null
-  const content = view === 'profile' ? <ProfileView profile={activeProfile} onProfileSaved={setActiveProfile} /> : view === 'resume' ? <RealResumeView file={resumeFile} lifecycle={resumeLifecycle} restoring={resumeRestoring} notice={notice} resumeRecord={resumeRecord} onDrop={(event) => { event.preventDefault(); chooseFile(event.dataTransfer.files[0]) }} onFileChange={(event) => chooseFile(event.target.files?.[0])} onAnalyze={analyze} onReprocess={reprocessResume} /> : view === 'resume-results' ? <RealResumeResults structuredResume={structuredResume} onNavigate={go} /> : view === 'careers' ? <CareersView resumeId={activeResumeId} onOpenJob={openJobDetails} /> : view === 'job-details' ? <JobDetailsView jobId={selectedJobId} resumeId={activeResumeId} onBack={() => go('careers')} /> : view === 'skills' ? <SkillsView resumeId={activeResumeId} onRoadmap={() => go('roadmap')} onSearchJobs={() => go('careers')} /> : view === 'roadmap' ? <RoadmapView resumeId={activeResumeId} /> : view === 'assistant' ? <AssistantView profile={activeProfile} resumeLifecycle={resumeLifecycle} structuredResume={structuredResume} onNavigate={go} /> : view === 'progress' ? <ProgressView profile={activeProfile} resumeLifecycle={resumeLifecycle} structuredResume={structuredResume} /> : view === 'settings' ? <SettingsView /> : <DashboardView currentUser={currentUser} profile={activeProfile} resumeLifecycle={resumeLifecycle} resumeRestoring={resumeRestoring} resumeRecord={resumeRecord} structuredResume={structuredResume} notice={notice} onNavigate={go} />
+  const content = view === 'profile' ? <ProfileView profile={activeProfile} onProfileSaved={setActiveProfile} /> : view === 'resume' ? <RealResumeView file={resumeFile} lifecycle={resumeLifecycle} restoring={resumeRestoring} notice={notice} resumeRecord={resumeRecord} onDrop={(event) => { event.preventDefault(); chooseFile(event.dataTransfer.files[0]) }} onFileChange={(event) => chooseFile(event.target.files?.[0])} onAnalyze={analyze} onReprocess={reprocessResume} /> : view === 'resume-results' ? <RealResumeResults structuredResume={structuredResume} onNavigate={go} /> : view === 'careers' ? <CareersView resumeId={activeResumeId} onOpenJob={openJobDetails} /> : view === 'job-details' ? <JobDetailsView jobId={selectedJobId} resumeId={activeResumeId} onBack={() => go('careers')} onAnalyzeSkillGap={() => go('skills')} /> : view === 'skills' ? <SkillsView resumeId={activeResumeId} jobId={selectedJobId} onRoadmap={() => go('roadmap')} onSearchJobs={() => go('careers')} /> : view === 'roadmap' ? <RoadmapView resumeId={activeResumeId} /> : view === 'assistant' ? <AssistantView profile={activeProfile} resumeLifecycle={resumeLifecycle} structuredResume={structuredResume} onNavigate={go} /> : view === 'progress' ? <ProgressView profile={activeProfile} resumeLifecycle={resumeLifecycle} structuredResume={structuredResume} /> : view === 'settings' ? <SettingsView /> : <DashboardView currentUser={currentUser} profile={activeProfile} resumeLifecycle={resumeLifecycle} resumeRestoring={resumeRestoring} resumeRecord={resumeRecord} structuredResume={structuredResume} notice={notice} onNavigate={go} />
   if (authStatus === 'checking') return <main className="auth-page"><section className="auth-panel"><div className="auth-brand"><span>AC</span><div><strong>AI Career</strong><small>Companion</small></div></div><p className="muted">Loading your workspace...</p></section></main>
   if (authStatus === 'unauthenticated') { const path = window.location.pathname; if (path === '/signup') return <SignupView onAuthenticated={handleAuthenticated} />; if (path === '/onboarding') return <OnboardingView />; return <LoginView onAuthenticated={handleAuthenticated} /> }
   const currentLabel = nav.find((item) => item.id === view)?.label ?? (view === 'job-details' ? 'Job Details' : view === 'resume-results' ? 'Resume Results' : 'Settings')
@@ -307,7 +308,7 @@ function CareersView({ resumeId, onOpenJob }: { resumeId: number | null; onOpenJ
     </section>
   </>
 }
-function JobDetailsView({ jobId, resumeId, onBack }: { jobId: string | null; resumeId: number | null; onBack: () => void }) {
+function JobDetailsView({ jobId, resumeId, onBack, onAnalyzeSkillGap }: { jobId: string | null; resumeId: number | null; onBack: () => void; onAnalyzeSkillGap: () => void }) {
   const [job, setJob] = useState<JobPosting | null>(null)
   const [jobError, setJobError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -354,30 +355,103 @@ function JobDetailsView({ jobId, resumeId, onBack }: { jobId: string | null; res
       {matchStatus === 'error' && <div className="error-notice" role="alert">{matchError}</div>}
       {matchResult && <div className="results-grid resume-result-grid"><article className="card result-card"><p className="eyebrow">MATCH SCORE</p><strong>{Math.round(matchResult.match_score)}%</strong><p className="muted">{matchResult.reasoning}</p></article><article className="card result-card"><p className="eyebrow">MATCHED SKILLS</p>{matchResult.matched_required_skills.length > 0 ? <div className="chip-list">{matchResult.matched_required_skills.map((skill) => <span className="skill-chip" key={skill}>{skill}</span>)}</div> : <p className="muted">None</p>}</article><article className="card result-card"><p className="eyebrow">MISSING SKILLS</p>{matchResult.missing_required_skills.length > 0 ? <div className="chip-list">{matchResult.missing_required_skills.map((skill) => <span className="warning-chip" key={skill}>{skill}</span>)}</div> : <p className="muted">None</p>}</article></div>}
       {matches !== null && matches.length === 0 && <p className="muted">This job was not found in your ranked matches. It may not currently be among your top retrieval candidates.</p>}
+      {resumeId !== null && <div className="detail-actions"><button className="primary-button" onClick={onAnalyzeSkillGap}>Analyze Skill Gaps -&gt;</button></div>}
     </section>
   </>
 }
-function SkillsView({ resumeId, onRoadmap, onSearchJobs }: { resumeId: number | null; onRoadmap: () => void; onSearchJobs: () => void }) {
-  const [matches, setMatches] = useState<JobMatchResult[] | null>(null)
+function GapCard({ item }: { item: GapItem }) {
+  const tone = item.match_type === 'missing' ? 'missing' : 'needs-improvement'
+  const label = item.match_type === 'missing' ? 'Missing' : 'Partially demonstrated'
+  return <article className="card result-card">
+    <div className="card-heading"><strong>{item.requirement}</strong><span className={`skill-status ${tone}`}>{label} · {item.priority}</span></div>
+    <p className="muted">{item.importance}</p>
+    <p className="result-bullet">{item.student_evidence.length > 0 ? `Evidence: ${item.student_evidence.map((evidence) => evidence.evidence).join(' | ')}` : item.reason}</p>
+    <p className="result-bullet">Recommendation: {item.recommendation}</p>
+  </article>
+}
+function GapSection({ eyebrow, subtitle, items }: { eyebrow: string; subtitle: string; items: GapItem[] }) {
+  if (items.length === 0) return null
+  return <section className="card comparison-card">
+    <div className="card-heading"><div><p className="eyebrow">{eyebrow}</p><h3>{subtitle}</h3></div></div>
+    <div className="results-grid resume-result-grid">{items.map((item, index) => <GapCard item={item} key={`${item.requirement}-${index}`} />)}</div>
+  </section>
+}
+function SkillsView({ resumeId, jobId, onRoadmap, onSearchJobs }: { resumeId: number | null; jobId: string | null; onRoadmap: () => void; onSearchJobs: () => void }) {
+  const [analysis, setAnalysis] = useState<SkillGapAnalysis | null>(null)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [error, setError] = useState('')
+
+  const runAnalysis = (resume: number, job: string, isCurrent: () => boolean = () => true) => {
+    setStatus('loading'); setError('')
+    void analyzeSkillGap(resume, job)
+      .then((result) => { if (isCurrent()) { setAnalysis(result); setStatus('idle') } })
+      .catch((reason: unknown) => { if (isCurrent()) { setStatus('error'); setError(reason instanceof Error ? reason.message : 'We could not run your skill gap analysis.') } })
+  }
+
   useEffect(() => {
-    if (resumeId === null) return
-    void getJobMatches(resumeId, 1).then(setMatches).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'We could not load skill gap data.'))
-  }, [resumeId])
-  const top = matches?.[0] ?? null
+    let cancelled = false
+    setAnalysis(null)
+    setError('')
+    setStatus('idle')
+    if (resumeId !== null && jobId !== null) runAnalysis(resumeId, jobId, () => !cancelled)
+    return () => { cancelled = true }
+  }, [resumeId, jobId])
+
   return <>
-    <PageHeading eyebrow="SKILL GAP ANALYSIS" title="Understand what to learn next." lede="Skill gaps are calculated from your top-ranked job match." action={<button className="primary-button" onClick={onSearchJobs}>Search internships -&gt;</button>} />
-    {resumeId === null && <div className="architecture-note">Select or match a job to view skill gaps. Process a resume first, then search or view a recommended job.</div>}
-    {resumeId !== null && error && <div className="error-notice" role="alert">{error}</div>}
-    {resumeId !== null && !error && matches === null && <p className="muted">Loading your skill gap analysis...</p>}
-    {resumeId !== null && !error && matches !== null && !top && <div className="architecture-note">Select or match a job to view skill gaps.</div>}
-    {top && <>
+    <PageHeading eyebrow="SKILL GAP ANALYSIS" title="Understand what to learn next." lede="A grounded comparison of your resume against the internship you selected." action={<button className="primary-button" onClick={onSearchJobs}>Search internships -&gt;</button>} />
+    {resumeId === null && <div className="architecture-note">Upload and process your resume before running skill gap analysis.</div>}
+    {resumeId !== null && jobId === null && <div className="architecture-note">Select an internship to analyze your skill gaps. Open a job's details and choose "Analyze Skill Gaps".</div>}
+    {resumeId !== null && jobId !== null && status === 'loading' && <p className="muted">Analyzing your skill gaps against this internship...</p>}
+    {resumeId !== null && jobId !== null && status === 'error' && <div className="error-notice" role="alert">{error}</div>}
+    {analysis && <>
+      <section className="card comparison-card">
+        <div className="card-heading">
+          <div><p className="eyebrow">SELECTED INTERNSHIP</p><h3>{analysis.job_title}</h3></div>
+          <button className="text-button" onClick={() => resumeId !== null && jobId !== null && runAnalysis(resumeId, jobId)} disabled={status === 'loading'}>Refresh analysis -&gt;</button>
+        </div>
+        <p className="muted">{analysis.company} · {analysis.domain} · {analysis.location}</p>
+        {analysis.stale && <p className="result-bullet">Your profile has changed since this analysis was generated. Refresh for updated results.</p>}
+      </section>
       <div className="skill-summary-grid">
-        <div className="card skill-score-card"><p className="eyebrow">MATCH SCORE</p><strong>{Math.round(top.match_score)}%</strong><div className="progress-track"><span style={{ width: `${Math.min(100, Math.round(top.match_score))}%` }} /></div><p className="muted">{top.job_title} at {top.company}</p></div>
-        <div className="card priority-card"><p className="eyebrow">MISSING REQUIRED SKILLS</p>{top.missing_required_skills.length === 0 ? <p className="muted">None — you match every required skill for this role.</p> : top.missing_required_skills.map((skill) => <div className="priority-item" key={skill}><span>{skill}</span></div>)}</div>
+        <div className="card skill-score-card">
+          <p className="eyebrow">SKILL READINESS</p>
+          <strong>{analysis.summary.overall_readiness}%</strong>
+          <div className="progress-track"><span style={{ width: `${Math.min(100, analysis.summary.overall_readiness)}%` }} /></div>
+          <p className="muted">Required skills matched: {analysis.summary.required_requirements_met}/{analysis.summary.required_requirements_total} &middot; Preferred: {analysis.summary.preferred_requirements_met}/{analysis.summary.preferred_requirements_total}</p>
+          <p className="muted">A separate measure from your Milestone 2 job match score — this reflects requirement-by-requirement readiness, not semantic relevance.</p>
+        </div>
+        <div className="card priority-card">
+          <p className="eyebrow">GAP OVERVIEW</p>
+          <div className="mini-gap"><span>Critical (required, missing)</span><span>{analysis.summary.critical_gap_count}</span></div>
+          <div className="mini-gap"><span>Partially demonstrated</span><span>{analysis.summary.partial_gap_count}</span></div>
+          <div className="mini-gap"><span>Preferred gaps</span><span>{analysis.summary.preferred_gap_count}</span></div>
+          <div className="mini-gap"><span>Experience gaps</span><span>{analysis.summary.experience_gap_count}</span></div>
+          <div className="mini-gap"><span>Qualification gaps</span><span>{analysis.summary.qualification_gap_count}</span></div>
+        </div>
       </div>
-      <section className="card comparison-card"><div className="card-heading"><div><p className="eyebrow">MATCHED SKILLS</p></div></div>{top.matched_required_skills.length > 0 ? <div className="chip-list">{top.matched_required_skills.map((skill) => <span className="skill-chip" key={skill}>{skill}</span>)}</div> : <p className="muted">None matched yet.</p>}</section>
-      {(top.strengths.length > 0 || top.gaps.length > 0) && <section className="card comparison-card"><div className="card-heading"><div><p className="eyebrow">STRENGTHS AND GAPS</p></div></div>{top.strengths.map((item, index) => <p className="result-bullet" key={`s-${index}`}>+ {item}</p>)}{top.gaps.map((item, index) => <p className="result-bullet" key={`g-${index}`}>- {item}</p>)}</section>}
+      <section className="card comparison-card">
+        <div className="card-heading"><div><p className="eyebrow">STRENGTHS</p><h3>What you already demonstrate</h3></div></div>
+        {analysis.strengths.length === 0 ? <p className="muted">No confirmed strengths were found for this role yet.</p> : <div className="results-grid resume-result-grid">
+          {analysis.strengths.map((item, index) => <article className="card result-card" key={`${item.requirement}-${index}`}>
+            <div className="card-heading"><strong>{item.requirement}</strong><span className="skill-status strong">Matched</span></div>
+            <p className="muted">{item.reason}</p>
+            {item.evidence.length > 0 && <p className="result-bullet">Evidence: {item.evidence.map((evidence) => evidence.evidence).join(' | ')}</p>}
+          </article>)}
+        </div>}
+      </section>
+      {analysis.summary.critical_gap_count === 0 && analysis.summary.partial_gap_count === 0 && <div className="success-notice" role="status">You meet every required skill extracted for this role. Review preferred skills and qualifications below to strengthen your application further.</div>}
+      <GapSection eyebrow="CRITICAL GAPS" subtitle="Required skills with no evidence found in your resume/profile" items={analysis.critical_gaps} />
+      <GapSection eyebrow="PARTIALLY DEMONSTRATED" subtitle="Related evidence exists, but the requirement is not fully confirmed" items={analysis.partial_gaps} />
+      <GapSection eyebrow="PREFERRED SKILL GAPS" subtitle="Not mandatory, but would strengthen your application" items={analysis.preferred_gaps} />
+      <GapSection eyebrow="EXPERIENCE GAPS" subtitle="What this role expects beyond what your resume currently shows" items={analysis.experience_gaps} />
+      <GapSection eyebrow="QUALIFICATION GAPS" subtitle="Education and other stated qualifications" items={analysis.qualification_gaps} />
+      {analysis.recommendations.length > 0 && <section className="card comparison-card">
+        <div className="card-heading"><div><p className="eyebrow">IMPROVEMENT PLAN</p><h3>Ordered by priority</h3></div></div>
+        {analysis.recommendations.map((item, index) => <div className="recommendation-line" key={`${item.requirement}-${index}`}>
+          <span>{item.priority}</span>
+          <div><strong>{item.requirement}</strong><p className="muted">{item.recommendation}</p></div>
+        </div>)}
+      </section>}
       <div className="detail-actions"><button className="primary-button" onClick={onRoadmap}>View learning roadmap</button></div>
     </>}
   </>
