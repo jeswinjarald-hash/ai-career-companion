@@ -18,7 +18,12 @@ ALIASES = {
     "experience": {"experience", "work experience", "professional experience", "employment history", "work history"},
     "internships": {"internship", "internships", "internship experience"},
     "projects": {"projects", "academic projects", "personal projects", "key projects", "project experience"},
-    "certifications": {"certifications", "certificates", "certifications & courses", "courses & certifications"},
+    "certifications": {
+        "certifications", "certificates", "certifications & courses", "courses & certifications",
+        # A generic "Additional"/"Additional Information" heading is conventionally used
+        # for supplementary certifications/courses — never a distinct, unclassified bucket.
+        "additional", "additional information", "additional details", "courses",
+    },
     "achievements": {"achievements", "awards", "honors", "awards & achievements"},
     "interests": {"interests", "career interests", "areas of interest"},
     "publications": {"publications", "papers", "research publications"},
@@ -27,6 +32,7 @@ ALIASES = {
         "areas currently learning", "currently learning", "areas of learning", "learning goals",
         "skills in progress", "learning in progress", "currently exploring",
     },
+    "languages": {"languages", "language", "languages known", "language proficiency"},
 }
 
 _ALIAS_TO_CANONICAL = {alias.casefold(): name for name, aliases in ALIASES.items() for alias in aliases}

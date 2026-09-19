@@ -47,12 +47,20 @@ def extract_docx_text(db: Session, resume: Resume) -> ResumeExtraction:
         blocks = []
         for block in _iter_blocks(document):
             if isinstance(block, Paragraph):
-                if block.text.strip():
+                # A blank paragraph is kept as an empty line rather than dropped: it is
+                # the author's own visual separator between entries (e.g. between two
+                # projects), and downstream section-aware parsers rely on that blank
+                # line as a structural boundary signal. `normalize_resume_text` already
+                # collapses any resulting run of 3+ blank lines down to one, so this
+                # cannot reintroduce excessive whitespace.
+                if block.text.strip() or blocks:
                     blocks.append(block.text)
             elif isinstance(block, Table):
                 table_text = _table_text(block)
                 if table_text:
                     blocks.append(table_text)
+        while blocks and not blocks[-1].strip():
+            blocks.pop()
 
         raw_text = "\n".join(blocks)
         normalized_text = normalize_resume_text(raw_text)

@@ -68,6 +68,34 @@ def test_docx_extraction_is_idempotent(resume_client) -> None:
     assert first.json()["normalized_text"] == second.json()["normalized_text"]
 
 
+def test_blank_paragraphs_between_content_survive_as_blank_lines(resume_client) -> None:
+    # A blank paragraph between two paragraphs of real content is the author's own
+    # visual separator (e.g. between two resume projects) — it must survive
+    # extraction as a blank line, not be silently dropped. Leading/trailing blank
+    # paragraphs (common Word formatting noise) are still trimmed away.
+    document = Document()
+    document.add_paragraph("")
+    document.add_paragraph("First Entry")
+    document.add_paragraph("Detail one.")
+    document.add_paragraph("")
+    document.add_paragraph("Second Entry")
+    document.add_paragraph("Detail two.")
+    document.add_paragraph("")
+    output = BytesIO()
+    document.save(output)
+
+    client, _ = resume_client
+    resume = upload_docx(client, create_profile(client), output.getvalue())
+
+    response = client.post(f"/api/resumes/{resume['id']}/extract-text")
+    assert response.status_code == 200, response.text
+    normalized = response.json()["normalized_text"]
+
+    assert "First Entry\nDetail one.\n\nSecond Entry\nDetail two." in normalized
+    assert not normalized.startswith("\n")
+    assert not normalized.endswith("\n")
+
+
 def test_empty_docx_fails_cleanly(resume_client) -> None:
     client, _ = resume_client
     resume = upload_docx(client, create_profile(client), docx_bytes(with_table=False, with_text=False))

@@ -5,7 +5,7 @@ from fastapi import UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
+from app.core.config import get_settings, resolve_backend_path
 from app.models import CandidateProfile, Resume
 from app.services.resume_validation import (
     MAX_RESUME_SIZE,
@@ -19,7 +19,11 @@ class ResumeUploadError(Exception):
 
 
 def _storage_directory() -> Path:
-    storage_dir = Path(get_settings().resume_storage_dir)
+    # Resolved against the backend project root, not the process cwd, so uploaded
+    # resumes land in the same physical folder regardless of the directory the app
+    # was launched from (same class of bug as the database path — see
+    # app.core.config.resolve_backend_path).
+    storage_dir = resolve_backend_path(get_settings().resume_storage_dir)
     storage_dir.mkdir(parents=True, exist_ok=True)
     return storage_dir
 

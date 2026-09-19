@@ -70,9 +70,12 @@ def test_dash_bulleted_projects_stay_two_projects_with_technologies_and_descript
     assert second["title"] == "Task Management REST API"
 
     # The un-bulleted technology line directly under a title is not miscounted
-    # as a new project; it is captured as that project's technologies.
-    assert set(first["technologies"]) == {"Python", "FastAPI", "SQLAlchemy", "SQLite", "React", "TypeScript"}
-    assert set(second["technologies"]) == {"Python", "FastAPI", "PostgreSQL", "Docker"}
+    # as a new project; it is captured as that project's technologies, along with
+    # any further recognized skill mentioned in the description prose itself
+    # ("Built REST APIs..." -> "REST APIs", even though it wasn't in the tech line).
+    assert set(first["technologies"]) == {"Python", "FastAPI", "SQLAlchemy", "SQLite", "React", "TypeScript", "REST APIs"}
+    # Second project's description also says "...tested endpoints using Postman."
+    assert set(second["technologies"]) == {"Python", "FastAPI", "PostgreSQL", "Docker", "Postman"}
 
     assert "and database metadata." in first["description"]
     assert "Added PDF text extraction" in first["description"]
@@ -113,8 +116,12 @@ def test_three_projects_with_trailing_tech_lines_produce_exactly_three_projects(
         "Student Performance Prediction System",
         "Library Management System",
     ]
-    assert set(projects[0]["technologies"]) == {"Python", "FastAPI", "PostgreSQL"}
-    assert set(projects[1]["technologies"]) == {"Python", "Scikit-learn", "Pandas"}
+    # Project 1's description also says "Built backend REST APIs...", so that skill
+    # is correctly picked up in addition to its explicit "Technologies:" line.
+    assert set(projects[0]["technologies"]) == {"Python", "FastAPI", "PostgreSQL", "REST APIs"}
+    # Project 2's description also says "...machine learning model...", picking up
+    # "Machine Learning" alongside its explicit "Technologies:" line.
+    assert set(projects[1]["technologies"]) == {"Python", "Scikit-learn", "Pandas", "Machine Learning"}
     assert set(projects[2]["technologies"]) == {"Java", "MySQL"}
     for project in projects:
         # The trailing "Technologies: ..." line must never appear as a title or
