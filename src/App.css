@@ -21,3 +21,8 @@ nav { display: grid; gap: 5px; }.nav-item { width: 100%; border: 0; padding: 12p
 .cover-letter-editor { width: 100%; margin-top: 10px; padding: 13px 12px; border: 1px solid var(--line); color: var(--ink); background: #fcfcf8; font: 13px/1.5 Georgia, serif; resize: vertical; }
 .tag-row .text-button { padding: 5px 9px; color: #63736a; background: #f0f3ee; font: 700 10px Arial, sans-serif; }
 .tag-row .text-button.active { color: var(--green); background: var(--pale-green); }
+.bullet-comparison { margin-top: 12px; }
+.bullet-editor { min-height: 52px; font: 12px/1.5 Arial, sans-serif; }
+.provenance-details { margin-top: 10px; font: 11px Arial, sans-serif; color: var(--muted); }
+.provenance-details summary { cursor: pointer; color: var(--green); font-weight: 700; }
+.provenance-details ul { margin-top: 8px; }

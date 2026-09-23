@@ -11,6 +11,7 @@ SourceType = Literal[
 KeywordStatus = Literal["supported", "partial", "unsupported"]
 KeywordRequirementType = Literal["required_skill", "preferred_skill"]
 CustomizationStatus = Literal["ready", "validation_warning"]
+GenerationMode = Literal["llm", "deterministic_fallback"]
 
 
 class EvidenceRecord(BaseModel):
@@ -42,6 +43,7 @@ class TailoredBullet(BaseModel):
     tailored_text: str
     source_path: str
     job_keywords_used: list[str]
+    evidence_ids: list[str] = Field(default_factory=list)
     introduced_claims: list[str] = Field(default_factory=list)
 
 
@@ -55,6 +57,7 @@ class TailoredProject(BaseModel):
     source_path: str
     relevance_rank: int
     job_keywords_used: list[str]
+    evidence_ids: list[str] = Field(default_factory=list)
     introduced_claims: list[str] = Field(default_factory=list)
 
 
@@ -85,6 +88,7 @@ class CoverLetterSentence(BaseModel):
 
     text: str
     sources: list[str]
+    evidence_ids: list[str] = Field(default_factory=list)
 
 
 class ValidationResult(BaseModel):
@@ -93,6 +97,17 @@ class ValidationResult(BaseModel):
     passed: bool
     warnings: list[str]
     removed_claims: list[str]
+
+
+class GenerationMetadata(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mode: GenerationMode
+    attempted_llm: bool
+    provider: str | None = None
+    model: str | None = None
+    repair_attempted: bool = False
+    fallback_reason: str | None = None
 
 
 class UserEdits(BaseModel):
@@ -122,6 +137,7 @@ class ApplicationCustomization(BaseModel):
     cover_letter: list[CoverLetterSentence]
     cover_letter_text: str
     validation: ValidationResult
+    generation: GenerationMetadata
     user_edits: UserEdits
     created_at: datetime
     updated_at: datetime
@@ -138,6 +154,7 @@ class ApplicationCustomizationSummary(BaseModel):
     version: int
     status: CustomizationStatus
     stale: bool
+    generation_mode: GenerationMode
     created_at: datetime
     updated_at: datetime
 

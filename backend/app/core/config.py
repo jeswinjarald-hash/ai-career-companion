@@ -33,6 +33,20 @@ class Settings(BaseSettings):
     resume_storage_dir: str = "./data/resumes"
     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
 
+    # Milestone 3.2 LLM rewrite layer. `llm_provider` defaults to "none" — the app
+    # never pretends a model is configured; the deterministic pipeline (M3.2's
+    # original implementation) is used as-is whenever no provider is set up or the
+    # provider fails/times out/returns invalid output. `llm_base_url` points at any
+    # OpenAI-chat-completions-compatible endpoint (OpenAI itself, Azure OpenAI's
+    # compatible surface, a local Ollama/vLLM server, etc.) so no vendor SDK
+    # dependency is required. The API key is read from the environment only, never
+    # logged or persisted.
+    llm_provider: str = "none"
+    llm_model: str | None = None
+    llm_base_url: str | None = None
+    llm_api_key: str | None = None
+    llm_timeout_seconds: float = 20.0
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

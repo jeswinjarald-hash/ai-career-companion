@@ -9,7 +9,8 @@ import { getJobDetails, searchJobs, type JobPosting, type JobSearchResult } from
 import { analyzeSkillGap, type GapItem, type SkillGapAnalysis } from './services/skillGapService'
 import {
   downloadExport, generateCustomization, getCustomization, listCustomizations, regenerateCustomization, updateCustomization,
-  type ApplicationCustomization, type ApplicationCustomizationSummary, type ExportDocument, type ExportFormat, type KeywordStatus,
+  type ApplicationCustomization, type ApplicationCustomizationSummary, type EvidenceRecord, type ExportDocument, type ExportFormat,
+  type GenerationMode, type KeywordStatus, type TailoredResume,
 } from './services/customizationService'
 
 type ResumeLifecycle = 'no_resume' | 'uploading' | 'processing' | 'processed' | 'failed'
@@ -466,6 +467,51 @@ function SkillsView({ resumeId, jobId, onRoadmap, onSearchJobs, onCustomizeAppli
 const KEYWORD_TONE: Record<KeywordStatus, string> = { unsupported: 'missing', partial: 'needs-improvement', supported: 'strong' }
 const KEYWORD_LABEL: Record<KeywordStatus, string> = { unsupported: 'Unsupported', partial: 'Partially supported', supported: 'Supported' }
 
+function bulletDraftsFrom(resume: TailoredResume): Record<string, string> {
+  const drafts: Record<string, string> = {}
+  for (const project of resume.projects) drafts[project.source_path] = project.tailored_text
+  for (const bullet of [...resume.experience, ...resume.internships]) drafts[bullet.source_path] = bullet.tailored_text
+  return drafts
+}
+
+function ProvenanceDetails({ evidenceIds, evidenceById }: { evidenceIds: string[]; evidenceById: Record<string, EvidenceRecord> }) {
+  if (evidenceIds.length === 0) return null
+  return <details className="provenance-details">
+    <summary>Supported by ({evidenceIds.length})</summary>
+    <ul className="result-list">
+      {evidenceIds.map((id) => {
+        const record = evidenceById[id]
+        if (!record) return null
+        return <li key={id}><span>{record.source_name}</span><small className="muted">{record.raw_text.length > 140 ? `${record.raw_text.slice(0, 140)}...` : record.raw_text}</small></li>
+      })}
+    </ul>
+  </details>
+}
+
+function BulletComparison({ original, tailored, draft, sourcePath, jobKeywordsUsed, evidenceIds, evidenceById, onEdit }: {
+  original: string
+  tailored: string
+  draft: string
+  sourcePath: string
+  jobKeywordsUsed: string[]
+  evidenceIds: string[]
+  evidenceById: Record<string, EvidenceRecord>
+  onEdit: (sourcePath: string, value: string) => void
+}) {
+  const edited = draft !== tailored
+  return <div className="bullet-comparison">
+    {original !== tailored && <p className="muted"><strong>Original:</strong> {original}</p>}
+    <label className="muted"><strong>Tailored{edited ? ' (editing)' : ''}:</strong>
+      <textarea className="cover-letter-editor bullet-editor" value={draft} onChange={(event) => onEdit(sourcePath, event.target.value)} rows={2} />
+    </label>
+    {jobKeywordsUsed.length > 0 && <div className="tag-row">{jobKeywordsUsed.map((keyword) => <span key={keyword}>{keyword}</span>)}</div>}
+    <ProvenanceDetails evidenceIds={evidenceIds} evidenceById={evidenceById} />
+  </div>
+}
+
+const GENERATION_LABEL: Record<GenerationMode, string> = { llm: 'AI Enhanced', deterministic_fallback: 'Grounded Fallback' }
+const GENERATION_TONE: Record<GenerationMode, string> = { llm: 'strong', deterministic_fallback: 'adequate' }
+
 function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs }: {
   resumeId: number | null
   jobId: string | null
@@ -478,6 +524,7 @@ function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs }: {
   const [error, setError] = useState('')
   const [summaryDraft, setSummaryDraft] = useState('')
   const [coverLetterDraft, setCoverLetterDraft] = useState('')
+  const [bulletDrafts, setBulletDrafts] = useState<Record<string, string>>({})
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [exportError, setExportError] = useState('')
   const [exporting, setExporting] = useState('')
@@ -486,6 +533,7 @@ function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs }: {
     setCustomization(result)
     setSummaryDraft(result.tailored_resume.summary)
     setCoverLetterDraft(result.cover_letter_text)
+    setBulletDrafts(bulletDraftsFrom(result.tailored_resume))
     setSaveStatus('idle')
   }
 
@@ -538,19 +586,27 @@ function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs }: {
     if (full) applyResult(full)
   }
 
+  const editBullet = (sourcePath: string, value: string) => setBulletDrafts((drafts) => ({ ...drafts, [sourcePath]: value }))
+
   const saveEdits = async () => {
     if (resumeId === null || customization === null) return
-    // Only send a field if its draft actually differs from the loaded content —
-    // otherwise an untouched field would be marked "user edited" on every save,
-    // even though the user never changed it.
-    const payload: { summary?: string; cover_letter_text?: string } = {}
+    // Only send a field/bullet if its draft actually differs from the loaded
+    // content — otherwise an untouched field would be marked "user edited" on
+    // every save, even though the user never changed it.
+    const payload: { summary?: string; cover_letter_text?: string; bullet_edits?: Record<string, string> } = {}
     if (summaryDraft !== customization.tailored_resume.summary) payload.summary = summaryDraft
     if (coverLetterDraft !== customization.cover_letter_text) payload.cover_letter_text = coverLetterDraft
+    const loadedBullets = bulletDraftsFrom(customization.tailored_resume)
+    const bulletEdits: Record<string, string> = {}
+    for (const [sourcePath, draft] of Object.entries(bulletDrafts)) {
+      if (draft !== loadedBullets[sourcePath]) bulletEdits[sourcePath] = draft
+    }
+    if (Object.keys(bulletEdits).length > 0) payload.bullet_edits = bulletEdits
     if (Object.keys(payload).length === 0) { setSaveStatus('saved'); return }
     setSaveStatus('saving')
     try {
       const updated = await updateCustomization(resumeId, customization.id, payload)
-      setCustomization(updated)
+      applyResult(updated)
       setSaveStatus('saved')
     } catch (err: unknown) {
       setSaveStatus('idle')
@@ -575,6 +631,8 @@ function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs }: {
 
   const resume = customization?.tailored_resume ?? null
   const original = structuredResume?.data ?? null
+  const evidenceById: Record<string, EvidenceRecord> = {}
+  if (customization) for (const record of customization.evidence) evidenceById[record.evidence_id] = record
 
   return <>
     <PageHeading
@@ -585,15 +643,27 @@ function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs }: {
         ? <button className="secondary-button" onClick={() => void regenerate()} disabled={status === 'loading'}>{status === 'loading' ? 'Regenerating...' : 'Regenerate ->'}</button>
         : <button className="primary-button" onClick={() => void generate()} disabled={status === 'loading'}>{status === 'loading' ? 'Generating...' : 'Generate tailored application ->'}</button>}
     />
+    {status === 'loading' && <p className="muted">{customization ? 'Regenerating your tailored application...' : 'Generating your tailored application...'}</p>}
     {status === 'error' && <div className="error-notice" role="alert">{error}</div>}
 
-    {versions.length > 1 && <div className="tag-row">{versions.map((item) => <span key={item.id}><button className={`text-button ${customization?.id === item.id ? 'active' : ''}`} onClick={() => void selectVersion(item.id)}>v{item.version}{item.stale ? ' (stale)' : ''}</button></span>)}</div>}
+    {versions.length > 1 && <div className="tag-row">{versions.map((item) => <span key={item.id}><button className={`text-button ${customization?.id === item.id ? 'active' : ''}`} onClick={() => void selectVersion(item.id)}>v{item.version} · {GENERATION_LABEL[item.generation_mode]}{item.stale ? ' (stale)' : ''}</button></span>)}</div>}
 
     {customization && <>
+      <div className="mini-gap">
+        <span className={`skill-status ${GENERATION_TONE[customization.generation.mode]}`}>{GENERATION_LABEL[customization.generation.mode]}</span>
+        <span className="muted">
+          {customization.generation.mode === 'llm'
+            ? `Rewritten by ${customization.generation.provider ?? 'an LLM'}${customization.generation.model ? ` (${customization.generation.model})` : ''}, validated against your evidence.`
+            : customization.generation.attempted_llm
+              ? 'AI enhancement unavailable or failed validation. A grounded fallback version is shown.'
+              : 'No LLM provider is configured — this is the deterministic, template-based version.'}
+        </span>
+      </div>
+
       {customization.parser_warning_notice && <div className="architecture-note" role="status">{customization.parser_warning_notice}</div>}
       {customization.validation.passed
         ? <div className="success-notice" role="status">Grounding check passed — every generated claim traces to your actual resume/profile.</div>
-        : <div className="error-notice" role="alert"><strong>Review required.</strong><ul>{customization.validation.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul></div>}
+        : <div className="error-notice" role="alert"><strong>Grounding warnings found.</strong><ul>{customization.validation.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul></div>}
 
       <section className="card comparison-card">
         <div className="card-heading"><div><p className="eyebrow">KEYWORD ALIGNMENT</p><h3>How your resume matches this role's skills</h3></div></div>
@@ -612,6 +682,7 @@ function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs }: {
         <div className="card-heading"><div><p className="eyebrow">PROFESSIONAL SUMMARY</p><h3>Tailored, editable</h3></div></div>
         <textarea className="cover-letter-editor" value={summaryDraft} onChange={(event) => setSummaryDraft(event.target.value)} rows={3} />
         {customization.user_edits.edited_fields.includes('summary') && <p className="muted">User edited — no longer treated as an AI-generated, evidence-verified claim.</p>}
+        <ProvenanceDetails evidenceIds={resume.summary_sources.flatMap((path) => customization.evidence.filter((e) => e.source_path === path).map((e) => e.evidence_id))} evidenceById={evidenceById} />
       </section>}
 
       {resume && original && <section className="results-grid resume-result-grid">
@@ -626,25 +697,34 @@ function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs }: {
       </section>}
 
       {resume && resume.projects.length > 0 && <section className="card comparison-card">
-        <div className="card-heading"><div><p className="eyebrow">PROJECTS</p><h3>Ranked by relevance to this role</h3></div></div>
+        <div className="card-heading"><div><p className="eyebrow">PROJECTS</p><h3>Ranked by relevance to this role — original vs. tailored</h3></div></div>
         <div className="results-grid resume-result-grid">
           {resume.projects.map((project) => <article className="card result-card" key={project.source_path}>
             <div className="card-heading"><strong>{project.title}</strong><span className="skill-status strong">Rank #{project.relevance_rank}</span></div>
-            <p className="result-bullet">{project.tailored_text}</p>
-            {project.job_keywords_used.length > 0 && <div className="tag-row">{project.job_keywords_used.map((keyword) => <span key={keyword}>{keyword}</span>)}</div>}
+            <BulletComparison
+              original={project.original_text} tailored={project.tailored_text} draft={bulletDrafts[project.source_path] ?? project.tailored_text}
+              sourcePath={project.source_path} jobKeywordsUsed={project.job_keywords_used} evidenceIds={project.evidence_ids}
+              evidenceById={evidenceById} onEdit={editBullet}
+            />
           </article>)}
         </div>
       </section>}
 
       {resume && (resume.experience.length > 0 || resume.internships.length > 0) && <section className="card comparison-card">
-        <div className="card-heading"><div><p className="eyebrow">EXPERIENCE AND INTERNSHIPS</p></div></div>
-        {[...resume.experience, ...resume.internships].map((bullet) => <p className="result-bullet" key={bullet.source_path}>+ {bullet.tailored_text}{bullet.job_keywords_used.length > 0 && <span className="muted"> ({bullet.job_keywords_used.join(', ')})</span>}</p>)}
+        <div className="card-heading"><div><p className="eyebrow">EXPERIENCE AND INTERNSHIPS</p><h3>Original vs. tailored</h3></div></div>
+        {[...resume.experience, ...resume.internships].map((bullet) => <BulletComparison
+          key={bullet.source_path}
+          original={bullet.original_text} tailored={bullet.tailored_text} draft={bulletDrafts[bullet.source_path] ?? bullet.tailored_text}
+          sourcePath={bullet.source_path} jobKeywordsUsed={bullet.job_keywords_used} evidenceIds={bullet.evidence_ids}
+          evidenceById={evidenceById} onEdit={editBullet}
+        />)}
       </section>}
 
       <section className="card comparison-card">
         <div className="card-heading"><div><p className="eyebrow">COVER LETTER</p><h3>Tailored, editable</h3></div></div>
         <textarea className="cover-letter-editor" value={coverLetterDraft} onChange={(event) => setCoverLetterDraft(event.target.value)} rows={10} />
         {customization.user_edits.edited_fields.includes('cover_letter_text') && <p className="muted">User edited — no longer treated as an AI-generated, evidence-verified claim.</p>}
+        <ProvenanceDetails evidenceIds={[...new Set(customization.cover_letter.flatMap((s) => s.evidence_ids))]} evidenceById={evidenceById} />
       </section>
 
       <div className="detail-actions">

@@ -5,6 +5,7 @@ export type SourceType = 'skill' | 'project' | 'experience' | 'internship' | 'ed
 export type KeywordStatus = 'supported' | 'partial' | 'unsupported'
 export type KeywordRequirementType = 'required_skill' | 'preferred_skill'
 export type CustomizationStatus = 'ready' | 'validation_warning'
+export type GenerationMode = 'llm' | 'deterministic_fallback'
 
 export type EvidenceRecord = {
   evidence_id: string
@@ -22,7 +23,7 @@ export type KeywordClassification = {
   reason: string
   matched_evidence_ids: string[]
 }
-export type TailoredBullet = { original_text: string; tailored_text: string; source_path: string; job_keywords_used: string[]; introduced_claims: string[] }
+export type TailoredBullet = { original_text: string; tailored_text: string; source_path: string; job_keywords_used: string[]; evidence_ids: string[]; introduced_claims: string[] }
 export type TailoredProject = {
   title: string
   original_text: string
@@ -31,6 +32,7 @@ export type TailoredProject = {
   source_path: string
   relevance_rank: number
   job_keywords_used: string[]
+  evidence_ids: string[]
   introduced_claims: string[]
 }
 export type TailoredEducationEntry = { raw_text: string; source_path: string }
@@ -46,8 +48,16 @@ export type TailoredResume = {
   certifications: string[]
   achievements: string[]
 }
-export type CoverLetterSentence = { text: string; sources: string[] }
+export type CoverLetterSentence = { text: string; sources: string[]; evidence_ids: string[] }
 export type ValidationResult = { passed: boolean; warnings: string[]; removed_claims: string[] }
+export type GenerationMetadata = {
+  mode: GenerationMode
+  attempted_llm: boolean
+  provider: string | null
+  model: string | null
+  repair_attempted: boolean
+  fallback_reason: string | null
+}
 export type UserEdits = { summary: string | null; cover_letter_text: string | null; bullet_edits: Record<string, string>; edited_fields: string[] }
 export type ApplicationCustomization = {
   id: number
@@ -65,6 +75,7 @@ export type ApplicationCustomization = {
   cover_letter: CoverLetterSentence[]
   cover_letter_text: string
   validation: ValidationResult
+  generation: GenerationMetadata
   user_edits: UserEdits
   created_at: string
   updated_at: string
@@ -78,6 +89,7 @@ export type ApplicationCustomizationSummary = {
   version: number
   status: CustomizationStatus
   stale: boolean
+  generation_mode: GenerationMode
   created_at: string
   updated_at: string
 }

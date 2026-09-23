@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.models import CandidateProfile, Resume, StructuredResume
 from app.models.career_state import ApplicationCustomization as ApplicationCustomizationRecord
 from app.schemas.customization import (
@@ -34,6 +35,7 @@ from app.schemas.customization import (
     ApplicationCustomizationSummary,
     CoverLetterSentence,
     EvidenceRecord,
+    GenerationMetadata,
     KeywordClassification,
     TailoredBullet,
     TailoredEducationEntry,
@@ -46,9 +48,11 @@ from app.schemas.job_posting import JobPosting
 from app.services.cover_letter_service import build_cover_letter
 from app.services.customization_evidence import build_evidence_records, relevance_score
 from app.services.customization_keywords import classify_job_keywords, partial_terms, supported_terms, unsupported_terms
+from app.services.customization_llm import LLMRewriteResponse, rewrite_with_llm
 from app.services.customization_validator import build_validation_result, validate_cover_letter, validate_summary
 from app.services.job_dataset_service import load_job_postings
 from app.services.job_matching import normalize_term
+from app.services.llm_provider import LLMProvider, get_llm_provider
 from app.services.skill_gap_evidence import mentions_term
 
 logger = logging.getLogger(__name__)
@@ -203,7 +207,80 @@ def _parser_warning_notice(structured_data: dict) -> str | None:
     return "Resume structure contains parsing warnings. Review extracted profile before customization."
 
 
-def generate_customization(db: Session, resume_id: int, job_id: str, user_id: int) -> ApplicationCustomization:
+def _backfill_evidence_ids(
+    tailored_resume: TailoredResume, cover_letter_sentences: list[CoverLetterSentence], evidence_records: list[EvidenceRecord],
+) -> None:
+    """Fills in `evidence_ids` for the deterministic baseline, before any LLM rewrite
+    runs: a deterministic bullet's text *is* its own evidence record (same
+    `source_path`), so the frontend's "Supported by" provenance UI has real data to
+    show even when no LLM is configured. The LLM path overwrites these with its own
+    (already-validated) citations for whatever it actually rewrites.
+    """
+    ids_by_path: dict[str, list[str]] = {}
+    for record in evidence_records:
+        ids_by_path.setdefault(record.source_path, []).append(record.evidence_id)
+
+    for project in tailored_resume.projects:
+        project.evidence_ids = ids_by_path.get(project.source_path, [])
+    for bullet in tailored_resume.experience + tailored_resume.internships:
+        bullet.evidence_ids = ids_by_path.get(bullet.source_path, [])
+    for sentence in cover_letter_sentences:
+        ids: list[str] = []
+        for path in sentence.sources:
+            ids.extend(ids_by_path.get(path, []))
+        sentence.evidence_ids = ids
+
+
+def _apply_llm_rewrite(
+    tailored_resume: TailoredResume,
+    cover_letter_sentences: list[CoverLetterSentence],
+    llm_response: LLMRewriteResponse,
+    evidence_records: list[EvidenceRecord],
+) -> tuple[TailoredResume, list[CoverLetterSentence]]:
+    """Merges a validated LLM rewrite onto the deterministic baseline. Only
+    `tailored_text`/`summary`/cover-letter text and their cited evidence change —
+    `original_text`, `source_path`, `technologies`, and `relevance_rank` are always
+    kept from the deterministic pass, so provenance and ranking stay intact even
+    when the wording is LLM-rewritten.
+    """
+    path_by_evidence_id = {e.evidence_id: e.source_path for e in evidence_records}
+
+    def _to_source_paths(evidence_ids: list[str]) -> list[str]:
+        return [path_by_evidence_id[eid] for eid in evidence_ids if eid in path_by_evidence_id]
+
+    bullet_map = {b.source_path: b for b in llm_response.bullets}
+    for project in tailored_resume.projects:
+        rewrite = bullet_map.get(project.source_path)
+        if rewrite is None or not rewrite.rewritten_text.strip():
+            continue
+        project.tailored_text = rewrite.rewritten_text
+        project.evidence_ids = rewrite.evidence_ids
+        if rewrite.job_keywords_used:
+            project.job_keywords_used = sorted(set(project.job_keywords_used) | set(rewrite.job_keywords_used))
+    for bullet in tailored_resume.experience + tailored_resume.internships:
+        rewrite = bullet_map.get(bullet.source_path)
+        if rewrite is None or not rewrite.rewritten_text.strip():
+            continue
+        bullet.tailored_text = rewrite.rewritten_text
+        bullet.evidence_ids = rewrite.evidence_ids
+        if rewrite.job_keywords_used:
+            bullet.job_keywords_used = sorted(set(bullet.job_keywords_used) | set(rewrite.job_keywords_used))
+
+    if llm_response.summary.strip():
+        tailored_resume.summary = llm_response.summary
+        tailored_resume.summary_sources = _to_source_paths(llm_response.summary_evidence_ids) or tailored_resume.summary_sources
+
+    new_cover_letter = [
+        CoverLetterSentence(text=p.text, sources=_to_source_paths(p.evidence_ids), evidence_ids=p.evidence_ids)
+        for p in llm_response.cover_letter_paragraphs if p.text.strip()
+    ] or cover_letter_sentences
+
+    return tailored_resume, new_cover_letter
+
+
+def generate_customization(
+    db: Session, resume_id: int, job_id: str, user_id: int, llm_provider: LLMProvider | None = None,
+) -> ApplicationCustomization:
     resume = db.get(Resume, resume_id)
     if resume is None:
         raise LookupError("Resume not found.")
@@ -225,8 +302,24 @@ def generate_customization(db: Session, resume_id: int, job_id: str, user_id: in
     classifications = classify_job_keywords(profile, structured.data, job, evidence_records)
     tailored_resume = _build_tailored_resume(profile, structured.data, classifications)
     cover_letter_sentences = build_cover_letter(profile, structured.data, job, evidence_records, classifications)
-
+    _backfill_evidence_ids(tailored_resume, cover_letter_sentences, evidence_records)
     unsupported = unsupported_terms(classifications)
+
+    # The deterministic pipeline above is always computed in full first — the LLM is
+    # strictly an optional enhancement layer applied on top of it, never a
+    # replacement the request depends on. A repair-failed/unavailable/misconfigured
+    # provider always leaves the fully-grounded deterministic result in place.
+    provider = llm_provider if llm_provider is not None else get_llm_provider(get_settings())
+    llm_response, generation_meta = rewrite_with_llm(provider, job, classifications, evidence_records, tailored_resume, unsupported)
+    if llm_response is not None:
+        tailored_resume, cover_letter_sentences = _apply_llm_rewrite(tailored_resume, cover_letter_sentences, llm_response, evidence_records)
+        generation = GenerationMetadata(mode="llm", **generation_meta)
+    else:
+        generation = GenerationMetadata(mode="deterministic_fallback", **generation_meta)
+
+    # The existing validator always runs last, over whichever text is actually being
+    # shipped (deterministic or LLM-rewritten) — a genuine final safety net, not
+    # bypassed just because the LLM path claims to have already checked itself.
     validated_summary, summary_warnings, summary_removed = validate_summary(tailored_resume.summary, unsupported)
     tailored_resume.summary = validated_summary
     validated_letter, letter_warnings, letter_removed = validate_cover_letter(cover_letter_sentences, unsupported)
@@ -248,6 +341,7 @@ def generate_customization(db: Session, resume_id: int, job_id: str, user_id: in
         "cover_letter": [json.loads(s.model_dump_json()) for s in validated_letter],
         "cover_letter_text": cover_letter_text,
         "validation": json.loads(validation.model_dump_json()),
+        "generation": json.loads(generation.model_dump_json()),
         "user_edits": json.loads(UserEdits().model_dump_json()),
         "parser_warning_notice": parser_notice,
     }
@@ -260,10 +354,19 @@ def generate_customization(db: Session, resume_id: int, job_id: str, user_id: in
     db.refresh(record)
 
     logger.info(
-        "customization_completed user_id=%s resume_id=%s job_id=%s customization_id=%s supported_keyword_count=%s warning_count=%s",
-        user_id, resume_id, job.job_id, record.id, len(supported_terms(classifications)), len(validation.warnings),
+        "customization_completed user_id=%s resume_id=%s job_id=%s customization_id=%s generation_mode=%s supported_keyword_count=%s warning_count=%s",
+        user_id, resume_id, job.job_id, record.id, generation.mode, len(supported_terms(classifications)), len(validation.warnings),
     )
     return _to_response(record, structured.updated_at)
+
+
+# Records written before this LLM-layer upgrade have no "generation" key at all —
+# they were produced entirely by the (still-existing) deterministic pipeline.
+_LEGACY_GENERATION_METADATA = {
+    "mode": "deterministic_fallback", "attempted_llm": False,
+    "provider": None, "model": None, "repair_attempted": False,
+    "fallback_reason": "generated_before_llm_layer_existed",
+}
 
 
 def _to_response(record: ApplicationCustomizationRecord, current_resume_updated_at: datetime) -> ApplicationCustomization:
@@ -280,6 +383,7 @@ def _to_response(record: ApplicationCustomizationRecord, current_resume_updated_
         cover_letter=[CoverLetterSentence.model_validate(s) for s in data.get("cover_letter", [])],
         cover_letter_text=data.get("cover_letter_text", ""),
         validation=ValidationResult.model_validate(data.get("validation", {"passed": True, "warnings": [], "removed_claims": []})),
+        generation=GenerationMetadata.model_validate(data.get("generation") or _LEGACY_GENERATION_METADATA),
         user_edits=UserEdits.model_validate(data.get("user_edits", {})),
         created_at=record.created_at, updated_at=record.updated_at,
     )
@@ -305,10 +409,11 @@ def list_customizations(db: Session, resume_id: int, job_id: str | None) -> list
     for record in records:
         reference = current_updated_at if current_updated_at is not None else record.source_resume_updated_at
         stale = _as_utc(record.source_resume_updated_at) < _as_utc(reference)
+        generation_mode = (record.data.get("generation") or _LEGACY_GENERATION_METADATA).get("mode", "deterministic_fallback")
         summaries.append(ApplicationCustomizationSummary(
             id=record.id, resume_id=record.resume_id, job_id=record.job_id,
             job_title=record.data.get("job_title", ""), company=record.data.get("company", ""),
-            version=record.version, status=record.status, stale=stale,
+            version=record.version, status=record.status, stale=stale, generation_mode=generation_mode,
             created_at=record.created_at, updated_at=record.updated_at,
         ))
     return summaries

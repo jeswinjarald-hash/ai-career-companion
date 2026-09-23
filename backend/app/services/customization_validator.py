@@ -36,7 +36,13 @@ def _sentence_has_unsupported_keyword(sentence: str, unsupported_terms: set[str]
     return None
 
 
-def _sentence_violation(sentence: str, unsupported_terms: set[str]) -> str | None:
+def check_fabrication(sentence: str, unsupported_terms: set[str]) -> str | None:
+    """Scans arbitrary generated text (deterministic-template or LLM-produced) for an
+    unsupported keyword or a fabricated metric/leadership/years-of-experience claim.
+    Returns a human-readable reason, or `None` if the text is clean. Public so the
+    LLM rewrite layer (`customization_llm.py`) can run the identical check on model
+    output instead of duplicating these patterns.
+    """
     unsupported_hit = _sentence_has_unsupported_keyword(sentence, unsupported_terms)
     if unsupported_hit:
         return f'references unsupported keyword "{unsupported_hit}"'
@@ -50,7 +56,7 @@ def _sentence_violation(sentence: str, unsupported_terms: set[str]) -> str | Non
 
 
 def validate_summary(summary: str, unsupported_terms: set[str]) -> tuple[str, list[str], list[str]]:
-    violation = _sentence_violation(summary, unsupported_terms)
+    violation = check_fabrication(summary, unsupported_terms)
     if violation is None:
         return summary, [], []
     warning = f'Removed from summary: "{summary}" ({violation}).'
@@ -64,7 +70,7 @@ def validate_cover_letter(
     warnings: list[str] = []
     removed: list[str] = []
     for sentence in sentences:
-        violation = _sentence_violation(sentence.text, unsupported_terms)
+        violation = check_fabrication(sentence.text, unsupported_terms)
         if violation is None:
             kept.append(sentence)
         else:
