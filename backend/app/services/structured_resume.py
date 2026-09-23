@@ -276,14 +276,51 @@ def _technology_terms(line: str) -> list[str] | None:
 _TITLE_ANNOTATION_SPLIT = re.compile(r"\s+[-–—|]\s+|:\s+(?=\S)")
 
 
+_TITLE_ANNOTATION_MAX_WORDS = 10
+
+
+_LIST_SPLIT = re.compile(r",|/|\||\band\b", re.I)
+
+
+def _looks_like_tech_annotation(tail: str) -> bool:
+    """A structural, vocabulary-independent check for an inline tech annotation
+    after a title delimiter ("Name — Built using X, Y and Z").
+
+    Deliberately does NOT require every (or even any) item to match the curated
+    skill vocabulary — that vocabulary can never be exhaustive (e.g. "Flutter" or
+    "Firebase" aren't in it), and a strict skill-to-word ratio is also sensitive to
+    incidental formatting ("Node,Express" vs "Node, Express" shifts the word count).
+    Instead: a tail with 2+ comma/pipe/slash/"and"-separated short segments reads as
+    a *list* regardless of whether the terms are recognized — that list *shape* is
+    what a plain subtitle like "Backend Foundation" never has. A tail with only one
+    segment (no list separator at all) is trusted only when it's essentially just a
+    recognized skill name and nothing else, which is what keeps a non-technical
+    phrase like "Machine Learning Project" (a recognized term buried in a longer
+    noun phrase, not a list) from being misread as an annotation.
+    """
+    words = tail.split()
+    if not words or len(words) > _TITLE_ANNOTATION_MAX_WORDS:
+        return False
+    # A bare "and" with no comma/pipe/slash anywhere is too weak a signal on its own
+    # — "Resume and Job Matching Platform" is an ordinary subtitle, not a list. An
+    # explicit separator must be present before "and" is trusted to close out the
+    # last item of an enumeration ("Node, Express and MongoDB").
+    has_explicit_separator = any(separator in tail for separator in (",", "|", "/"))
+    if has_explicit_separator:
+        segments = [segment.strip() for segment in _LIST_SPLIT.split(tail) if segment.strip()]
+        if len(segments) >= 2:
+            return all(len(segment.split()) <= 4 for segment in segments)
+    return len(words) <= 2 and len(_skills(tail)) >= 1
+
+
 def _split_title_and_annotation(line: str) -> tuple[str, str | None]:
     """Splits "Project Name — Built using X, Y and Z" into (title, annotation).
 
-    Only splits when the trailing part actually reads as tech-stack content (checked
-    via `_technology_terms`); otherwise the whole line is kept as the title. This is
-    what lets "Society Finance Management — Built using Node,Express and MongoDB"
-    split correctly while a title that simply contains a dash/colon with no tech
-    annotation, e.g. "AI Career Companion - Backend Foundation", is left intact.
+    Only splits when the trailing part actually reads as tech-stack content; otherwise
+    the whole line is kept as the title. This is what lets "Society Finance Management
+    — Built using Node, Express and MongoDB" split correctly while a title that simply
+    contains a dash/colon with no tech annotation, e.g. "AI Career Companion - Backend
+    Foundation", is left intact.
     """
     match = _TITLE_ANNOTATION_SPLIT.search(line)
     if not match:
@@ -291,7 +328,7 @@ def _split_title_and_annotation(line: str) -> tuple[str, str | None]:
     head, tail = line[: match.start()].strip(), line[match.end():].strip()
     if not head or not tail:
         return line, None
-    if _technology_terms(tail) is None:
+    if not _looks_like_tech_annotation(tail):
         return line, None
     return head, tail
 
@@ -307,22 +344,33 @@ _TITLE_CONTINUATION_STARTS = {
 }
 
 
+_PROJECT_TITLE_MAX_WORDS = 9
+
+
 def _looks_like_project_title(line: str) -> bool:
     """Conservative, structural-first validation for "does this line start a NEW
     project" (used only as a fallback when a line is neither indented/bulleted nor a
     recognized tech-stack line). Rejects sentence-continuation fragments — the actual
     cause of a project description exploding into many bogus single-word/short-phrase
     "projects" — without requiring every resume to follow one exact format.
+
+    This is deliberately a low-confidence, last-resort signal (blank-line block
+    boundaries and explicit tech-annotation delimiters are the trusted ones); a false
+    positive here is caught after the fact by `_merge_content_less_fragments`, which
+    folds a title-only "project" this produced back into its neighbor.
     """
     stripped = line.strip()
     if not stripped or len(stripped) < 3:
         return False
+    words = stripped.split()
+    if len(words) > _PROJECT_TITLE_MAX_WORDS:
+        return False  # a genuine title is short; a long line is prose, not a heading
     first_alpha = next((character for character in stripped if character.isalpha()), None)
     if first_alpha is not None and first_alpha.islower():
         return False  # a lowercase-led line is virtually always a sentence continuation
     if _ends_with_terminal_punctuation(stripped):
         return False  # a completed sentence, not a title
-    first_word = re.sub(r"[^a-zA-Z]", "", stripped.split()[0]).casefold()
+    first_word = re.sub(r"[^a-zA-Z]", "", words[0]).casefold()
     if first_word in _TITLE_CONTINUATION_STARTS:
         return False
     return True
@@ -341,10 +389,44 @@ def _split_into_blank_line_blocks(content: str) -> list[str]:
     return [block for block in blocks if block.strip()]
 
 
-def _new_project(line: str) -> tuple[dict, str | None]:
+_ANNOTATION_LEAD_IN = re.compile(r"(?i)^(?:built|developed|created|designed|implemented)?\s*(?:using|with)\s+")
+
+
+def _annotation_terms(annotation: str) -> list[str]:
+    """Resolves an already-confirmed tech annotation ("Built using Node, Express and
+    MongoDB", "Flutter, Firebase") into a technologies list.
+
+    This must NOT be re-classified through the generic per-line heuristics (tech-line
+    detection, title detection, ...) — an annotation containing an unrecognized term
+    like "Flutter" or "Firebase" would fail `_technology_terms` (not in the curated
+    vocabulary) and then incorrectly pass `_looks_like_project_title`, splitting the
+    real project into a bogus extra one. Recognized terms are canonicalized via
+    `_skills`; an unrecognized short segment is kept verbatim rather than silently
+    dropped, mirroring `_explicit_skill_items`'s treatment of an explicit Skills
+    section — the curated vocabulary can never name every technology.
+    """
+    segments = [segment.strip() for segment in _LIST_SPLIT.split(annotation) if segment.strip()]
+    if not segments:
+        segments = [annotation.strip()] if annotation.strip() else []
+    terms: list[str] = []
+    seen: set[str] = set()
+    for segment in segments:
+        cleaned = _ANNOTATION_LEAD_IN.sub("", segment).strip()
+        if not cleaned or not _is_meaningful_entry(cleaned):
+            continue
+        recognized = _skills(cleaned)
+        value = recognized[0] if recognized else cleaned
+        key = value.casefold()
+        if key not in seen:
+            seen.add(key)
+            terms.append(value)
+    return terms
+
+
+def _new_project(line: str) -> dict:
     title, annotation = _split_title_and_annotation(line)
-    project = {"title": title, "description": "", "technologies": [], "raw_text": title}
-    return project, annotation
+    technologies = _annotation_terms(annotation) if annotation else []
+    return {"title": title, "description": "", "technologies": technologies, "raw_text": title}
 
 
 def _group_project_block(lines: list[tuple[str, bool]]) -> list[dict]:
@@ -371,39 +453,82 @@ def _group_project_block(lines: list[tuple[str, bool]]) -> list[dict]:
         line, indented = pending.pop(0)
         if current is None:
             # The first line of a project block is always its heading; an inline
-            # tech annotation after a dash/colon/pipe is split off and processed like
-            # any other line rather than folded into the title.
-            current, annotation = _new_project(line)
+            # tech annotation after a dash/colon/pipe is split off and resolved
+            # directly into `technologies` (see `_new_project`/`_annotation_terms`).
+            current = _new_project(line)
             description_lines = []
-            if annotation:
-                pending.insert(0, (annotation, False))
             continue
 
-        technologies = _technology_terms(line)
-        # An explicit label ("Technologies:", "Tech Stack:", ...) is unambiguous even on
-        # an indented/bulleted line. Without a label, only treat an unindented line as a
-        # tech-stack line — a bulleted sentence that merely *mentions* two technologies
-        # in prose ("Used Python, FastAPI and Git.") is still a description line, not a
-        # dedicated tech-stack line, and must stay part of the description.
-        if technologies is not None and (not indented or _TECH_LABEL_PATTERN.match(line.strip())):
-            current["technologies"] = technologies
+        is_labeled_tech_line = _TECH_LABEL_PATTERN.match(line.strip()) is not None
+        # An explicit label ("Technologies:", "Tech Stack:", ...) is unambiguous even
+        # on an indented/bulleted line — handle it before anything else.
+        if is_labeled_tech_line:
+            current["technologies"] = _technology_terms(line) or current["technologies"]
             continue
         if indented:
             description_lines.append(_strip_bullet_prefix(line))
             continue
+
+        # Unindented: check whether this is actually a NEW project's title with an
+        # inline tech annotation ("E-commerce Management — Built using X, Y, Z")
+        # *before* checking whether the whole line reads as a bare tech-stack list.
+        # Checking tech-list-ness first would let a new title with several
+        # technologies named after it get misread as more technologies for the
+        # *current* (about-to-be-closed) project instead of starting a new one.
+        title, annotation = _split_title_and_annotation(line)
+        if annotation is not None and _looks_like_project_title(title):
+            finalize()
+            current = {"title": title, "description": "", "technologies": _annotation_terms(annotation), "raw_text": title}
+            description_lines = []
+            continue
+
+        technologies = _technology_terms(line)
+        # Without a label, only treat an unindented line as a tech-stack line — a
+        # bulleted sentence that merely *mentions* two technologies in prose ("Used
+        # Python, FastAPI and Git.") is still a description line, not a dedicated
+        # tech-stack line, and must stay part of the description; that case is
+        # already excluded here because it's indented.
+        if technologies is not None:
+            current["technologies"] = technologies
+            continue
         if _looks_like_project_title(line):
             finalize()
-            current, annotation = _new_project(line)
+            current = _new_project(line)
             description_lines = []
-            if annotation:
-                pending.insert(0, (annotation, False))
             continue
         # Neither a recognized tech line nor a plausible new title — a sentence
         # fragment (a wrapped continuation, or a description with no bullet marker
         # at all) that belongs to the current project's description.
         description_lines.append(line)
     finalize()
-    return projects
+    return _merge_content_less_fragments(projects)
+
+
+def _merge_content_less_fragments(projects: list[dict]) -> list[dict]:
+    """Folds a title-only "project" (no description, no technologies — nothing
+    attached at all) back into the previous project's description.
+
+    `_looks_like_project_title` is a deliberately low-confidence, last-resort
+    signal — on a resume whose bullets have no marker and use an action verb this
+    module doesn't recognize as a continuation-starter, a short unbulleted sentence
+    fragment can still slip through it and open a bogus "project". A genuine project
+    almost always has *something* beyond a bare title (a description sentence or an
+    explicit technology list); one that has neither is far more likely a stray
+    fragment than a real, separate project, so it is merged rather than kept.
+    """
+    merged: list[dict] = []
+    for project in projects:
+        is_content_less = not project["description"] and not project["technologies"]
+        if is_content_less and merged:
+            previous = merged[-1]
+            previous["description"] = (previous["description"] + " " + project["title"]).strip()
+            previous["raw_text"] = previous["title"] + (f" - {previous['description']}" if previous["description"] else "")
+            for skill in _skills(project["title"]):
+                if skill not in previous["technologies"]:
+                    previous["technologies"].append(skill)
+            continue
+        merged.append(project)
+    return merged
 
 
 def _projects(sections: list[ResumeSection]) -> list[dict]:
@@ -416,19 +541,39 @@ def _projects(sections: list[ResumeSection]) -> list[dict]:
     return projects
 
 
-def build_structured_data(sections: list[ResumeSection]) -> dict:
-    all_text = "\n".join(section.content for section in sections)
-    skills_section_text = "\n".join(section.content for section in sections if section.name == "skills")
-    if skills_section_text:
-        # A dedicated Skills section: every self-declared item is preserved (known
-        # ones canonicalized), not just the subset matching a closed vocabulary.
-        combined_skills = _explicit_skill_items(skills_section_text)
-    else:
+_MAX_TRUSTED_EXPLICIT_SKILL_ITEMS = 25
+
+
+def _vocabulary_matched_skills(text: str) -> list[str]:
+    technical = _skills(text)
+    return technical + [skill for skill in _soft_skills(text) if skill not in technical]
+
+
+def _resolve_skills(skills_section_text: str, all_text: str) -> list[str]:
+    if not skills_section_text:
         # No dedicated section — fall back to conservative vocabulary-matched
         # scanning of the whole resume; blindly keeping every phrase here would
         # flatten unrelated prose nouns into fake "skills".
-        technical_skills = _skills(all_text)
-        combined_skills = technical_skills + [skill for skill in _soft_skills(all_text) if skill not in technical_skills]
+        return _vocabulary_matched_skills(all_text)
+
+    # A dedicated Skills section: every self-declared item is preserved (known ones
+    # canonicalized), not just the subset matching a closed vocabulary.
+    explicit_items = _explicit_skill_items(skills_section_text)
+    if len(explicit_items) <= _MAX_TRUSTED_EXPLICIT_SKILL_ITEMS:
+        return explicit_items
+
+    # An implausibly long "skills" list is a strong signal this section's content
+    # isn't a clean, curated list — most likely a later, unrecognized heading's
+    # content (e.g. an uncommon "Areas of Expertise" spelling) silently ran into it
+    # and every one of its words got preserved verbatim. Fall back to only
+    # vocabulary-matched technical/soft skills rather than trusting every fragment.
+    return _vocabulary_matched_skills(skills_section_text)
+
+
+def build_structured_data(sections: list[ResumeSection]) -> dict:
+    all_text = "\n".join(section.content for section in sections)
+    skills_section_text = "\n".join(section.content for section in sections if section.name == "skills")
+    combined_skills = _resolve_skills(skills_section_text, all_text)
     return {
         "header": next((section.content for section in sections if section.name == "header"), ""),
         "summary": next((section.content for section in sections if section.name == "summary"), None),
@@ -456,32 +601,49 @@ def get_structured_resume(db: Session, resume_id: int) -> StructuredResume | Non
 
 
 _COMMON_STOPWORDS = {"in", "on", "at", "to", "of", "a", "an", "the", "and", "or", "but", "is", "are", "was", "were", "it", "as"}
+_COMMON_PROSE_WORDS = {
+    "and", "using", "with", "the", "a", "an", "for", "to", "of", "in", "on", "built", "developed",
+    "such", "this", "that", "page", "success", "project", "knowledge", "application", "features",
+}
+_PROJECT_COUNT_WARNING_THRESHOLD = 15
+_SKILLS_COUNT_WARNING_THRESHOLD = 30
 
 
 def _parser_warnings(data: dict) -> list[str]:
     """Conservative, non-destructive sanity checks over freshly-structured resume
-    data. These only ever produce a warning to log for developer diagnostics — they
+    data. These only ever produce a warning to log (and are persisted alongside the
+    structured data for API/UI visibility) for developer/user diagnostics — they
     never reject or silently alter a legitimate (if unusual) resume.
     """
     warnings: list[str] = []
 
     projects = data.get("projects", [])
-    if len(projects) > 12:
-        warnings.append(f"Unusually high project count ({len(projects)}); output may be fragmented.")
-    suspicious_titles = [p["title"] for p in projects if p["title"].strip().casefold() in _COMMON_STOPWORDS]
-    if suspicious_titles:
-        warnings.append(f"Suspicious stop-word project titles: {suspicious_titles}")
+    if len(projects) > _PROJECT_COUNT_WARNING_THRESHOLD:
+        warnings.append(f"suspicious_project_count: {len(projects)} projects found on one resume; output may be fragmented.")
+    single_word_titles = [p["title"] for p in projects if len(p["title"].split()) == 1]
+    if projects and len(single_word_titles) / len(projects) > 0.5:
+        warnings.append(f"many_single_word_project_titles: {single_word_titles}")
+    stopword_titles = [p["title"] for p in projects if p["title"].strip().casefold() in _COMMON_STOPWORDS]
+    if stopword_titles:
+        warnings.append(f"suspicious_stopword_project_titles: {stopword_titles}")
+
+    skills = data.get("skills", [])
+    if len(skills) > _SKILLS_COUNT_WARNING_THRESHOLD:
+        warnings.append(f"excessive_skill_count: {len(skills)} skills found; output may include unrelated content.")
+    prose_skills = [skill for skill in skills if skill.strip().casefold() in _COMMON_PROSE_WORDS]
+    if prose_skills:
+        warnings.append(f"excessive_unrecognized_skills: prose words present in skills: {prose_skills}")
 
     for category in ("experience", "internships"):
         for entry in data.get(category, []):
             text = str(entry.get("raw_text", "")).strip()
             if len(text) < 3 or text.casefold() in _COMMON_STOPWORDS:
-                warnings.append(f"Suspicious {category} entry: {text!r}")
+                warnings.append(f"suspicious_{category}_entry: {text!r}")
 
     for entry in data.get("education", []):
         raw_text = str(entry.get("raw_text", "")).strip()
         if len(raw_text) < 5:
-            warnings.append(f"Education entry looks incomplete: {raw_text!r}")
+            warnings.append(f"truncated_education_entry: {raw_text!r}")
 
     return warnings
 
@@ -500,10 +662,14 @@ def structure_resume(db: Session, resume: Resume) -> StructuredResume:
     # Diagnostic only — never the full resume text, per privacy/logging requirements.
     logger.info(
         "resume_structuring_completed resume_id=%s sections=%s education_count=%s project_count=%s "
-        "experience_count=%s internship_count=%s skills_count=%s warnings=%s",
+        "experience_count=%s internship_count=%s skills_count=%s warning_count=%s warnings=%s",
         resume.id, [section.name for section in sections], len(data.get("education", [])), len(data.get("projects", [])),
-        len(data.get("experience", [])), len(data.get("internships", [])), len(data.get("skills", [])), warnings,
+        len(data.get("experience", [])), len(data.get("internships", [])), len(data.get("skills", [])), len(warnings), warnings,
     )
+    # Persisted (not just logged) so the API response / frontend can surface a
+    # "processed with warnings" notice instead of silently feeding pathological
+    # structure downstream to M2/M3 as if it were clean.
+    data["parser_warnings"] = warnings
 
     result.data = data
     resume.status = "structured"

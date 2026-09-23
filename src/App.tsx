@@ -532,7 +532,9 @@ function RealResumeView({ file, lifecycle, restoring, notice, resumeRecord, onDr
 function RealResumeResults({ structuredResume, onNavigate }: { structuredResume: StructuredResume | null; onNavigate: (view: View) => void }) {
   const data = structuredResume?.data
   const textOf = (item: Record<string, unknown>) => String(item.raw_text ?? item.title ?? '')
+  const warnings = data?.parser_warnings ?? []
   return <section className="results-section"><div className="section-heading"><div><p className="eyebrow">STRUCTURED RESUME</p><h2>Resume context</h2></div><button className="text-button" onClick={() => onNavigate('resume')}>Process another -&gt;</button></div>{!data ? <div className="architecture-note">Process a resume to view persisted results.</div> : <>
+    {warnings.length > 0 && <div className="architecture-note" role="status"><strong>Processed with warnings</strong><p>Some parts of this resume's structure may need review — this doesn't block using the app, but double-check the sections below against your actual resume.</p></div>}
     <div className="results-grid resume-result-grid">
       <article className="card result-card"><p className="eyebrow">EXTRACTED SKILLS</p>{data.skills.length > 0 ? <div className="chip-list">{data.skills.map((skill) => <span className="skill-chip" key={skill}>{skill}</span>)}</div> : <p className="muted">No skills extracted.</p>}</article>
       <article className="card result-card"><p className="eyebrow">EDUCATION</p>{data.education.length > 0 ? data.education.map((item, index) => <p className="result-bullet" key={index}>+ {textOf(item)}</p>) : <p className="muted">No education entries extracted.</p>}</article>

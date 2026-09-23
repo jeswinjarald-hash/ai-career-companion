@@ -8,31 +8,56 @@ from app.models import Resume, ResumeSection
 
 
 ALIASES = {
-    "summary": {"summary", "professional summary", "profile", "about me", "career summary"},
-    "objective": {"objective", "career objective", "professional objective"},
+    "summary": {
+        "summary", "professional summary", "profile", "about me", "career summary",
+        "summary of qualifications", "personal profile", "executive summary",
+    },
+    "objective": {"objective", "career objective", "professional objective", "resume objective"},
     "skills": {
         "skills", "technical skills", "core skills", "key skills", "technologies", "technical proficiencies",
         "soft skills", "soft skill", "interpersonal skills", "personal skills", "core competencies",
+        "skill set", "skillset", "areas of expertise", "technical proficiency", "technical expertise",
+        "tech skills", "programming skills", "relevant skills", "competencies", "expertise",
     },
-    "education": {"education", "academic background", "academic qualifications", "educational qualifications", "academics"},
-    "experience": {"experience", "work experience", "professional experience", "employment history", "work history"},
-    "internships": {"internship", "internships", "internship experience"},
-    "projects": {"projects", "academic projects", "personal projects", "key projects", "project experience"},
+    "education": {
+        "education", "academic background", "academic qualifications", "educational qualifications", "academics",
+        "education & academics", "academic details", "academic profile", "educational background",
+    },
+    "experience": {
+        "experience", "work experience", "professional experience", "employment history", "work history",
+        "relevant experience", "career history", "work ex", "professional background",
+    },
+    "internships": {"internship", "internships", "internship experience", "internship details"},
+    "projects": {
+        "projects", "academic projects", "personal projects", "key projects", "project experience",
+        "project work", "major projects", "mini projects", "relevant projects", "technical projects",
+        "projects & internships",
+    },
     "certifications": {
         "certifications", "certificates", "certifications & courses", "courses & certifications",
         # A generic "Additional"/"Additional Information" heading is conventionally used
         # for supplementary certifications/courses — never a distinct, unclassified bucket.
         "additional", "additional information", "additional details", "courses",
+        "professional certifications", "licenses & certifications", "certifications and courses",
+        "online courses", "training & certifications", "courses & training",
     },
-    "achievements": {"achievements", "awards", "honors", "awards & achievements"},
-    "interests": {"interests", "career interests", "areas of interest"},
-    "publications": {"publications", "papers", "research publications"},
-    "activities": {"activities", "extracurricular activities", "co-curricular activities"},
+    "achievements": {
+        "achievements", "awards", "honors", "awards & achievements", "key achievements",
+        "achievements & awards", "honors & awards", "accomplishments",
+    },
+    "interests": {"interests", "career interests", "areas of interest", "hobbies", "hobbies & interests"},
+    "publications": {"publications", "papers", "research publications", "research papers"},
+    "activities": {
+        "activities", "extracurricular activities", "co-curricular activities",
+        "extra-curricular activities", "positions of responsibility", "leadership & activities",
+    },
     "learning": {
         "areas currently learning", "currently learning", "areas of learning", "learning goals",
         "skills in progress", "learning in progress", "currently exploring",
     },
-    "languages": {"languages", "language", "languages known", "language proficiency"},
+    "languages": {
+        "languages", "language", "languages known", "language proficiency", "languages spoken",
+    },
 }
 
 _ALIAS_TO_CANONICAL = {alias.casefold(): name for name, aliases in ALIASES.items() for alias in aliases}
