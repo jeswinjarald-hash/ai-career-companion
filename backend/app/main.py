@@ -30,9 +30,29 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# A fixed, finite list of guessed dev ports ("5173".."5176") is fragile: Vite picks
+# the next free port whenever a prior dev server is still holding one, so the
+# frontend's real origin can drift past any hardcoded list — the browser then sends
+# a preflight from an origin CORSMiddleware doesn't recognize, and Starlette
+# rejects it with 400 "Disallowed CORS origin" before the request ever reaches
+# `/api/auth/me`. In development, allow any localhost/127.0.0.1 port via regex
+# instead of enumerating ports; `allow_origins=["*"]` is never used here since this
+# app authenticates with a credentialed cookie, and the CORS spec (correctly
+# enforced by browsers) forbids combining a wildcard origin with credentials. The
+# configured `frontend_url` is always allowed by exact match too, so a
+# non-development deployment (where the permissive regex is intentionally not
+# applied) still works via that explicit origin.
+LOCAL_DEV_ORIGIN_REGEX = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+
+
+def cors_origin_regex_for_env(app_env: str) -> str | None:
+    return LOCAL_DEV_ORIGIN_REGEX if app_env == "development" else None
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=list({settings.frontend_url, "http://localhost:5173", "http://127.0.0.1:5173", "http://127.0.0.1:5174", "http://127.0.0.1:5175", "http://127.0.0.1:5176"}),
+    allow_origins=[settings.frontend_url],
+    allow_origin_regex=cors_origin_regex_for_env(settings.app_env),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
