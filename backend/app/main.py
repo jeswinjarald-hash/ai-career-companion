@@ -11,6 +11,7 @@ from app.api.context import router as context_router
 from app.api.jobs import router as jobs_router
 from app.api.auth import router as auth_router
 from app.api.skill_gap import router as skill_gap_router
+from app.api.customization import router as customization_router
 from app.core.config import get_settings
 from app.core.database import init_db
 
@@ -74,3 +75,4 @@ app.include_router(context_router)
 app.include_router(jobs_router)
 app.include_router(auth_router)
 app.include_router(skill_gap_router)
+app.include_router(customization_router)
