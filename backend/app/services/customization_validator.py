@@ -36,6 +36,23 @@ def _sentence_has_unsupported_keyword(sentence: str, unsupported_terms: set[str]
     return None
 
 
+def check_fabrication_patterns(sentence: str) -> str | None:
+    """The metric/leadership/years-of-experience half of `check_fabrication`, without
+    the unsupported-keyword check. Used where merely *mentioning* an unsupported
+    skill is legitimate and expected — e.g. Milestone 3.3's interview questions
+    about a job's real required skills, or a `skill_gap`-category question whose
+    entire purpose is to name a gap by term — but an invented metric/leadership/
+    years claim is never legitimate regardless of category.
+    """
+    if _METRIC_PATTERN.search(sentence):
+        return "contains an unverified numeric metric claim"
+    if _LEADERSHIP_PATTERN.search(sentence):
+        return "contains an unverified leadership/team-size claim"
+    if _YEARS_EXPERIENCE_PATTERN.search(sentence):
+        return "contains an unverified years-of-experience claim"
+    return None
+
+
 def check_fabrication(sentence: str, unsupported_terms: set[str]) -> str | None:
     """Scans arbitrary generated text (deterministic-template or LLM-produced) for an
     unsupported keyword or a fabricated metric/leadership/years-of-experience claim.
@@ -46,13 +63,7 @@ def check_fabrication(sentence: str, unsupported_terms: set[str]) -> str | None:
     unsupported_hit = _sentence_has_unsupported_keyword(sentence, unsupported_terms)
     if unsupported_hit:
         return f'references unsupported keyword "{unsupported_hit}"'
-    if _METRIC_PATTERN.search(sentence):
-        return "contains an unverified numeric metric claim"
-    if _LEADERSHIP_PATTERN.search(sentence):
-        return "contains an unverified leadership/team-size claim"
-    if _YEARS_EXPERIENCE_PATTERN.search(sentence):
-        return "contains an unverified years-of-experience claim"
-    return None
+    return check_fabrication_patterns(sentence)
 
 
 def validate_summary(summary: str, unsupported_terms: set[str]) -> tuple[str, list[str], list[str]]:

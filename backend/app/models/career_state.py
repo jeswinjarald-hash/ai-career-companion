@@ -80,3 +80,26 @@ class ApplicationCustomization(Base):
     data: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+
+class InterviewPreparation(Base):
+    """Milestone 3.3 — a persisted, versioned interview-preparation set (categorized
+    questions + a prioritized revision plan) for one (resume, job) pair. Same
+    conventions as `ApplicationCustomization`: the source `Resume`/`StructuredResume`
+    are never mutated, and every generation/regeneration inserts a new version rather
+    than overwriting a prior one.
+    """
+
+    __tablename__ = "interview_preparations"
+    __table_args__ = (UniqueConstraint("resume_id", "job_id", "version", name="uq_interview_prep_version"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    resume_id: Mapped[int] = mapped_column(ForeignKey("resumes.id"), nullable=False, index=True)
+    job_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="ready")
+    source_resume_updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    data: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)

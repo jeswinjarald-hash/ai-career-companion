@@ -59,7 +59,7 @@ SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 
 def init_db() -> None:
-    from app.models import CandidateProfile, Resume, ResumeExtraction, ResumeSection, StructuredResume, CandidateContext, User, AuthSession, SelectedJob, SkillGap, LearningRoadmap, RoadmapItem, ProgressEvent, ApplicationCustomization  # noqa: F401
+    from app.models import CandidateProfile, Resume, ResumeExtraction, ResumeSection, StructuredResume, CandidateContext, User, AuthSession, SelectedJob, SkillGap, LearningRoadmap, RoadmapItem, ProgressEvent, ApplicationCustomization, InterviewPreparation  # noqa: F401
 
     logger.info("Database initialized: %s", _safe_url_for_logging(_database_url()))
     # create_all only creates tables that don't already exist — it never drops or

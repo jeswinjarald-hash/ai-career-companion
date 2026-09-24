@@ -26,3 +26,9 @@ nav { display: grid; gap: 5px; }.nav-item { width: 100%; border: 0; padding: 12p
 .provenance-details { margin-top: 10px; font: 11px Arial, sans-serif; color: var(--muted); }
 .provenance-details summary { cursor: pointer; color: var(--green); font-weight: 700; }
 .provenance-details ul { margin-top: 8px; }
+.interview-question-card summary { cursor: pointer; list-style: none; font: 600 13px/1.4 Arial, sans-serif; color: var(--ink); }
+.interview-question-card summary::-webkit-details-marker { display: none; }
+.interview-question-card summary .skill-status { margin-right: 8px; display: inline-block; vertical-align: middle; }
+.interview-question-card[open] summary { margin-bottom: 14px; }
+.mock-interview-block { margin-top: 16px; padding-top: 14px; border-top: 1px solid #edf0eb; }
+.mini-gap-block { margin-top: 12px; padding: 12px; background: #f7faf5; border: 1px solid #e2eee7; }

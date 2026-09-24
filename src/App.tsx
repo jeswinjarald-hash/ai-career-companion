@@ -12,12 +12,17 @@ import {
   type ApplicationCustomization, type ApplicationCustomizationSummary, type EvidenceRecord, type ExportDocument, type ExportFormat,
   type GenerationMode, type KeywordStatus, type TailoredResume,
 } from './services/customizationService'
+import {
+  generateInterviewPreparation, getInterviewPreparation, listInterviewPreparations, regenerateInterviewPreparation, submitMockAnswer,
+  type Difficulty, type InterviewPreparation, type InterviewPreparationSummary, type InterviewQuestion,
+  type MockAnswerEvaluation, type QuestionCategory, type RevisionPriority,
+} from './services/interviewPrepService'
 
 type ResumeLifecycle = 'no_resume' | 'uploading' | 'processing' | 'processed' | 'failed'
 
-type View = 'dashboard' | 'profile' | 'resume' | 'resume-results' | 'careers' | 'job-details' | 'skills' | 'customize' | 'roadmap' | 'assistant' | 'progress' | 'settings'
+type View = 'dashboard' | 'profile' | 'resume' | 'resume-results' | 'careers' | 'job-details' | 'skills' | 'customize' | 'interview-prep' | 'roadmap' | 'assistant' | 'progress' | 'settings'
 const nav = [{ id: 'dashboard' as View, label: 'Dashboard', note: 'Your next best action' }, { id: 'profile' as View, label: 'Career Profile', note: 'Your structured context' }, { id: 'resume' as View, label: 'Resume Analyzer', note: 'Upload and feedback' }, { id: 'careers' as View, label: 'Career Recommendations', note: 'Paths that fit you' }, { id: 'skills' as View, label: 'Skill Gap Analysis', note: 'Compare your skills' }, { id: 'roadmap' as View, label: 'Learning Roadmap', note: 'Your learning path' }, { id: 'assistant' as View, label: 'AI Career Assistant', note: 'Contextual guidance' }, { id: 'progress' as View, label: 'Progress Tracker', note: 'Your development' }]
-const viewFromPath = (): View => { const path = window.location.pathname; if (path.startsWith('/jobs/')) return 'job-details'; if (path === '/resume/results') return 'resume-results'; if (path === '/customize') return 'customize'; const match = nav.find((item) => `/${item.id}` === path); return match?.id ?? (path === '/settings' ? 'settings' : 'dashboard') }
+const viewFromPath = (): View => { const path = window.location.pathname; if (path.startsWith('/jobs/')) return 'job-details'; if (path === '/resume/results') return 'resume-results'; if (path === '/customize') return 'customize'; if (path === '/interview-prep') return 'interview-prep'; const match = nav.find((item) => `/${item.id}` === path); return match?.id ?? (path === '/settings' ? 'settings' : 'dashboard') }
 const greetingForTime = () => { const hour = new Date().getHours(); return hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening' }
 
 type AuthStatus = 'checking' | 'authenticated' | 'unauthenticated'
@@ -145,10 +150,10 @@ function App() {
     }
   }
   const activeResumeId = resumeLifecycle === 'processed' ? resumeRecord?.id ?? null : null
-  const content = view === 'profile' ? <ProfileView profile={activeProfile} onProfileSaved={setActiveProfile} /> : view === 'resume' ? <RealResumeView file={resumeFile} lifecycle={resumeLifecycle} restoring={resumeRestoring} notice={notice} resumeRecord={resumeRecord} onDrop={(event) => { event.preventDefault(); chooseFile(event.dataTransfer.files[0]) }} onFileChange={(event) => chooseFile(event.target.files?.[0])} onAnalyze={analyze} onReprocess={reprocessResume} /> : view === 'resume-results' ? <RealResumeResults structuredResume={structuredResume} onNavigate={go} /> : view === 'careers' ? <CareersView resumeId={activeResumeId} onOpenJob={openJobDetails} /> : view === 'job-details' ? <JobDetailsView jobId={selectedJobId} resumeId={activeResumeId} onBack={() => go('careers')} onAnalyzeSkillGap={() => go('skills')} onCustomizeApplication={() => go('customize')} /> : view === 'skills' ? <SkillsView resumeId={activeResumeId} jobId={selectedJobId} onRoadmap={() => go('roadmap')} onSearchJobs={() => go('careers')} onCustomizeApplication={() => go('customize')} /> : view === 'customize' ? <CustomizeView resumeId={activeResumeId} jobId={selectedJobId} structuredResume={structuredResume} onSearchJobs={() => go('careers')} /> : view === 'roadmap' ? <RoadmapView resumeId={activeResumeId} /> : view === 'assistant' ? <AssistantView profile={activeProfile} resumeLifecycle={resumeLifecycle} structuredResume={structuredResume} onNavigate={go} /> : view === 'progress' ? <ProgressView profile={activeProfile} resumeLifecycle={resumeLifecycle} structuredResume={structuredResume} /> : view === 'settings' ? <SettingsView /> : <DashboardView currentUser={currentUser} profile={activeProfile} resumeLifecycle={resumeLifecycle} resumeRestoring={resumeRestoring} resumeRecord={resumeRecord} structuredResume={structuredResume} notice={notice} onNavigate={go} />
+  const content = view === 'profile' ? <ProfileView profile={activeProfile} onProfileSaved={setActiveProfile} /> : view === 'resume' ? <RealResumeView file={resumeFile} lifecycle={resumeLifecycle} restoring={resumeRestoring} notice={notice} resumeRecord={resumeRecord} onDrop={(event) => { event.preventDefault(); chooseFile(event.dataTransfer.files[0]) }} onFileChange={(event) => chooseFile(event.target.files?.[0])} onAnalyze={analyze} onReprocess={reprocessResume} /> : view === 'resume-results' ? <RealResumeResults structuredResume={structuredResume} onNavigate={go} /> : view === 'careers' ? <CareersView resumeId={activeResumeId} onOpenJob={openJobDetails} /> : view === 'job-details' ? <JobDetailsView jobId={selectedJobId} resumeId={activeResumeId} onBack={() => go('careers')} onAnalyzeSkillGap={() => go('skills')} onCustomizeApplication={() => go('customize')} onInterviewPrep={() => go('interview-prep')} /> : view === 'skills' ? <SkillsView resumeId={activeResumeId} jobId={selectedJobId} onRoadmap={() => go('roadmap')} onSearchJobs={() => go('careers')} onCustomizeApplication={() => go('customize')} onInterviewPrep={() => go('interview-prep')} /> : view === 'customize' ? <CustomizeView resumeId={activeResumeId} jobId={selectedJobId} structuredResume={structuredResume} onSearchJobs={() => go('careers')} onInterviewPrep={() => go('interview-prep')} /> : view === 'interview-prep' ? <InterviewPrepView resumeId={activeResumeId} jobId={selectedJobId} structuredResume={structuredResume} onSearchJobs={() => go('careers')} /> : view === 'roadmap' ? <RoadmapView resumeId={activeResumeId} /> : view === 'assistant' ? <AssistantView profile={activeProfile} resumeLifecycle={resumeLifecycle} structuredResume={structuredResume} onNavigate={go} /> : view === 'progress' ? <ProgressView profile={activeProfile} resumeLifecycle={resumeLifecycle} structuredResume={structuredResume} /> : view === 'settings' ? <SettingsView /> : <DashboardView currentUser={currentUser} profile={activeProfile} resumeLifecycle={resumeLifecycle} resumeRestoring={resumeRestoring} resumeRecord={resumeRecord} structuredResume={structuredResume} notice={notice} onNavigate={go} />
   if (authStatus === 'checking') return <main className="auth-page"><section className="auth-panel"><div className="auth-brand"><span>AC</span><div><strong>AI Career</strong><small>Companion</small></div></div><p className="muted">Loading your workspace...</p></section></main>
   if (authStatus === 'unauthenticated') { const path = window.location.pathname; if (path === '/signup') return <SignupView onAuthenticated={handleAuthenticated} />; if (path === '/onboarding') return <OnboardingView />; return <LoginView onAuthenticated={handleAuthenticated} /> }
-  const currentLabel = nav.find((item) => item.id === view)?.label ?? (view === 'job-details' ? 'Job Details' : view === 'resume-results' ? 'Resume Results' : view === 'customize' ? 'Customize Application' : 'Settings')
+  const currentLabel = nav.find((item) => item.id === view)?.label ?? (view === 'job-details' ? 'Job Details' : view === 'resume-results' ? 'Resume Results' : view === 'customize' ? 'Customize Application' : view === 'interview-prep' ? 'Interview Preparation' : 'Settings')
   return <div className="app-shell"><aside className="sidebar"><div className="brand-mark"><span>AC</span><div><strong>AI Career</strong><small>Companion</small></div></div><div className="workspace-label">STUDENT WORKSPACE</div><nav aria-label="Primary navigation">{nav.map((item) => <button className={`nav-item ${view === item.id ? 'active' : ''}`} key={item.id} onClick={() => go(item.id)}><span className="nav-dot" aria-hidden="true" /><span><strong>{item.label}</strong><small>{item.note}</small></span></button>)}</nav><div className="sidebar-divider" /><button className={`nav-item ${view === 'settings' ? 'active' : ''}`} onClick={() => go('settings')}><span className="nav-dot" aria-hidden="true" /><span><strong>Settings</strong><small>Workspace preferences</small></span></button><div className="sidebar-footer"><span className="status-pulse" /> Career workspace</div></aside><main className="main-content"><header className="topbar"><div className="breadcrumbs"><span>Workspace</span><span>/</span><strong>{currentLabel}</strong></div><div className="account"><div className="avatar">{initials(currentUser?.full_name ?? '')}</div><div><strong>{currentUser?.full_name}</strong><small>{currentUser?.email}</small></div><button className="text-button" onClick={() => void handleLogout()}>Sign out</button></div></header><div className="mobile-nav" aria-label="Mobile navigation">{nav.slice(0, 5).map((item) => <button className={view === item.id ? 'active' : ''} key={item.id} onClick={() => go(item.id)}>{item.label}</button>)}</div><div className="page-wrap">{content}</div></main></div>
 }
 
@@ -313,7 +318,7 @@ function CareersView({ resumeId, onOpenJob }: { resumeId: number | null; onOpenJ
     </section>
   </>
 }
-function JobDetailsView({ jobId, resumeId, onBack, onAnalyzeSkillGap, onCustomizeApplication }: { jobId: string | null; resumeId: number | null; onBack: () => void; onAnalyzeSkillGap: () => void; onCustomizeApplication: () => void }) {
+function JobDetailsView({ jobId, resumeId, onBack, onAnalyzeSkillGap, onCustomizeApplication, onInterviewPrep }: { jobId: string | null; resumeId: number | null; onBack: () => void; onAnalyzeSkillGap: () => void; onCustomizeApplication: () => void; onInterviewPrep: () => void }) {
   const [job, setJob] = useState<JobPosting | null>(null)
   const [jobError, setJobError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -360,7 +365,7 @@ function JobDetailsView({ jobId, resumeId, onBack, onAnalyzeSkillGap, onCustomiz
       {matchStatus === 'error' && <div className="error-notice" role="alert">{matchError}</div>}
       {matchResult && <div className="results-grid resume-result-grid"><article className="card result-card"><p className="eyebrow">MATCH SCORE</p><strong>{Math.round(matchResult.match_score)}%</strong><p className="muted">{matchResult.reasoning}</p></article><article className="card result-card"><p className="eyebrow">MATCHED SKILLS</p>{matchResult.matched_required_skills.length > 0 ? <div className="chip-list">{matchResult.matched_required_skills.map((skill) => <span className="skill-chip" key={skill}>{skill}</span>)}</div> : <p className="muted">None</p>}</article><article className="card result-card"><p className="eyebrow">MISSING REQUIRED SKILLS</p>{matchResult.missing_required_skills.length > 0 ? <div className="chip-list">{matchResult.missing_required_skills.map((skill) => <span className="warning-chip" key={skill}>{skill}</span>)}</div> : <p className="muted">None</p>}</article></div>}
       {matches !== null && matches.length === 0 && <p className="muted">This job was not found in your ranked matches. It may not currently be among your top retrieval candidates.</p>}
-      {resumeId !== null && <div className="detail-actions"><button className="primary-button" onClick={onAnalyzeSkillGap}>Analyze Skill Gaps -&gt;</button><button className="secondary-button" onClick={onCustomizeApplication}>Customize Application -&gt;</button></div>}
+      {resumeId !== null && <div className="detail-actions"><button className="primary-button" onClick={onAnalyzeSkillGap}>Analyze Skill Gaps -&gt;</button><button className="secondary-button" onClick={onCustomizeApplication}>Customize Application -&gt;</button><button className="secondary-button" onClick={onInterviewPrep}>Prepare for Interview -&gt;</button></div>}
     </section>
   </>
 }
@@ -383,7 +388,7 @@ function GapSection({ eyebrow, subtitle, items }: { eyebrow: string; subtitle: s
     <div className="results-grid resume-result-grid">{items.map((item, index) => <GapCard item={item} key={`${item.requirement}-${index}`} />)}</div>
   </section>
 }
-function SkillsView({ resumeId, jobId, onRoadmap, onSearchJobs, onCustomizeApplication }: { resumeId: number | null; jobId: string | null; onRoadmap: () => void; onSearchJobs: () => void; onCustomizeApplication: () => void }) {
+function SkillsView({ resumeId, jobId, onRoadmap, onSearchJobs, onCustomizeApplication, onInterviewPrep }: { resumeId: number | null; jobId: string | null; onRoadmap: () => void; onSearchJobs: () => void; onCustomizeApplication: () => void; onInterviewPrep: () => void }) {
   const [analysis, setAnalysis] = useState<SkillGapAnalysis | null>(null)
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [error, setError] = useState('')
@@ -459,7 +464,7 @@ function SkillsView({ resumeId, jobId, onRoadmap, onSearchJobs, onCustomizeAppli
           <div><strong>{item.requirement}</strong><p className="muted">{item.recommendation}</p></div>
         </div>)}
       </section>}
-      <div className="detail-actions"><button className="primary-button" onClick={onCustomizeApplication}>Customize Application -&gt;</button><button className="secondary-button" onClick={onRoadmap}>View learning roadmap</button></div>
+      <div className="detail-actions"><button className="primary-button" onClick={onCustomizeApplication}>Customize Application -&gt;</button><button className="secondary-button" onClick={onInterviewPrep}>Prepare for Interview -&gt;</button><button className="secondary-button" onClick={onRoadmap}>View learning roadmap</button></div>
     </>}
   </>
 }
@@ -512,11 +517,12 @@ function BulletComparison({ original, tailored, draft, sourcePath, jobKeywordsUs
 const GENERATION_LABEL: Record<GenerationMode, string> = { llm: 'AI Enhanced', deterministic_fallback: 'Grounded Fallback' }
 const GENERATION_TONE: Record<GenerationMode, string> = { llm: 'strong', deterministic_fallback: 'adequate' }
 
-function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs }: {
+function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs, onInterviewPrep }: {
   resumeId: number | null
   jobId: string | null
   structuredResume: StructuredResume | null
   onSearchJobs: () => void
+  onInterviewPrep: () => void
 }) {
   const [customization, setCustomization] = useState<ApplicationCustomization | null>(null)
   const [versions, setVersions] = useState<ApplicationCustomizationSummary[]>([])
@@ -733,11 +739,203 @@ function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs }: {
         <button className="secondary-button" onClick={() => void download('resume', 'docx')} disabled={exporting !== ''}>{exporting === 'resume-docx' ? 'Exporting...' : 'Export resume (DOCX)'}</button>
         <button className="secondary-button" onClick={() => void download('cover_letter', 'pdf')} disabled={exporting !== ''}>{exporting === 'cover_letter-pdf' ? 'Exporting...' : 'Export cover letter (PDF)'}</button>
         <button className="secondary-button" onClick={() => void download('cover_letter', 'docx')} disabled={exporting !== ''}>{exporting === 'cover_letter-docx' ? 'Exporting...' : 'Export cover letter (DOCX)'}</button>
+        <button className="secondary-button" onClick={onInterviewPrep}>Prepare for Interview -&gt;</button>
       </div>
       {exportError && <div className="error-notice" role="alert">{exportError}</div>}
     </>}
   </>
 }
+
+const CATEGORY_ORDER: QuestionCategory[] = ['technical', 'resume', 'project', 'role', 'hr', 'skill_gap']
+const CATEGORY_LABEL: Record<QuestionCategory, string> = { technical: 'Technical', resume: 'Resume-based', project: 'Project-based', role: 'Role-specific', hr: 'HR / Behavioral', skill_gap: 'Skill-gap-focused' }
+const DIFFICULTY_TONE: Record<Difficulty, string> = { easy: 'adequate', medium: 'needs-improvement', hard: 'missing' }
+const PRIORITY_TONE: Record<RevisionPriority, string> = { high: 'missing', medium: 'needs-improvement', low: 'adequate' }
+
+function InterviewQuestionCard({ question, index, evidenceById, mockState, onStartMock, onAnswerChange, onSubmitMock }: {
+  question: InterviewQuestion
+  index: number
+  evidenceById: Record<string, EvidenceRecord>
+  mockState: { draft: string; submitting: boolean; error: string; result: MockAnswerEvaluation | null } | undefined
+  onStartMock: (index: number) => void
+  onAnswerChange: (index: number, value: string) => void
+  onSubmitMock: (index: number) => void
+}) {
+  return <details className="card result-card interview-question-card">
+    <summary><span className={`skill-status ${DIFFICULTY_TONE[question.difficulty]}`}>{question.difficulty}</span> {question.question}</summary>
+    <div className="mini-gap"><span className="muted">Why this is asked</span></div>
+    <p className="muted">{question.why_asked}</p>
+    <div className="mini-gap"><span className="muted">What the interviewer is testing</span></div>
+    <p className="muted">{question.what_interviewer_is_testing}</p>
+    <div className="mini-gap"><span className="muted">How to prepare</span></div>
+    <p className="result-bullet">{question.preparation_guidance}</p>
+    {question.topics_to_review.length > 0 && <div className="chip-list">{question.topics_to_review.map((topic) => <span className="skill-chip" key={topic}>{topic}</span>)}</div>}
+    {question.source_requirements.length > 0 && <div className="tag-row">{question.source_requirements.map((req) => <span key={req}>{req}</span>)}</div>}
+    <ProvenanceDetails evidenceIds={question.source_evidence_ids} evidenceById={evidenceById} />
+    <div className="mock-interview-block">
+      {mockState === undefined
+        ? <button className="text-button" onClick={() => onStartMock(index)}>Practice this question -&gt;</button>
+        : <>
+          <textarea className="cover-letter-editor" value={mockState.draft} onChange={(event) => onAnswerChange(index, event.target.value)} rows={4} placeholder="Type your answer..." />
+          <button className="secondary-button" onClick={() => onSubmitMock(index)} disabled={mockState.submitting || !mockState.draft.trim()}>{mockState.submitting ? 'Evaluating...' : 'Submit answer for feedback'}</button>
+          {mockState.error && <div className="error-notice" role="alert">{mockState.error}</div>}
+          {mockState.result && <div className="mini-gap-block">
+            <span className={`skill-status ${GENERATION_TONE[mockState.result.generation.mode]}`}>{GENERATION_LABEL[mockState.result.generation.mode]}</span>
+            <p className="result-bullet">{mockState.result.grounded_feedback}</p>
+            <p className="muted">Suggested structure: {mockState.result.suggested_structure}</p>
+            {mockState.result.strengths.length > 0 && <p className="result-bullet">Strengths: {mockState.result.strengths.join(' ')}</p>}
+            {mockState.result.improvements.length > 0 && <p className="result-bullet">To improve: {mockState.result.improvements.join(' ')}</p>}
+            {mockState.result.missing_points.length > 0 && <p className="result-bullet">Consider addressing: {mockState.result.missing_points.join(', ')}</p>}
+          </div>}
+        </>}
+    </div>
+  </details>
+}
+
+function InterviewPrepView({ resumeId, jobId, structuredResume, onSearchJobs }: {
+  resumeId: number | null
+  jobId: string | null
+  structuredResume: StructuredResume | null
+  onSearchJobs: () => void
+}) {
+  const [prep, setPrep] = useState<InterviewPreparation | null>(null)
+  const [versions, setVersions] = useState<InterviewPreparationSummary[]>([])
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [error, setError] = useState('')
+  const [mockAnswers, setMockAnswers] = useState<Record<number, { draft: string; submitting: boolean; error: string; result: MockAnswerEvaluation | null }>>({})
+
+  useEffect(() => {
+    let cancelled = false
+    setPrep(null); setVersions([]); setError(''); setStatus('idle'); setMockAnswers({})
+    if (resumeId === null || jobId === null) return
+    void listInterviewPreparations(resumeId, jobId).then(async (list) => {
+      if (cancelled) return
+      setVersions(list)
+      const latest = list[0]
+      if (!latest) return
+      const full = await getInterviewPreparation(resumeId, latest.id)
+      if (!cancelled && full) setPrep(full)
+    }).catch((reason: unknown) => { if (!cancelled) setError(reason instanceof Error ? reason.message : 'We could not load interview preparation.') })
+    return () => { cancelled = true }
+  }, [resumeId, jobId])
+
+  const generate = async () => {
+    if (resumeId === null || jobId === null) return
+    setStatus('loading'); setError(''); setMockAnswers({})
+    try {
+      const result = await generateInterviewPreparation(resumeId, jobId)
+      setPrep(result)
+      setVersions(await listInterviewPreparations(resumeId, jobId))
+      setStatus('idle')
+    } catch (err: unknown) {
+      setStatus('error')
+      setError(err instanceof Error ? err.message : 'We could not generate interview preparation for this resume and internship.')
+    }
+  }
+
+  const regenerate = async () => {
+    if (resumeId === null || prep === null) return
+    setStatus('loading'); setError(''); setMockAnswers({})
+    try {
+      const result = await regenerateInterviewPreparation(resumeId, prep.id)
+      setPrep(result)
+      setVersions(await listInterviewPreparations(resumeId, prep.job_id))
+      setStatus('idle')
+    } catch (err: unknown) {
+      setStatus('error')
+      setError(err instanceof Error ? err.message : 'We could not regenerate interview preparation.')
+    }
+  }
+
+  const selectVersion = async (id: number) => {
+    if (resumeId === null) return
+    const full = await getInterviewPreparation(resumeId, id)
+    if (full) { setPrep(full); setMockAnswers({}) }
+  }
+
+  const startMock = (index: number) => setMockAnswers((current) => ({ ...current, [index]: current[index] ?? { draft: '', submitting: false, error: '', result: null } }))
+  const changeMockAnswer = (index: number, value: string) => setMockAnswers((current) => ({ ...current, [index]: { ...(current[index] ?? { draft: '', submitting: false, error: '', result: null }), draft: value } }))
+  const submitMock = async (index: number) => {
+    if (resumeId === null || prep === null) return
+    const entry = mockAnswers[index]
+    if (!entry || !entry.draft.trim()) return
+    setMockAnswers((current) => ({ ...current, [index]: { ...entry, submitting: true, error: '' } }))
+    try {
+      const result = await submitMockAnswer(resumeId, prep.id, index, entry.draft.trim())
+      setMockAnswers((current) => ({ ...current, [index]: { ...entry, submitting: false, result } }))
+    } catch (err: unknown) {
+      setMockAnswers((current) => ({ ...current, [index]: { ...entry, submitting: false, error: err instanceof Error ? err.message : 'We could not evaluate this answer.' } }))
+    }
+  }
+
+  if (resumeId === null) return <><PageHeading eyebrow="INTERVIEW PREPARATION" title="Prepare for your interview." lede="Upload and process your resume before preparing for an interview." /><div className="architecture-note">Upload and process your resume before preparing for an interview.</div></>
+  if (jobId === null) return <><PageHeading eyebrow="INTERVIEW PREPARATION" title="Prepare for your interview." lede="Select an internship to prepare for its interview." action={<button className="primary-button" onClick={onSearchJobs}>Search internships -&gt;</button>} /><div className="architecture-note">Open a job's details, skill gap analysis, or customized application and choose "Prepare for Interview" to get started.</div></>
+
+  const evidenceById: Record<string, EvidenceRecord> = {}
+  if (prep) for (const record of prep.evidence) evidenceById[record.evidence_id] = record
+  const structuredWarnings = structuredResume?.data.parser_warnings ?? []
+
+  return <>
+    <PageHeading
+      eyebrow="INTERVIEW PREPARATION"
+      title={prep ? `Preparing for ${prep.job_title}` : 'Generate your interview preparation.'}
+      lede={prep ? `${prep.company} · version ${prep.version}${prep.stale ? ' · your resume has changed since this was generated' : ''}` : 'Categorized questions, preparation guidance and a revision plan grounded in your actual resume, profile and skill gaps.'}
+      action={prep
+        ? <button className="secondary-button" onClick={() => void regenerate()} disabled={status === 'loading'}>{status === 'loading' ? 'Regenerating...' : 'Regenerate ->'}</button>
+        : <button className="primary-button" onClick={() => void generate()} disabled={status === 'loading'}>{status === 'loading' ? 'Generating...' : 'Generate interview preparation ->'}</button>}
+    />
+    {status === 'loading' && <p className="muted">{prep ? 'Regenerating your interview preparation...' : 'Generating your interview preparation...'}</p>}
+    {status === 'error' && <div className="error-notice" role="alert">{error}</div>}
+    {structuredWarnings.length > 0 && <div className="architecture-note" role="status">Your resume was processed with parsing warnings — double-check resume-based questions below against your actual resume.</div>}
+
+    {versions.length > 1 && <div className="tag-row">{versions.map((item) => <span key={item.id}><button className={`text-button ${prep?.id === item.id ? 'active' : ''}`} onClick={() => void selectVersion(item.id)}>v{item.version} · {GENERATION_LABEL[item.generation_mode]}{item.stale ? ' (stale)' : ''}</button></span>)}</div>}
+
+    {prep && <>
+      <div className="mini-gap">
+        <span className={`skill-status ${GENERATION_TONE[prep.generation.mode]}`}>{GENERATION_LABEL[prep.generation.mode]}</span>
+        <span className="muted">
+          {prep.generation.mode === 'llm'
+            ? `Refined by ${prep.generation.provider ?? 'an LLM'}${prep.generation.model ? ` (${prep.generation.model})` : ''}, validated against your evidence.`
+            : prep.generation.attempted_llm
+              ? 'AI enhancement unavailable or failed validation. A grounded fallback version is shown.'
+              : 'No LLM provider is configured — this is the deterministic, template-based version.'}
+        </span>
+      </div>
+
+      {prep.parser_warning_notice && <div className="architecture-note" role="status">{prep.parser_warning_notice}</div>}
+      {prep.validation.passed
+        ? <div className="success-notice" role="status">Grounding check passed — every question traces to your actual resume/profile, the real job requirements, or your Skill Gap Analysis.</div>
+        : <div className="error-notice" role="alert"><strong>Grounding warnings found.</strong><ul>{prep.validation.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul></div>}
+
+      <section className="card comparison-card">
+        <div className="card-heading"><div><p className="eyebrow">PREPARATION SUMMARY</p><h3>Overview</h3></div></div>
+        <p className="muted">{prep.preparation_summary}</p>
+      </section>
+
+      {CATEGORY_ORDER.map((category) => {
+        const questions = prep.questions.map((question, index) => ({ question, index })).filter((item) => item.question.category === category)
+        if (questions.length === 0) return null
+        return <section className="card comparison-card" key={category}>
+          <div className="card-heading"><div><p className="eyebrow">{CATEGORY_LABEL[category]}</p><h3>{questions.length} question{questions.length === 1 ? '' : 's'}</h3></div></div>
+          <div className="results-grid resume-result-grid">
+            {questions.map(({ question, index }) => <InterviewQuestionCard
+              key={index} question={question} index={index} evidenceById={evidenceById}
+              mockState={mockAnswers[index]} onStartMock={startMock} onAnswerChange={changeMockAnswer} onSubmitMock={(i) => void submitMock(i)}
+            />)}
+          </div>
+        </section>
+      })}
+
+      {prep.revision_plan.length > 0 && <section className="card comparison-card">
+        <div className="card-heading"><div><p className="eyebrow">REVISION PLAN</p><h3>Ordered by priority</h3></div></div>
+        {prep.revision_plan.map((item, index) => <div className="recommendation-line" key={`${item.topic}-${index}`}>
+          <span className={`skill-status ${PRIORITY_TONE[item.priority]}`}>{item.priority}</span>
+          <div><strong>{item.topic}</strong><p className="muted">{item.reason}</p><p className="result-bullet">{item.suggested_revision}</p><p className="muted">Suggested focus: {item.estimated_focus}</p></div>
+        </div>)}
+      </section>}
+    </>}
+  </>
+}
+
 function RoadmapView({ resumeId }: { resumeId: number | null }) {
   const [matches, setMatches] = useState<JobMatchResult[] | null>(null)
   useEffect(() => {
