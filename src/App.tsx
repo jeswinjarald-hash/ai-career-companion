@@ -17,6 +17,10 @@ import {
   type Difficulty, type InterviewPreparation, type InterviewPreparationSummary, type InterviewQuestion,
   type MockAnswerEvaluation, type QuestionCategory, type RevisionPriority,
 } from './services/interviewPrepService'
+import {
+  createConversation, deleteConversation, getConversation, listConversations, sendMessage,
+  type ActionType, type ConversationDetail, type ConversationSummary, type MessageOut, type SuggestedAction,
+} from './services/assistantService'
 
 type ResumeLifecycle = 'no_resume' | 'uploading' | 'processing' | 'processed' | 'failed'
 
@@ -24,6 +28,11 @@ type View = 'dashboard' | 'profile' | 'resume' | 'resume-results' | 'careers' | 
 const nav = [{ id: 'dashboard' as View, label: 'Dashboard', note: 'Your next best action' }, { id: 'profile' as View, label: 'Career Profile', note: 'Your structured context' }, { id: 'resume' as View, label: 'Resume Analyzer', note: 'Upload and feedback' }, { id: 'careers' as View, label: 'Career Recommendations', note: 'Paths that fit you' }, { id: 'skills' as View, label: 'Skill Gap Analysis', note: 'Compare your skills' }, { id: 'roadmap' as View, label: 'Learning Roadmap', note: 'Your learning path' }, { id: 'assistant' as View, label: 'AI Career Assistant', note: 'Contextual guidance' }, { id: 'progress' as View, label: 'Progress Tracker', note: 'Your development' }]
 const viewFromPath = (): View => { const path = window.location.pathname; if (path.startsWith('/jobs/')) return 'job-details'; if (path === '/resume/results') return 'resume-results'; if (path === '/customize') return 'customize'; if (path === '/interview-prep') return 'interview-prep'; const match = nav.find((item) => `/${item.id}` === path); return match?.id ?? (path === '/settings' ? 'settings' : 'dashboard') }
 const greetingForTime = () => { const hour = new Date().getHours(); return hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening' }
+const ACTION_VIEW: Partial<Record<ActionType, View>> = {
+  upload_resume: 'resume', process_resume: 'resume', view_resume: 'resume-results',
+  view_recommendations: 'careers', compare_jobs: 'careers', analyze_skill_gap: 'skills',
+  customize_application: 'customize', prepare_interview: 'interview-prep', view_learning_plan: 'roadmap',
+}
 
 type AuthStatus = 'checking' | 'authenticated' | 'unauthenticated'
 
@@ -92,6 +101,12 @@ function App() {
   // go('job-details'), which would otherwise read selectedJobId from this render's
   // closure before the setSelectedJobId update above has been applied.
   const openJobDetails = (jobId: string) => { setSelectedJobId(jobId); setView('job-details'); setNotice(''); window.history.pushState({}, '', `/jobs/${jobId}`) }
+  const handleAssistantAction = (action: SuggestedAction) => {
+    if (action.action === 'view_job' && action.job_id) { openJobDetails(action.job_id); return }
+    if (action.job_id) setSelectedJobId(action.job_id)
+    const nextView = ACTION_VIEW[action.action]
+    if (nextView) go(nextView)
+  }
   const chooseFile = (file: File | undefined) => { if (!file) return; const extension = file.name.toLowerCase().split('.').pop(); if (!['pdf', 'docx'].includes(extension ?? '')) { setNotice('Please choose a PDF or DOCX resume.'); return }; setResumeFile(file); setResumeLifecycle('no_resume'); setResumeRecord(null); setStructuredResume(null); setNotice('') }
   const analyze = async () => {
     if (!resumeFile) return
@@ -150,7 +165,7 @@ function App() {
     }
   }
   const activeResumeId = resumeLifecycle === 'processed' ? resumeRecord?.id ?? null : null
-  const content = view === 'profile' ? <ProfileView profile={activeProfile} onProfileSaved={setActiveProfile} /> : view === 'resume' ? <RealResumeView file={resumeFile} lifecycle={resumeLifecycle} restoring={resumeRestoring} notice={notice} resumeRecord={resumeRecord} onDrop={(event) => { event.preventDefault(); chooseFile(event.dataTransfer.files[0]) }} onFileChange={(event) => chooseFile(event.target.files?.[0])} onAnalyze={analyze} onReprocess={reprocessResume} /> : view === 'resume-results' ? <RealResumeResults structuredResume={structuredResume} onNavigate={go} /> : view === 'careers' ? <CareersView resumeId={activeResumeId} onOpenJob={openJobDetails} /> : view === 'job-details' ? <JobDetailsView jobId={selectedJobId} resumeId={activeResumeId} onBack={() => go('careers')} onAnalyzeSkillGap={() => go('skills')} onCustomizeApplication={() => go('customize')} onInterviewPrep={() => go('interview-prep')} /> : view === 'skills' ? <SkillsView resumeId={activeResumeId} jobId={selectedJobId} onRoadmap={() => go('roadmap')} onSearchJobs={() => go('careers')} onCustomizeApplication={() => go('customize')} onInterviewPrep={() => go('interview-prep')} /> : view === 'customize' ? <CustomizeView resumeId={activeResumeId} jobId={selectedJobId} structuredResume={structuredResume} onSearchJobs={() => go('careers')} onInterviewPrep={() => go('interview-prep')} /> : view === 'interview-prep' ? <InterviewPrepView resumeId={activeResumeId} jobId={selectedJobId} structuredResume={structuredResume} onSearchJobs={() => go('careers')} /> : view === 'roadmap' ? <RoadmapView resumeId={activeResumeId} /> : view === 'assistant' ? <AssistantView profile={activeProfile} resumeLifecycle={resumeLifecycle} structuredResume={structuredResume} onNavigate={go} /> : view === 'progress' ? <ProgressView profile={activeProfile} resumeLifecycle={resumeLifecycle} structuredResume={structuredResume} /> : view === 'settings' ? <SettingsView /> : <DashboardView currentUser={currentUser} profile={activeProfile} resumeLifecycle={resumeLifecycle} resumeRestoring={resumeRestoring} resumeRecord={resumeRecord} structuredResume={structuredResume} notice={notice} onNavigate={go} />
+  const content = view === 'profile' ? <ProfileView profile={activeProfile} onProfileSaved={setActiveProfile} /> : view === 'resume' ? <RealResumeView file={resumeFile} lifecycle={resumeLifecycle} restoring={resumeRestoring} notice={notice} resumeRecord={resumeRecord} onDrop={(event) => { event.preventDefault(); chooseFile(event.dataTransfer.files[0]) }} onFileChange={(event) => chooseFile(event.target.files?.[0])} onAnalyze={analyze} onReprocess={reprocessResume} /> : view === 'resume-results' ? <RealResumeResults structuredResume={structuredResume} onNavigate={go} /> : view === 'careers' ? <CareersView resumeId={activeResumeId} onOpenJob={openJobDetails} /> : view === 'job-details' ? <JobDetailsView jobId={selectedJobId} resumeId={activeResumeId} onBack={() => go('careers')} onAnalyzeSkillGap={() => go('skills')} onCustomizeApplication={() => go('customize')} onInterviewPrep={() => go('interview-prep')} /> : view === 'skills' ? <SkillsView resumeId={activeResumeId} jobId={selectedJobId} onRoadmap={() => go('roadmap')} onSearchJobs={() => go('careers')} onCustomizeApplication={() => go('customize')} onInterviewPrep={() => go('interview-prep')} /> : view === 'customize' ? <CustomizeView resumeId={activeResumeId} jobId={selectedJobId} structuredResume={structuredResume} onSearchJobs={() => go('careers')} onInterviewPrep={() => go('interview-prep')} /> : view === 'interview-prep' ? <InterviewPrepView resumeId={activeResumeId} jobId={selectedJobId} structuredResume={structuredResume} onSearchJobs={() => go('careers')} /> : view === 'roadmap' ? <RoadmapView resumeId={activeResumeId} /> : view === 'assistant' ? <AssistantView resumeId={activeResumeId} jobId={selectedJobId} onAction={handleAssistantAction} /> : view === 'progress' ? <ProgressView profile={activeProfile} resumeLifecycle={resumeLifecycle} structuredResume={structuredResume} /> : view === 'settings' ? <SettingsView /> : <DashboardView currentUser={currentUser} profile={activeProfile} resumeLifecycle={resumeLifecycle} resumeRestoring={resumeRestoring} resumeRecord={resumeRecord} structuredResume={structuredResume} notice={notice} onNavigate={go} />
   if (authStatus === 'checking') return <main className="auth-page"><section className="auth-panel"><div className="auth-brand"><span>AC</span><div><strong>AI Career</strong><small>Companion</small></div></div><p className="muted">Loading your workspace...</p></section></main>
   if (authStatus === 'unauthenticated') { const path = window.location.pathname; if (path === '/signup') return <SignupView onAuthenticated={handleAuthenticated} />; if (path === '/onboarding') return <OnboardingView />; return <LoginView onAuthenticated={handleAuthenticated} /> }
   const currentLabel = nav.find((item) => item.id === view)?.label ?? (view === 'job-details' ? 'Job Details' : view === 'resume-results' ? 'Resume Results' : view === 'customize' ? 'Customize Application' : view === 'interview-prep' ? 'Interview Preparation' : 'Settings')
@@ -949,17 +964,140 @@ function RoadmapView({ resumeId }: { resumeId: number | null }) {
     {top && top.missing_required_skills.length > 0 && <section className="card comparison-card"><div className="card-heading"><div><p className="eyebrow">CURRENT SKILL GAP CONTEXT</p><h3>From your top job match, for reference</h3></div></div><div className="chip-list">{top.missing_required_skills.map((skill) => <span className="warning-chip" key={skill}>{skill}</span>)}</div></section>}
   </>
 }
-function AssistantView({ profile, resumeLifecycle, structuredResume, onNavigate }: { profile: CandidateProfile | null; resumeLifecycle: ResumeLifecycle; structuredResume: StructuredResume | null; onNavigate: (view: View) => void }) {
-  const [messages, setMessages] = useState<{ from: 'user' | 'assistant'; text: string }[]>([])
+const STARTER_PROMPTS = [
+  'Which internships fit my resume?', 'What skills am I missing?', 'Why does this job fit me?',
+  'What should I learn next?', 'Help me customize my application.', 'Prepare me for an interview.',
+]
+
+function AssistantMessageBubble({ message, onAction }: { message: MessageOut; onAction: (action: SuggestedAction) => void }) {
+  return <div className={`message ${message.role === 'user' ? 'user' : 'assistant'}`}>
+    <span>{message.role === 'user' ? 'You' : 'AC'}</span>
+    <div>
+      {message.role === 'assistant' && message.generation && <span className={`skill-status ${GENERATION_TONE[message.generation.mode]} message-badge`}>{GENERATION_LABEL[message.generation.mode]}</span>}
+      <p>{message.content}</p>
+      {message.suggested_actions.length > 0 && <div className="message-actions">{message.suggested_actions.map((action, index) => <button key={`${action.action}-${index}`} onClick={() => onAction(action)}>{action.label} -&gt;</button>)}</div>}
+    </div>
+  </div>
+}
+
+function AssistantView({ resumeId, jobId, onAction }: { resumeId: number | null; jobId: string | null; onAction: (action: SuggestedAction) => void }) {
+  const [conversations, setConversations] = useState<ConversationSummary[]>([])
+  const [active, setActive] = useState<ConversationDetail | null>(null)
+  const [listStatus, setListStatus] = useState<'idle' | 'loading' | 'error'>('loading')
   const [input, setInput] = useState('')
-  const NOT_AVAILABLE = 'AI guidance is planned for a later milestone. This assistant cannot answer yet.'
-  const ask = (prompt: string) => setMessages((items) => [...items, { from: 'user', text: prompt }, { from: 'assistant', text: NOT_AVAILABLE }])
-  const contextLine = resumeLifecycle === 'processed' && structuredResume
-    ? `${structuredResume.data.skills.length} skills extracted from your latest resume`
-    : profile && profile.target_roles.length > 0
-      ? `Target roles: ${profile.target_roles.join(', ')}`
-      : 'No resume or profile context available yet'
-  return <><PageHeading eyebrow="AI CAREER ASSISTANT" title="Guidance grounded in your profile." lede="Ask about your resume, target role, skill gaps or learning path." /><div className="assistant-layout"><section className="card assistant-panel"><div className="assistant-context"><span className="mini-icon">AI</span><div><strong>Career context</strong><small>{contextLine}</small></div></div><div className="message-list">{messages.length === 0 && <div className="assistant-empty"><span className="assistant-mark">AC</span><h3>{NOT_AVAILABLE}</h3></div>}{messages.map((message, index) => <div className={`message ${message.from}`} key={`${message.text}-${index}`}><span>{message.from === 'user' ? 'You' : 'AC'}</span><p>{message.text}</p></div>)}</div><form className="assistant-input" onSubmit={(event) => { event.preventDefault(); if (input.trim()) { ask(input); setInput('') } }}><input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask about your next step..." aria-label="Ask the career assistant" /><button className="primary-button">Send</button></form></section><aside className="assistant-quick card"><p className="eyebrow">QUICK QUESTIONS</p>{['Analyze my career profile', 'What should I learn next?', 'Explain my skill gaps', 'Explain my resume feedback'].map((prompt) => <button key={prompt} onClick={() => ask(prompt)}>{prompt}<span>-&gt;</span></button>)}<div className="aside-divider" /><p className="eyebrow">RELATED VIEWS</p><button onClick={() => onNavigate('skills')}>View skill gap <span>-&gt;</span></button><button onClick={() => onNavigate('roadmap')}>Open roadmap <span>-&gt;</span></button></aside></div></>
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
+  const [activeJobTitle, setActiveJobTitle] = useState('')
+
+  const refreshList = async () => {
+    const list = await listConversations()
+    setConversations(list)
+    return list
+  }
+
+  useEffect(() => {
+    let cancelled = false
+    setListStatus('loading')
+    refreshList().then(async (list) => {
+      if (cancelled) return
+      if (list.length > 0) {
+        const detail = await getConversation(list[0].id)
+        if (!cancelled) setActive(detail)
+      }
+      setListStatus('idle')
+    }).catch((reason: unknown) => { if (!cancelled) { setListStatus('error'); setError(reason instanceof Error ? reason.message : 'We could not load your conversations.') } })
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    setActiveJobTitle('')
+    if (!active?.active_job_id) return
+    void getJobDetails(active.active_job_id).then((job) => { if (!cancelled) setActiveJobTitle(job.job_title) }).catch(() => {})
+    return () => { cancelled = true }
+  }, [active?.active_job_id])
+
+  const selectConversation = async (id: number) => {
+    const detail = await getConversation(id)
+    setActive(detail)
+  }
+
+  const startNewConversation = async () => {
+    const created = await createConversation(undefined, jobId ?? undefined)
+    setActive(created)
+    await refreshList()
+  }
+
+  const removeConversation = async (id: number) => {
+    await deleteConversation(id)
+    const list = await refreshList()
+    if (active?.id === id) setActive(list.length > 0 ? await getConversation(list[0].id) : null)
+  }
+
+  const send = async (text: string) => {
+    const trimmed = text.trim()
+    if (!trimmed || sending) return
+    setSending(true); setError(''); setInput('')
+    try {
+      let conversation = active
+      if (conversation === null) {
+        conversation = await createConversation(undefined, jobId ?? undefined)
+        setActive(conversation)
+      }
+      const response = await sendMessage(conversation.id, trimmed, jobId ?? undefined)
+      const updated = await getConversation(conversation.id)
+      setActive(updated)
+      void response
+      await refreshList()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'We could not send your message. Please try again.')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const contextLine = `${active?.active_job_id ? `Job: ${activeJobTitle || active.active_job_id}` : 'No internship selected yet'} · ${resumeId !== null ? 'Resume connected' : 'No processed resume yet'}`
+
+  return <>
+    <PageHeading eyebrow="AI CAREER ASSISTANT" title="Guidance grounded in your profile." lede="Ask about your recommendations, skill gaps, resume, cover letter, or interview preparation." />
+    <div className="assistant-layout">
+      <section className="card assistant-panel">
+        <div className="assistant-context"><span className="mini-icon">AI</span><div><strong>Career context</strong><small>{contextLine}</small></div></div>
+        <div className="message-list">
+          {active === null || active.messages.length === 0
+            ? <div className="assistant-empty">
+                <span className="assistant-mark">AC</span>
+                <h3>Ask me anything about your career search.</h3>
+                <p>I use your real resume, skill gaps, and job data — never invented facts.</p>
+                <div className="starter-prompts">{STARTER_PROMPTS.map((prompt) => <button key={prompt} onClick={() => void send(prompt)} disabled={sending}>{prompt}</button>)}</div>
+              </div>
+            : active.messages.map((message) => <AssistantMessageBubble key={message.id} message={message} onAction={onAction} />)}
+          {sending && <p className="muted">Thinking...</p>}
+        </div>
+        {error && <div className="error-notice" role="alert">{error}</div>}
+        <form className="assistant-input" onSubmit={(event) => { event.preventDefault(); void send(input) }}>
+          <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask about your next step..." aria-label="Ask the career assistant" disabled={sending} />
+          <button className="primary-button" disabled={sending || !input.trim()}>{sending ? 'Sending...' : 'Send'}</button>
+        </form>
+      </section>
+      <aside className="assistant-quick card">
+        <p className="eyebrow">CONVERSATIONS</p>
+        <button className="secondary-button full-button" onClick={() => void startNewConversation()}>New conversation</button>
+        {listStatus === 'loading' && <p className="muted">Loading...</p>}
+        <div className="conversation-list">
+          {conversations.map((conversation) => <button key={conversation.id} className={`conversation-row ${active?.id === conversation.id ? 'active' : ''}`} onClick={() => void selectConversation(conversation.id)}>
+            <strong>{conversation.title || 'New conversation'}</strong>
+            <small>{conversation.message_count} messages · {conversation.active_job_id ?? 'no job yet'}</small>
+          </button>)}
+          {conversations.length === 0 && listStatus === 'idle' && <p className="muted">No conversations yet.</p>}
+        </div>
+        {active !== null && <button className="text-button" onClick={() => void removeConversation(active.id)}>Delete this conversation</button>}
+        <div className="aside-divider" />
+        <p className="eyebrow">TRY ASKING</p>
+        {STARTER_PROMPTS.slice(0, 4).map((prompt) => <button key={prompt} onClick={() => void send(prompt)}>{prompt}<span>-&gt;</span></button>)}
+      </aside>
+    </div>
+  </>
 }
 function ProgressView({ profile, resumeLifecycle, structuredResume }: { profile: CandidateProfile | null; resumeLifecycle: ResumeLifecycle; structuredResume: StructuredResume | null }) {
   const completionFields = profile ? [profile.full_name, profile.email, profile.education, profile.degree, profile.specialization, profile.experience_level, profile.career_interests.length, profile.target_roles.length, profile.skills.length, profile.career_goals] : []

@@ -14,6 +14,7 @@ from app.api.auth import router as auth_router
 from app.api.skill_gap import router as skill_gap_router
 from app.api.customization import router as customization_router
 from app.api.interview_prep import router as interview_prep_router
+from app.api.assistant import router as assistant_router
 from app.core.config import get_settings
 from app.core.database import init_db
 
@@ -101,3 +102,4 @@ app.include_router(auth_router)
 app.include_router(skill_gap_router)
 app.include_router(customization_router)
 app.include_router(interview_prep_router)
+app.include_router(assistant_router)

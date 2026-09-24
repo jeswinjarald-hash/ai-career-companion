@@ -53,6 +53,25 @@ def check_fabrication_patterns(sentence: str) -> str | None:
     return None
 
 
+def check_fabrication_patterns_excluding_metrics(sentence: str) -> str | None:
+    """Same leadership/years-of-experience checks as `check_fabrication_patterns`,
+    but never flags a bare numeric percentage. Milestone 3.4's Career Assistant
+    legitimately states real, already-computed scores in its responses (a Milestone
+    3.1 skill-gap readiness percentage, a Milestone 2 job-match percentage) — unlike
+    M3.2's resume/cover-letter bullets, where any percentage is inherently suspect
+    unless byte-traceable to evidence, a percentage the assistant states is one it
+    was explicitly given in `facts` (the LLM is only ever rewording an already-
+    computed baseline answer, never composing a claim from scratch), so the metric
+    check would otherwise reject entirely legitimate, grounded output. An invented
+    leadership/team-size or years-of-experience claim is still never legitimate here.
+    """
+    if _LEADERSHIP_PATTERN.search(sentence):
+        return "contains an unverified leadership/team-size claim"
+    if _YEARS_EXPERIENCE_PATTERN.search(sentence):
+        return "contains an unverified years-of-experience claim"
+    return None
+
+
 def check_fabrication(sentence: str, unsupported_terms: set[str]) -> str | None:
     """Scans arbitrary generated text (deterministic-template or LLM-produced) for an
     unsupported keyword or a fabricated metric/leadership/years-of-experience claim.

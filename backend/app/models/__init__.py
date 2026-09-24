@@ -8,5 +8,6 @@ from app.models.user import User
 from app.models.auth_session import AuthSession
 from app.models.career_state import ApplicationCustomization, InterviewPreparation, LearningRoadmap, RoadmapItem, SelectedJob, SkillGap
 from app.models.progress_event import ProgressEvent
+from app.models.conversation import Conversation, ConversationMessage
 
-__all__ = ["CandidateProfile", "Resume", "ResumeExtraction", "ResumeSection", "StructuredResume", "CandidateContext", "User", "AuthSession", "SelectedJob", "SkillGap", "LearningRoadmap", "RoadmapItem", "ProgressEvent", "ApplicationCustomization", "InterviewPreparation"]
+__all__ = ["CandidateProfile", "Resume", "ResumeExtraction", "ResumeSection", "StructuredResume", "CandidateContext", "User", "AuthSession", "SelectedJob", "SkillGap", "LearningRoadmap", "RoadmapItem", "ProgressEvent", "ApplicationCustomization", "InterviewPreparation", "Conversation", "ConversationMessage"]
