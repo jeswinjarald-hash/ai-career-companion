@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -15,13 +16,35 @@ from app.api.customization import router as customization_router
 from app.core.config import get_settings
 from app.core.database import init_db
 
-
+logger = logging.getLogger(__name__)
 settings = get_settings()
+
+
+def _log_llm_config_status() -> None:
+    # Logs only booleans/identifiers — LLM_API_KEY's value is never logged, printed,
+    # or otherwise surfaced here, only whether one is present. Also printed directly
+    # (not just logged): this app has no global `logging.basicConfig`/handler setup,
+    # so a plain `logger.info` call — like every other one already in this codebase —
+    # is silently dropped by Python's default root-logger level (WARNING) unless the
+    # deployment environment separately configures logging; `print` guarantees this
+    # specific startup confirmation is actually visible without requiring that.
+    if settings.llm_provider == "none":
+        message = "llm_config_status provider=none (deterministic-only pipeline)"
+    else:
+        message = (
+            f"llm_config_status provider={settings.llm_provider} "
+            f"model_configured={bool(settings.llm_model)} "
+            f"base_url_configured={bool(settings.llm_base_url)} "
+            f"api_key_present={bool(settings.llm_api_key)}"
+        )
+    logger.info(message)
+    print(message, flush=True)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     init_db()
+    _log_llm_config_status()
     yield
 
 app = FastAPI(

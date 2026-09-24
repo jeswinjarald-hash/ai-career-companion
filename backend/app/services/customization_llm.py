@@ -33,14 +33,33 @@ restricted "allowed_evidence" list — each item has a stable evidence_id and re
 directly from the candidate's own resume/profile.
 
 Rules you must follow exactly:
-- You may reword, clarify, reorder, shorten, and prioritize bullets for relevance to the job.
+- You may reword, clarify, reorder, shorten, and prioritize bullets for relevance to the job. A \
+good rewrite genuinely improves clarity and professional tone while preserving every fact exactly \
+— for example "Built backend REST APIs using FastAPI and integrated structured resume processing." \
+may become "Developed FastAPI-based REST APIs for an AI career platform, supporting structured \
+resume processing and backend application workflows." — same facts, more polished, nothing added.
 - You may emphasize supported_skills and job-relevant terms already present in allowed_evidence.
-- You must NEVER invent or imply any skill, technology, tool, metric/percentage, year of \
-experience, team size, leadership role, company name, job title, date, certification, or \
-achievement that is not explicitly present in the allowed_evidence text you were given.
+- You must NEVER invent or imply any skill, technology, tool, metric/percentage, year or duration \
+of experience, team size, leadership role, production/business impact, company name, job title, \
+date, certification, or achievement that is not explicitly present in the allowed_evidence text \
+you were given. Concretely, never add things like "improved performance by 40%", "using AWS", \
+"using Docker", "led a team of 5", or "3 years of experience" unless that exact fact is already in \
+allowed_evidence.
 - You must NEVER present a skill from unsupported_skills_do_not_use as something the candidate has.
 - Every rewritten bullet and every cover-letter paragraph that makes a factual claim must cite the \
 evidence_id(s) (from allowed_evidence only) that support it.
+- "summary" must be a concise, professional 2-3 sentence paragraph — state the candidate's field of \
+study (degree/specialization only, never the institution name, graduation year, CGPA, or \
+coursework) and their most job-relevant supported skills, optionally naming one relevant project. \
+Do not copy a full raw education or project line verbatim into the summary.
+- "cover_letter_paragraphs" must read as one natural, professional cover letter, not a list of \
+disconnected facts, targeting roughly 250-400 words total across all paragraphs, structured as: \
+(1) an opening naming the real job title and company, (2) a paragraph on the candidate's current \
+background (education field + top skills, phrased naturally, not copy-pasted), (3) a paragraph on \
+the strongest relevant project/experience evidence, summarized in the candidate's own words rather \
+than the full raw text dumped in, (4) a paragraph connecting the candidate's skills to the role's \
+actual stated focus/responsibilities, and (5) a brief, professional closing. Never invent the \
+recipient's name — use a generic address like "Dear Hiring Team," if a greeting is included.
 - Respond with ONLY a single JSON object, no prose, no markdown code fences, in exactly this shape:
 {
   "summary": "...",
@@ -54,7 +73,8 @@ evidence_id(s) (from allowed_evidence only) that support it.
 }
 - "bullets" must contain exactly one entry per source_path listed in bullets_to_rewrite, using the \
 identical source_path string.
-- "cover_letter_paragraphs" must contain 3 to 6 paragraphs forming one coherent cover letter."""
+- "cover_letter_paragraphs" must contain 4 to 7 entries forming one coherent cover letter of \
+roughly 250-400 words in total."""
 
 
 class LLMBulletRewrite(BaseModel):

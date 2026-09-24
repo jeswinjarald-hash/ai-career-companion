@@ -46,7 +46,7 @@ from app.schemas.customization import (
 )
 from app.schemas.job_posting import JobPosting
 from app.services.cover_letter_service import build_cover_letter
-from app.services.customization_evidence import build_evidence_records, relevance_score
+from app.services.customization_evidence import build_evidence_records, is_category_label, join_terms, relevance_score, short_education_phrase, summarize_clause
 from app.services.customization_keywords import classify_job_keywords, partial_terms, supported_terms, unsupported_terms
 from app.services.customization_llm import LLMRewriteResponse, rewrite_with_llm
 from app.services.customization_validator import build_validation_result, validate_cover_letter, validate_summary
@@ -98,28 +98,29 @@ def _keywords_used(text: str, term_pool: set[str], display: dict[str, str]) -> l
     return sorted({display.get(term, term) for term in found})
 
 
-def _build_summary(profile: CandidateProfile, structured_data: dict, priority_terms: list[str]) -> tuple[str, list[str]]:
-    sources: list[str] = []
-    if profile.degree:
-        education_phrase = f"{profile.degree}{f' ({profile.specialization})' if profile.specialization else ''} student"
-        sources.append("profile.degree")
-        if profile.specialization:
-            sources.append("profile.specialization")
-    else:
-        first_education = next((e for e in structured_data.get("education", []) or [] if isinstance(e, dict) and e.get("raw_text")), None)
-        if first_education is not None:
-            index = (structured_data.get("education") or []).index(first_education)
-            education_phrase = str(first_education["raw_text"]).strip()
-            sources.append(f"structured_resume.education[{index}].raw_text")
+def _build_summary(
+    profile: CandidateProfile, structured_data: dict, priority_terms: list[str], top_project: TailoredProject | None,
+) -> tuple[str, list[str]]:
+    """A concise 2-3 sentence professional summary — never the raw education line
+    (institution/CGPA/coursework), and never every extracted skill dumped in a row.
+    Sentence 1 states education (degree/field only) + the top few job-relevant
+    skills the student actually has. Sentence 2, when a relevant project exists,
+    names it and states its most job-relevant technologies — never the full project
+    description.
+    """
+    education_phrase, sources = short_education_phrase(profile, structured_data)
+
+    sentences = [f"{education_phrase} student with hands-on experience in {join_terms(priority_terms)}." if priority_terms else f"{education_phrase} student."]
+
+    if top_project is not None:
+        project_skills = [kw for kw in top_project.job_keywords_used if normalize_term(kw) in {normalize_term(t) for t in priority_terms}] or top_project.job_keywords_used
+        if project_skills:
+            sentences.append(f"Applied {join_terms(project_skills[:3])} in building {top_project.title}.")
         else:
-            education_phrase = "Student"
+            sentences.append(f"Built {top_project.title} as a hands-on application of these skills.")
+        sources.append(top_project.source_path)
 
-    if not priority_terms:
-        return f"{education_phrase}.", sources
-
-    skills_joined = ", ".join(priority_terms[:-1]) + (f", and {priority_terms[-1]}" if len(priority_terms) > 1 else priority_terms[0])
-    summary = f"{education_phrase} with hands-on experience in {skills_joined}."
-    return summary, sources
+    return " ".join(sentences), sources
 
 
 def _build_tailored_resume(
@@ -134,17 +135,22 @@ def _build_tailored_resume(
 
     # Skills: reorder only — never add a job's missing skill to the list. A stable
     # sort keeps the student's original relative ordering within each relevance tier.
-    original_skills = [str(s) for s in structured_data.get("skills", []) or []]
+    # Category-header labels (e.g. "Programming", "Backend") that M1's intentionally
+    # permissive Skills-section parser can preserve verbatim (see
+    # `customization_evidence.CATEGORY_LABEL_TERMS`) are excluded here — the
+    # unfiltered original list is still visible via the "original order" display,
+    # so nothing about the source resume itself is hidden, only this tailored/
+    # exported view is cleaned up.
+    original_skills = [str(s) for s in structured_data.get("skills", []) or [] if not is_category_label(str(s))]
     ranked_skills = sorted(
         enumerate(original_skills),
         key=lambda pair: (0 if normalize_term(pair[1]) in supported else 1 if normalize_term(pair[1]) in partial else 2, pair[0]),
     )
     skills = [name for _index, name in ranked_skills]
 
-    priority_skill_names = [name for _index, name in ranked_skills if normalize_term(name) in supported][:6]
+    priority_skill_names = [name for _index, name in ranked_skills if normalize_term(name) in supported][:4]
     if not priority_skill_names:
-        priority_skill_names = skills[:4]
-    summary, summary_sources = _build_summary(profile, structured_data, priority_skill_names)
+        priority_skill_names = skills[:3]
 
     education = [
         TailoredEducationEntry(raw_text=str(entry.get("raw_text") or ""), source_path=f"structured_resume.education[{index}].raw_text")
@@ -172,6 +178,8 @@ def _build_tailored_resume(
             relevance_rank=rank,
             job_keywords_used=_keywords_used(raw_text, relevant_pool, display),
         ))
+
+    summary, summary_sources = _build_summary(profile, structured_data, priority_skill_names, projects[0] if projects else None)
 
     def _bullets(key: str) -> list[TailoredBullet]:
         bullets: list[TailoredBullet] = []

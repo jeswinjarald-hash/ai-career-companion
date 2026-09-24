@@ -477,3 +477,77 @@ expected to align these more precisely than this simplistic mock did).
   content is not run back through the fabrication validator (per the explicit
   requirement that a user's own edits are not treated as verified, AI-generated
   evidence — they are the user's own words, shown as such, not silently gated).
+
+## Quality fixes (2026-09-24)
+
+A manual review of real generated output surfaced several polish issues, all fixed
+and regression-tested (`backend/tests/test_customization_quality.py`):
+
+- **Category-label "skills"** — a resume whose Skills section uses bare category
+  headers on their own line ("Programming" / "Backend" / "Databases" / "Web" /
+  "Tools", each followed by a comma-separated list) had those headers preserved
+  as if they were skills themselves. Root cause: M1's `structured_resume.
+  _explicit_skill_items` *intentionally* keeps every unrecognized Skills-section
+  item verbatim (documented, deliberate — see Milestone 3.1's manual-review-fixes
+  section — so a legitimate-but-unrecognized skill like "Frontend Development" is
+  never silently dropped). Rather than weakening that intentional M1 behavior,
+  `customization_evidence.CATEGORY_LABEL_TERMS` / `is_category_label` filters this
+  small, explicitly-named set of category-header words out of M3.2's own tailored/
+  exported skill list and evidence pool only — `structured_resume.data` itself,
+  and the "original order" skill display, are untouched and still show the
+  parser's raw output for transparency.
+- **Professional summary** — previously could copy the full raw education line
+  (institution, graduation year, CGPA, coursework) into the summary.
+  `customization_evidence.short_education_phrase` extracts only the degree/field
+  clause; `_build_summary` now composes a concise 2-3 sentence, role-specific
+  paragraph (education + top supported skills, optionally the top relevant
+  project) rather than a raw data dump. Applied to both the deterministic
+  fallback and the LLM system prompt (which now explicitly instructs the model
+  not to copy raw education/project lines verbatim).
+- **Cover letter** — restructured to opening / current background / strongest
+  relevant evidence / role alignment / closing, targeting roughly 250-400 words.
+  `customization_evidence.summarize_clause` extracts a single grounded clause
+  from raw evidence (skipping a leading "{title} at {company}, {dates}"
+  sentence in favor of the actual work description, and truncating a long
+  clause) — a verbatim shortening, never a paraphrase — so evidence is
+  summarized rather than dumped. A shared `join_terms` helper fixes
+  inconsistent/incorrect comma placement in skill lists ("X and Y" for two
+  items, an Oxford comma for three or more). No recipient name is ever
+  invented ("Dear Hiring Team,"); the candidate's own real name signs the
+  closing.
+- **Bullet rewriting quality** — the LLM system prompt now includes a concrete
+  before/after example of the expected rewrite quality (polished, professional,
+  identical facts) and an explicit list of the specific fabrication patterns
+  that must never be introduced (metrics, AWS, Docker, leadership, team size,
+  years of experience) unless literally present in the offered evidence.
+
+**Live re-verification**: regenerating against a real Gemini account reproduced
+the "Grounded Fallback" the report was about — root-caused to `HTTP 429
+RESOURCE_EXHAUSTED`, specifically Gemini's **free-tier daily quota**
+(`GenerateRequestsPerDayPerProjectPerModel-FreeTier`, 20 requests/day for
+`gemini-3.6-flash`), exhausted by cumulative testing across sessions — not a
+code or config defect. Since the quota is scoped per-model, `LLM_MODEL` was
+switched to `gemini-flash-lite-latest` (a real, currently-available Gemini
+model with separate, unused quota) to demonstrate a genuine live success: the
+UI correctly showed **"AI Enhanced — Rewritten by openai_compatible
+(gemini-flash-lite-latest), validated against your evidence."**, with a 33-word
+2-sentence summary, a bullet rewrite matching the "Built..." -> "Developed..."
+style requested, and a natural 231-word five-paragraph cover letter — all
+grounding-clean (no Docker/AWS/metrics/team-size/years-of-experience found).
+Save/refresh persistence and PDF export were also re-confirmed on this
+AI-enhanced, user-edited version. `LLM_MODEL=gemini-3.6-flash`'s daily quota
+resets on Google's normal schedule (or immediately on a paid plan) and can be
+restored in `backend/.env` at any time — both are genuine, currently-supported
+Gemini models.
+
+**A second dev-environment root cause, now fixed at the process-management
+level**: `uvicorn --reload`'s actual worker is spawned via `multiprocessing.
+spawn_main`, whose OS command line contains no literal "uvicorn" — so a
+process-matching filter like `CommandLine -like '*uvicorn*'` (used earlier in
+this project's own dev-server cleanup steps) silently misses it, leaving an
+orphaned worker holding the old in-memory config still bound to the port
+after the reloader itself is killed. This explains the repeated "stale
+process serving an old key/model" symptom encountered while iterating on this
+project's LLM configuration. Restarting the backend cleanly now means killing
+every `python.exe`/`node.exe` process tied to the target port, not just ones
+whose command line happens to contain "uvicorn".
