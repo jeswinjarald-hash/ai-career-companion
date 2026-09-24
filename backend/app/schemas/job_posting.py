@@ -11,7 +11,12 @@ class JobPosting(BaseModel):
     company: str
     location: str
     work_mode: Literal["On-site", "Hybrid", "Remote"]
-    employment_type: Literal["Internship", "Entry Level"]
+    # The project's single "opportunity type" axis (internship / entry-level job /
+    # graduate program / trainee / apprenticeship). Kept as `employment_type` rather
+    # than adding a separate `opportunity_type` field, since this field already
+    # served exactly this purpose for the original two-value dataset — widening it
+    # avoids a parallel, duplicate concept.
+    employment_type: Literal["Internship", "Entry Level", "Graduate Role", "Trainee", "Apprenticeship"]
     domain: str
     job_description: str
     responsibilities: list[str]

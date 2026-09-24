@@ -32,6 +32,8 @@ nav { display: grid; gap: 5px; }.nav-item { width: 100%; border: 0; padding: 12p
 .interview-question-card[open] summary { margin-bottom: 14px; }
 .mock-interview-block { margin-top: 16px; padding-top: 14px; border-top: 1px solid #edf0eb; }
 .mini-gap-block { margin-top: 12px; padding: 12px; background: #f7faf5; border: 1px solid #e2eee7; }
+.opportunity-type-chip { display: inline-block; padding: 4px 8px; color: var(--amber); background: var(--pale-amber); font: 700 10px Arial, sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.opportunity-type-chip.inline { margin-right: 8px; vertical-align: middle; }
 .message p { white-space: pre-wrap; }
 .message-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .message-actions button { padding: 6px 9px; border: 1px solid var(--pale-green); color: var(--green); background: var(--surface); font: 700 10px Arial, sans-serif; }

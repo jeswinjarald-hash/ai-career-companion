@@ -220,7 +220,7 @@ function SignupView({ onAuthenticated }: { onAuthenticated: (session: AuthSessio
   return <main className="auth-page"><section className="auth-panel"><div className="auth-brand"><span>AC</span><div><strong>AI Career</strong><small>Companion</small></div></div><div className="auth-copy"><p className="eyebrow">CREATE YOUR WORKSPACE</p><h1>Start with your career context.</h1><p>Create an account, then complete your career profile.</p></div><form className="auth-form" onSubmit={(event) => { event.preventDefault(); void submit() }}><label>Full name<input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Your name" disabled={submitting} /></label><label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" disabled={submitting} /></label><label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" disabled={submitting} /></label><label>Confirm password<input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Re-enter your password" disabled={submitting} /></label>{error && <p className="auth-error" role="alert">{error}</p>}<button className="primary-button auth-submit" disabled={submitting}>{submitting ? 'Creating account...' : 'Create account'}</button></form><button className="text-button" onClick={() => { window.history.pushState({}, '', '/'); window.location.reload() }}>Already have an account? Sign in</button></section><aside className="auth-aside"><p className="eyebrow">YOUR FIRST STEPS</p><h2>Build a profile that can grow with you.</h2><div className="auth-flow"><span>01</span><div><strong>Tell us about your direction</strong><small>Interests and experience</small></div></div><div className="auth-flow"><span>02</span><div><strong>Add your resume</strong><small>Skills and projects extracted</small></div></div></aside></main>
 }
 function OnboardingView() { return <main className="auth-page"><section className="auth-panel"><div className="auth-brand"><span>AC</span><div><strong>AI Career</strong><small>Companion</small></div></div><div className="auth-copy"><p className="eyebrow">CREATE YOUR ACCOUNT</p><h1>Let's get your workspace set up.</h1><p>Create an account to build your career profile and upload your resume.</p></div><button className="primary-button auth-submit" onClick={() => { window.history.pushState({}, '', '/signup'); window.location.reload() }}>Go to sign up</button></section><aside className="auth-aside"><p className="eyebrow">A CLEAR START</p><h2>Your profile becomes the context behind every next step.</h2><div className="auth-flow"><span>01</span><div><strong>Profile</strong><small>Personal and career details</small></div></div><div className="auth-flow"><span>02</span><div><strong>Guidance</strong><small>Recommendations shaped around you</small></div></div></aside></main> }
-function PageHeading({ eyebrow, title, lede, action }: { eyebrow: string; title: string; lede: string; action?: React.ReactNode }) { return <section className="page-heading"><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p className="lede">{lede}</p></div>{action}</section> }
+function PageHeading({ eyebrow, title, lede, action }: { eyebrow: string; title: string; lede: React.ReactNode; action?: React.ReactNode }) { return <section className="page-heading"><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p className="lede">{lede}</p></div>{action}</section> }
 function DashboardView({ currentUser, profile, resumeLifecycle, resumeRestoring, resumeRecord, structuredResume, notice, onNavigate }: {
   currentUser: AuthUser | null
   profile: CandidateProfile | null
@@ -299,27 +299,28 @@ function CareersView({ resumeId, onOpenJob }: { resumeId: number | null; onOpenJ
       setSearchStatus('idle')
     } catch (error: unknown) {
       setSearchStatus('error')
-      setSearchError(error instanceof Error ? error.message : 'We could not search internships. Please try again.')
+      setSearchError(error instanceof Error ? error.message : 'We could not search opportunities. Please try again.')
     }
   }
 
   return <>
-    <PageHeading eyebrow="CAREER RECOMMENDATIONS" title="Paths that fit your profile." lede="Search the internship knowledge base by role, skill or topic, or review recommendations ranked from your latest resume." />
+    <PageHeading eyebrow="CAREER RECOMMENDATIONS" title="Paths that fit your profile." lede="Search internships, entry-level jobs, graduate programs, and trainee/apprenticeship roles, or review recommendations ranked from your latest resume." />
     <section className="card comparison-card">
-      <div className="card-heading"><div><p className="eyebrow">SEMANTIC JOB SEARCH</p><h3>Search internships</h3></div></div>
+      <div className="card-heading"><div><p className="eyebrow">SEMANTIC OPPORTUNITY SEARCH</p><h3>Search opportunities</h3></div></div>
       <form className="assistant-input" onSubmit={(event) => void runSearch(event)}>
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder='e.g. "Python machine learning internship"' aria-label="Search internships" />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder='e.g. "Python machine learning internship" or "graduate data analyst"' aria-label="Search opportunities" />
         <button className="primary-button" disabled={searchStatus === 'loading'}>{searchStatus === 'loading' ? 'Searching...' : 'Search'}</button>
       </form>
       {searchStatus === 'error' && <div className="error-notice" role="alert">{searchError}</div>}
-      {searchStatus !== 'error' && searchResults !== null && searchResults.length === 0 && <p className="muted">No internships matched that search.</p>}
+      {searchStatus !== 'error' && searchResults !== null && searchResults.length === 0 && <p className="muted">No opportunities matched that search.</p>}
       {searchResults !== null && searchResults.length > 0 && <section className="career-list">
         {searchResults.map((result) => <article className="card career-card" key={result.job_id}>
           <div className="career-card-top"><span className="role-mark">{result.job_title.slice(0, 1)}</span><span className="match-badge">{Math.round(result.similarity_score * 100)}% relevance</span></div>
           <h3>{result.job_title}</h3>
-          <p>{result.company} · {result.domain} · {result.location} · {result.work_mode} · {result.employment_type}</p>
+          <div className="tag-row"><span className="opportunity-type-chip">{result.employment_type}</span></div>
+          <p>{result.company} · {result.domain} · {result.location} · {result.work_mode}</p>
           <div className="tag-row">{result.required_skills.slice(0, 4).map((skill) => <span key={skill}>{skill}</span>)}</div>
-          <button className="text-button" onClick={() => onOpenJob(result.job_id)}>View job details -&gt;</button>
+          <button className="text-button" onClick={() => onOpenJob(result.job_id)}>View details -&gt;</button>
         </article>)}
       </section>}
     </section>
@@ -328,8 +329,8 @@ function CareersView({ resumeId, onOpenJob }: { resumeId: number | null; onOpenJ
       {matchError ? <div className="error-notice" role="alert">{matchError}</div>
         : resumeId === null ? <div className="architecture-note">Process a resume to see recommendations ranked for you.</div>
         : matches === null ? <p className="muted">Loading your recommendations...</p>
-        : matches.length === 0 ? <p className="muted">No job matches were found for your resume yet.</p>
-        : <section className="career-list">{matches.map((match) => <article className="card career-card" key={match.job_id}><div className="career-card-top"><span className="role-mark">{match.job_title.slice(0, 1)}</span><span className="match-badge">{Math.round(match.match_score)}% match</span></div><h3>{match.job_title}</h3><p>{match.company} · {match.domain}</p><div className="tag-row">{match.matched_required_skills.slice(0, 3).map((skill) => <span key={skill}>{skill}</span>)}</div><p className="muted">{match.reasoning}</p><p className="result-bullet">Missing required: {match.missing_required_skills.join(', ') || 'None'}</p><button className="text-button" onClick={() => onOpenJob(match.job_id)}>View job details -&gt;</button></article>)}</section>}
+        : matches.length === 0 ? <p className="muted">No opportunity matches were found for your resume yet.</p>
+        : <section className="career-list">{matches.map((match) => <article className="card career-card" key={match.job_id}><div className="career-card-top"><span className="role-mark">{match.job_title.slice(0, 1)}</span><span className="match-badge">{Math.round(match.match_score)}% match</span></div><h3>{match.job_title}</h3><div className="tag-row"><span className="opportunity-type-chip">{match.employment_type}</span></div><p>{match.company} · {match.domain}</p><div className="tag-row">{match.matched_required_skills.slice(0, 3).map((skill) => <span key={skill}>{skill}</span>)}</div><p className="muted">{match.reasoning}</p><p className="result-bullet">Missing required: {match.missing_required_skills.join(', ') || 'None'}</p><button className="text-button" onClick={() => onOpenJob(match.job_id)}>View details -&gt;</button></article>)}</section>}
     </section>
   </>
 }
@@ -366,7 +367,7 @@ function JobDetailsView({ jobId, resumeId, onBack, onAnalyzeSkillGap, onCustomiz
   const matchResult = matches?.[0] ?? null
 
   return <>
-    <PageHeading eyebrow="JOB DETAILS" title={job.job_title} lede={`${job.company} · ${job.domain}`} action={<button className="text-button" onClick={onBack}>Back to search -&gt;</button>} />
+    <PageHeading eyebrow="JOB DETAILS" title={job.job_title} lede={<><span className="opportunity-type-chip inline">{job.employment_type}</span> {job.company} · {job.domain}</>} action={<button className="text-button" onClick={onBack}>Back to search -&gt;</button>} />
     <section className="results-grid resume-result-grid">
       <article className="card result-card"><p className="eyebrow">OVERVIEW</p><p className="result-bullet">Location: {job.location}</p><p className="result-bullet">Work mode: {job.work_mode}</p><p className="result-bullet">Employment type: {job.employment_type}</p><p className="result-bullet">Posted: {job.posted_date}</p></article>
       <article className="card result-card"><p className="eyebrow">DESCRIPTION</p><p className="muted">{job.job_description}</p></article>
@@ -425,15 +426,15 @@ function SkillsView({ resumeId, jobId, onRoadmap, onSearchJobs, onCustomizeAppli
   }, [resumeId, jobId])
 
   return <>
-    <PageHeading eyebrow="SKILL GAP ANALYSIS" title="Understand what to learn next." lede="A grounded comparison of your resume against the internship you selected." action={<button className="primary-button" onClick={onSearchJobs}>Search internships -&gt;</button>} />
+    <PageHeading eyebrow="SKILL GAP ANALYSIS" title="Understand what to learn next." lede="A grounded comparison of your resume against the opportunity you selected." action={<button className="primary-button" onClick={onSearchJobs}>Search opportunities -&gt;</button>} />
     {resumeId === null && <div className="architecture-note">Upload and process your resume before running skill gap analysis.</div>}
-    {resumeId !== null && jobId === null && <div className="architecture-note">Select an internship to analyze your skill gaps. Open a job's details and choose "Analyze Skill Gaps".</div>}
-    {resumeId !== null && jobId !== null && status === 'loading' && <p className="muted">Analyzing your skill gaps against this internship...</p>}
+    {resumeId !== null && jobId === null && <div className="architecture-note">Select an opportunity to analyze your skill gaps. Open its details and choose "Analyze Skill Gaps".</div>}
+    {resumeId !== null && jobId !== null && status === 'loading' && <p className="muted">Analyzing your skill gaps against this opportunity...</p>}
     {resumeId !== null && jobId !== null && status === 'error' && <div className="error-notice" role="alert">{error}</div>}
     {analysis && <>
       <section className="card comparison-card">
         <div className="card-heading">
-          <div><p className="eyebrow">SELECTED INTERNSHIP</p><h3>{analysis.job_title}</h3></div>
+          <div><p className="eyebrow">SELECTED OPPORTUNITY</p><h3>{analysis.job_title}</h3></div>
           <button className="text-button" onClick={() => resumeId !== null && jobId !== null && runAnalysis(resumeId, jobId)} disabled={status === 'loading'}>Refresh analysis -&gt;</button>
         </div>
         <p className="muted">{analysis.company} · {analysis.domain} · {analysis.location}</p>
@@ -583,7 +584,7 @@ function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs, onInte
       setStatus('idle')
     } catch (err: unknown) {
       setStatus('error')
-      setError(err instanceof Error ? err.message : 'We could not generate application materials for this resume and internship.')
+      setError(err instanceof Error ? err.message : 'We could not generate application materials for this resume and opportunity.')
     }
   }
 
@@ -648,7 +649,7 @@ function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs, onInte
   }
 
   if (resumeId === null) return <><PageHeading eyebrow="CUSTOMIZE APPLICATION" title="Tailor your resume and cover letter." lede="Upload and process your resume before customizing an application." /><div className="architecture-note">Upload and process your resume before customizing an application.</div></>
-  if (jobId === null) return <><PageHeading eyebrow="CUSTOMIZE APPLICATION" title="Tailor your resume and cover letter." lede="Select an internship to customize your application." action={<button className="primary-button" onClick={onSearchJobs}>Search internships -&gt;</button>} /><div className="architecture-note">Open a job's details or your skill gap analysis and choose "Customize Application" to get started.</div></>
+  if (jobId === null) return <><PageHeading eyebrow="CUSTOMIZE APPLICATION" title="Tailor your resume and cover letter." lede="Select an opportunity to customize your application." action={<button className="primary-button" onClick={onSearchJobs}>Search opportunities -&gt;</button>} /><div className="architecture-note">Open an opportunity's details or your skill gap analysis and choose "Customize Application" to get started.</div></>
 
   const resume = customization?.tailored_resume ?? null
   const original = structuredResume?.data ?? null
@@ -843,7 +844,7 @@ function InterviewPrepView({ resumeId, jobId, structuredResume, onSearchJobs }: 
       setStatus('idle')
     } catch (err: unknown) {
       setStatus('error')
-      setError(err instanceof Error ? err.message : 'We could not generate interview preparation for this resume and internship.')
+      setError(err instanceof Error ? err.message : 'We could not generate interview preparation for this resume and opportunity.')
     }
   }
 
@@ -883,7 +884,7 @@ function InterviewPrepView({ resumeId, jobId, structuredResume, onSearchJobs }: 
   }
 
   if (resumeId === null) return <><PageHeading eyebrow="INTERVIEW PREPARATION" title="Prepare for your interview." lede="Upload and process your resume before preparing for an interview." /><div className="architecture-note">Upload and process your resume before preparing for an interview.</div></>
-  if (jobId === null) return <><PageHeading eyebrow="INTERVIEW PREPARATION" title="Prepare for your interview." lede="Select an internship to prepare for its interview." action={<button className="primary-button" onClick={onSearchJobs}>Search internships -&gt;</button>} /><div className="architecture-note">Open a job's details, skill gap analysis, or customized application and choose "Prepare for Interview" to get started.</div></>
+  if (jobId === null) return <><PageHeading eyebrow="INTERVIEW PREPARATION" title="Prepare for your interview." lede="Select an opportunity to prepare for its interview." action={<button className="primary-button" onClick={onSearchJobs}>Search opportunities -&gt;</button>} /><div className="architecture-note">Open an opportunity's details, skill gap analysis, or customized application and choose "Prepare for Interview" to get started.</div></>
 
   const evidenceById: Record<string, EvidenceRecord> = {}
   if (prep) for (const record of prep.evidence) evidenceById[record.evidence_id] = record
@@ -965,7 +966,7 @@ function RoadmapView({ resumeId }: { resumeId: number | null }) {
   </>
 }
 const STARTER_PROMPTS = [
-  'Which internships fit my resume?', 'What skills am I missing?', 'Why does this job fit me?',
+  'Which opportunities fit my resume?', 'What skills am I missing?', 'Why does this job fit me?',
   'What should I learn next?', 'Help me customize my application.', 'Prepare me for an interview.',
 ]
 
@@ -1056,7 +1057,7 @@ function AssistantView({ resumeId, jobId, onAction }: { resumeId: number | null;
     }
   }
 
-  const contextLine = `${active?.active_job_id ? `Job: ${activeJobTitle || active.active_job_id}` : 'No internship selected yet'} · ${resumeId !== null ? 'Resume connected' : 'No processed resume yet'}`
+  const contextLine = `${active?.active_job_id ? `Opportunity: ${activeJobTitle || active.active_job_id}` : 'No opportunity selected yet'} · ${resumeId !== null ? 'Resume connected' : 'No processed resume yet'}`
 
   return <>
     <PageHeading eyebrow="AI CAREER ASSISTANT" title="Guidance grounded in your profile." lede="Ask about your recommendations, skill gaps, resume, cover letter, or interview preparation." />

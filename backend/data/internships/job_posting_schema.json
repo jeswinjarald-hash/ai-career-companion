@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.0",
-  "description": "Standard schema for curated internship/job postings used by the AI Career Companion Milestone 2 knowledge base.",
+  "schema_version": "1.1",
+  "description": "Standard schema for curated career-opportunity postings (internships, entry-level jobs, graduate programs, trainee and apprenticeship roles) used by the AI Career Companion Milestone 2 knowledge base.",
   "required_fields": [
     "job_id",
     "job_title",
@@ -44,9 +44,13 @@
     },
     "employment_type": {
       "type": "string",
+      "description": "The opportunity type. Widened in schema_version 1.1 to cover the broader career-opportunity scope beyond internships.",
       "allowed": [
         "Internship",
-        "Entry Level"
+        "Entry Level",
+        "Graduate Role",
+        "Trainee",
+        "Apprenticeship"
       ]
     },
     "domain": {

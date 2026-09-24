@@ -30,9 +30,9 @@ REQUIRED_FIELDS = {
 def test_loads_canonical_dataset() -> None:
     postings = load_job_postings()
 
-    assert len(postings) == 180
+    assert len(postings) == 320
     assert all(isinstance(posting, JobPosting) for posting in postings)
-    assert len({posting.job_id for posting in postings}) == 180
+    assert len({posting.job_id for posting in postings}) == 320
 
 
 def test_postings_have_required_fields_array_fields_and_raw_text() -> None:

@@ -75,7 +75,7 @@ def _as_utc(value: datetime) -> datetime:
 def _get_job(job_id: str) -> JobPosting:
     job = next((job for job in load_job_postings() if job.job_id == job_id), None)
     if job is None:
-        raise LookupError("Internship not found.")
+        raise LookupError("Job posting not found.")
     return job
 
 

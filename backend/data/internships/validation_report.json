@@ -1,37 +1,40 @@
 {
-  "dataset_version": "1.0",
-  "record_count": 180,
-  "target_range": "150-200",
+  "dataset_version": "2.0",
+  "record_count": 320,
+  "target_range": "300-360",
   "within_target_range": true,
   "missing_required_field_count": 0,
   "duplicate_job_id_count": 0,
   "duplicate_content_count": 0,
   "domain_count": 15,
   "domain_distribution": {
-    "Software Development": 12,
-    "Java Backend": 12,
-    "Python Backend": 12,
-    "Frontend Development": 12,
-    "Full Stack Development": 12,
-    "Data Science": 12,
-    "Machine Learning": 12,
-    "Generative AI / NLP": 12,
-    "Data Analytics": 12,
-    "Cloud Computing": 12,
-    "DevOps": 12,
-    "Cybersecurity": 12,
-    "Database / SQL": 12,
-    "Software Testing / QA": 12,
-    "Mobile Development": 12
+    "Cloud Computing": 21,
+    "Cybersecurity": 21,
+    "Data Analytics": 22,
+    "Data Science": 21,
+    "Database / SQL": 22,
+    "DevOps": 22,
+    "Frontend Development": 21,
+    "Full Stack Development": 21,
+    "Generative AI / NLP": 21,
+    "Java Backend": 21,
+    "Machine Learning": 22,
+    "Mobile Development": 22,
+    "Python Backend": 21,
+    "Software Development": 21,
+    "Software Testing / QA": 21
   },
   "work_mode_distribution": {
-    "On-site": 60,
-    "Hybrid": 60,
-    "Remote": 60
+    "Hybrid": 111,
+    "On-site": 137,
+    "Remote": 72
   },
   "employment_type_distribution": {
-    "Internship": 150,
-    "Entry Level": 30
+    "Apprenticeship": 10,
+    "Entry Level": 80,
+    "Graduate Role": 45,
+    "Internship": 170,
+    "Trainee": 15
   },
   "status": "PASS"
 }

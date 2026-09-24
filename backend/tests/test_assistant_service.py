@@ -159,7 +159,7 @@ def test_missing_job_context_asks_a_followup_instead_of_guessing(db: Session) ->
     response = send_message(db, profile.user_id, conversation.id, "What skills am I missing?", llm_provider=NullLLMProvider())
     assert response.message.intent == "SKILL_GAP"
     assert response.message.job_id is None
-    assert "internship" in response.message.content.lower()
+    assert "opportunity" in response.message.content.lower()
     assert response.message.generation is None  # no service/LLM call was attempted
 
 

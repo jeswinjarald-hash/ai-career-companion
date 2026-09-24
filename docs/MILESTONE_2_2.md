@@ -2,6 +2,13 @@
 
 The internship knowledge base uses the canonical JSON dataset from `backend/data/internships/`.
 
+> **Note (Career Opportunity Generalization):** the canonical dataset was expanded from
+> 180 internship-only records to 320 records spanning internships, entry-level jobs,
+> graduate programs, trainee and apprenticeship roles (`career_opportunities_320.json`).
+> The pipeline described below is unchanged — see
+> [`docs/CAREER_OPPORTUNITY_GENERALIZATION.md`](CAREER_OPPORTUNITY_GENERALIZATION.md)
+> for the dataset audit, composition, and migration details.
+
 ## Pipeline
 
 Job dataset -> structured chunks -> local embeddings -> FAISS exact index -> query embedding -> chunk retrieval -> job-level aggregation -> top-k jobs

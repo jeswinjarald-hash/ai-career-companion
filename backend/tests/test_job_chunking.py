@@ -6,8 +6,8 @@ def test_dataset_generates_three_deterministic_chunks_per_job() -> None:
     jobs = load_job_postings()
     chunks = chunk_job_postings(jobs)
 
-    assert len(chunks) == 540
-    assert len({chunk.chunk_id for chunk in chunks}) == 540
+    assert len(chunks) == 960
+    assert len({chunk.chunk_id for chunk in chunks}) == 960
     assert {chunk.chunk_type for chunk in chunks} == {"overview", "requirements", "responsibilities"}
     assert {chunk.job_id for chunk in chunks} == {job.job_id for job in jobs}
     assert all(chunk.text.strip() for chunk in chunks)

@@ -49,5 +49,5 @@ def read_skill_gap_analysis(
         raise HTTPException(status_code=409, detail="A structured student profile is required before skill gap analysis.")
     result = get_persisted_skill_gap(db, current_user.id, job_id, structured.updated_at)
     if result is None:
-        raise HTTPException(status_code=404, detail="No skill gap analysis found for this internship yet.")
+        raise HTTPException(status_code=404, detail="No skill gap analysis found for this opportunity yet.")
     return result

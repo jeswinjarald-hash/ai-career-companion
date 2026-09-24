@@ -8,8 +8,8 @@ from pydantic import ValidationError
 from app.schemas.job_posting import JobPosting
 
 DATASET_DIRECTORY = Path(__file__).resolve().parents[2] / "data" / "internships"
-DATASET_PATH = DATASET_DIRECTORY / "internship_jobs_180.json"
-EXPECTED_RECORD_COUNT = 180
+DATASET_PATH = DATASET_DIRECTORY / "career_opportunities_320.json"
+EXPECTED_RECORD_COUNT = 320
 REQUIRED_RAW_TEXT_LABELS = (
     "Job Title:",
     "Company:",

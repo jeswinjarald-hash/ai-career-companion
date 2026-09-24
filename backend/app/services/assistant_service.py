@@ -113,21 +113,21 @@ def _missing_context_followup(intent_result: dict, ctx: ResolvedContext) -> tupl
             return "Your resume is uploaded but not processed yet. Process it first so I can use your extracted skills and experience.", [SuggestedAction(label="Process resume", action="process_resume")]
 
     if intent_result["requires_second_job_context"] and ctx.job is None and ctx.second_job is None:
-        # Neither job of a comparison was identified — ask for both together rather
-        # than asking for the first one only and leaving the second unexplained.
-        return 'To compare two internships, please mention both ids (e.g. "compare JOB-0035 and JOB-0041").', []
+        # Neither opportunity of a comparison was identified — ask for both together
+        # rather than asking for the first one only and leaving the second unexplained.
+        return 'To compare two opportunities, please mention both ids (e.g. "compare JOB-0035 and JOB-0041").', []
 
     if intent_result["requires_job_context"]:
         if ctx.job_not_found:
-            return f"I couldn't find an internship with id {ctx.job_not_found}. Could you double-check the id, or open its Job Details page first?", []
+            return f"I couldn't find an opportunity with id {ctx.job_not_found}. Could you double-check the id, or open its details page first?", []
         if ctx.job is None:
-            return "Which internship would you like me to use? You can mention its id (e.g. JOB-0035) or open its Job Details page first.", []
+            return "Which opportunity would you like me to use? You can mention its id (e.g. JOB-0035) or open its details page first.", []
 
     if intent_result["requires_second_job_context"]:
         if ctx.second_job_not_found:
-            return f"I couldn't find an internship with id {ctx.second_job_not_found}. Could you double-check both ids?", []
+            return f"I couldn't find an opportunity with id {ctx.second_job_not_found}. Could you double-check both ids?", []
         if ctx.second_job is None:
-            return 'To compare two internships, please mention both ids (e.g. "compare JOB-0035 and JOB-0041").', []
+            return 'To compare two opportunities, please mention both ids (e.g. "compare JOB-0035 and JOB-0041").', []
 
     return None, []
 

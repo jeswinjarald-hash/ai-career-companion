@@ -41,7 +41,14 @@ _CUSTOMIZATION_KEYWORDS = ("customize", "tailor my resume", "tailor resume", "im
 _SKILL_GAP_KEYWORDS = ("skill gap", "missing skills", "what am i missing", "what skills am i missing", "am i qualified", "my gaps", "skills am i lacking")
 _LEARNING_KEYWORDS = ("what should i learn", "learn next", "study next", "revision plan", "what to study", "learning roadmap", "what should i study")
 _MATCH_EXPLANATION_KEYWORDS = ("why does this", "why is this a match", "why does it match", "explain the match", "why does this role fit", "why does this job fit", "why is this role")
-_DISCOVERY_KEYWORDS = ("which internships", "which jobs", "internships fit", "jobs fit", "recommend", "find jobs", "find internships", "search for", "suggest internships", "suggest jobs", "what internships")
+_DISCOVERY_KEYWORDS = (
+    "which internships", "which jobs", "which roles", "which opportunities", "internships fit", "jobs fit",
+    "roles fit", "opportunities fit", "recommend", "find jobs", "find internships", "find opportunities",
+    "find entry level", "find entry-level", "find graduate", "find trainee", "search for", "suggest internships",
+    "suggest jobs", "suggest opportunities", "suggest roles", "what internships", "what opportunities",
+    "entry level jobs", "entry-level jobs", "graduate roles", "graduate jobs", "trainee roles", "trainee programs",
+    "apprenticeship", "opportunities match my resume", "opportunities fit my resume",
+)
 _PROFILE_SUMMARY_KEYWORDS = ("my profile", "my strongest project", "my projects", "summarize my resume", "tell me about my resume", "about my background")
 _NEXT_ACTION_KEYWORDS = ("what should i do next", "next step", "what now", "what should i do", "next best action")
 

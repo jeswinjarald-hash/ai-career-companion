@@ -65,16 +65,16 @@ def handle_job_discovery(db: Session, user_id: int, ctx: ResolvedContext, messag
     matches = match_jobs_for_resume(db, ctx.resume.id, top_k=5)
     if not matches:
         return HandlerResult(
-            "I couldn't find any internship matches for your resume yet. Try exploring Career Recommendations directly.",
+            "I couldn't find any matching opportunities for your resume yet. Try exploring Career Recommendations directly.",
             {"matches": []}, [SuggestedAction(label="View recommendations", action="view_recommendations")],
             context_used=["m2_job_match"], resume_id=ctx.resume.id,
         )
-    lines = [f"{m.job_title} at {m.company} — {round(m.match_score)}% match" + (f" (matched: {', '.join(m.matched_required_skills[:3])})" if m.matched_required_skills else "") for m in matches]
-    message_out = "Based on your resume, here are your top internship matches:\n" + "\n".join(f"- {line}" for line in lines)
+    lines = [f"{m.job_title} at {m.company} ({m.employment_type}) — {round(m.match_score)}% match" + (f" (matched: {', '.join(m.matched_required_skills[:3])})" if m.matched_required_skills else "") for m in matches]
+    message_out = "Based on your resume, here are your top opportunity matches:\n" + "\n".join(f"- {line}" for line in lines)
     actions = [SuggestedAction(label=f"View {m.job_title}", action="view_job", job_id=m.job_id) for m in matches[:3]]
     actions.append(SuggestedAction(label="View all recommendations", action="view_recommendations"))
     facts = {"matches": [
-        {"job_id": m.job_id, "job_title": m.job_title, "company": m.company, "match_score": round(m.match_score),
+        {"job_id": m.job_id, "job_title": m.job_title, "company": m.company, "opportunity_type": m.employment_type, "match_score": round(m.match_score),
          "matched_required_skills": m.matched_required_skills, "missing_required_skills": m.missing_required_skills}
         for m in matches
     ]}
@@ -209,13 +209,15 @@ def handle_job_comparison(db: Session, user_id: int, ctx: ResolvedContext, messa
     a, b = ctx.job, ctx.second_job
     lines = [
         f"{a.job_title} ({a.company}) vs {b.job_title} ({b.company}):",
+        f"Type: {a.employment_type} vs {b.employment_type}.",
         f"Location/mode: {a.location}/{a.work_mode} vs {b.location}/{b.work_mode}.",
         f"Required skills: {', '.join(a.required_skills)} vs {', '.join(b.required_skills)}.",
         f"Preferred skills: {', '.join(a.preferred_skills) or 'none'} vs {', '.join(b.preferred_skills) or 'none'}.",
+        f"Experience expectations: {a.experience_requirements} vs {b.experience_requirements}",
     ]
     facts: dict = {
-        "job_a": {"job_id": a.job_id, "job_title": a.job_title, "company": a.company, "required_skills": a.required_skills, "preferred_skills": a.preferred_skills, "location": a.location, "work_mode": a.work_mode},
-        "job_b": {"job_id": b.job_id, "job_title": b.job_title, "company": b.company, "required_skills": b.required_skills, "preferred_skills": b.preferred_skills, "location": b.location, "work_mode": b.work_mode},
+        "job_a": {"job_id": a.job_id, "job_title": a.job_title, "company": a.company, "opportunity_type": a.employment_type, "required_skills": a.required_skills, "preferred_skills": a.preferred_skills, "location": a.location, "work_mode": a.work_mode, "experience_requirements": a.experience_requirements},
+        "job_b": {"job_id": b.job_id, "job_title": b.job_title, "company": b.company, "opportunity_type": b.employment_type, "required_skills": b.required_skills, "preferred_skills": b.preferred_skills, "location": b.location, "work_mode": b.work_mode, "experience_requirements": b.experience_requirements},
     }
     unsupported: set[str] = set()
     context_used = ["job_posting_a", "job_posting_b"]
@@ -263,7 +265,7 @@ def handle_next_best_action(db: Session, user_id: int, ctx: ResolvedContext, mes
     if not ctx.resume_is_processed:
         return HandlerResult("Your resume is uploaded but not yet processed. Process it to extract your skills and experience.", {}, [SuggestedAction(label="Process resume", action="process_resume")], resume_id=ctx.resume.id)
     if ctx.job is None:
-        return HandlerResult("You haven't selected a target internship yet. Explore recommendations to find one that fits you.", {}, [SuggestedAction(label="Explore recommendations", action="view_recommendations")], resume_id=ctx.resume.id)
+        return HandlerResult("You haven't selected a target opportunity yet. Explore recommendations to find one that fits you.", {}, [SuggestedAction(label="Explore recommendations", action="view_recommendations")], resume_id=ctx.resume.id)
 
     job = ctx.job
     gap = get_persisted_skill_gap(db, user_id, job.job_id, ctx.structured.updated_at)
@@ -284,7 +286,7 @@ def handle_next_best_action(db: Session, user_id: int, ctx: ResolvedContext, mes
 
 
 def handle_general_career_chat(db: Session, user_id: int, ctx: ResolvedContext, message: str) -> HandlerResult:
-    text = "I can help with job recommendations, skill gaps, resume customization, cover letters, and interview preparation. Try asking about a specific internship, or ask what you should do next."
+    text = "I can help with job recommendations, skill gaps, resume customization, cover letters, and interview preparation. Try asking about a specific opportunity, or ask what you should do next."
     actions: list[SuggestedAction] = []
     if ctx.resume is None:
         actions.append(SuggestedAction(label="Upload resume", action="upload_resume"))

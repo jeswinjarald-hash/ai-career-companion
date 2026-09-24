@@ -47,7 +47,7 @@ MIN_EVIDENCE_RECORDS = 3
 def _get_job(job_id: str):
     job = next((j for j in load_job_postings() if j.job_id == job_id), None)
     if job is None:
-        raise LookupError("Internship not found.")
+        raise LookupError("Job posting not found.")
     return job
 
 
