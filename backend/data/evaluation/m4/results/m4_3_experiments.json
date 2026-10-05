@@ -1,0 +1,196 @@
+{
+  "milestone": "M4.3 controlled optimization",
+  "baseline": "results/m4_2_baseline_results.json (frozen; sha1 b03a66c5fa90d4501a405be5b905284d0aeedbc9)",
+  "final_evaluation": "results/m4_3_optimized_results.json",
+  "method": "One logical change at a time: hypothesis -> minimal implementation -> focused tests -> same M4 evaluation (scripts/run_m4_evaluation.py, null LLM, offline) -> compare with the frozen baseline -> accept or reject. Rejected variants were reverted before the next experiment.",
+  "experiments": [
+    {
+      "experiment_id": "E1",
+      "name": "Assistant job discovery uses the requested area",
+      "hypothesis": "Discovery ignores the message: match_jobs_for_resume always retrieves with the resume's own terms.",
+      "change": "assistant_intent.extract_discovery_request strips generic discovery wording (no domain lists); when area words remain they drive retrieval via an optional query on match_jobs_for_profile/match_jobs_for_resume, while scoring stays resume-based. Generic requests keep resume-driven discovery.",
+      "baseline": {"discovery_expected_domain_hit_rate": 0.0, "identical_results_for_different_requests": true},
+      "result": {"discovery_expected_domain_hit_rate": 1.0, "identical_results_for_different_requests": false},
+      "regressions": "none (all other metrics identical; 74 assistant/matching tests passed)",
+      "decision": "ACCEPT"
+    },
+    {
+      "experiment_id": "E2a",
+      "name": "Conversational routing: self-comparison, learning-priority follow-ups, free-form discovery wording",
+      "hypothesis": "'Compare me with JOB-X' is routed as a two-job comparison; learning-priority follow-ups and 'find <area> jobs' phrasings match no keyword.",
+      "change": "Deterministic regex rules in assistant_intent.classify_intent: student-as-object comparison -> JOB_MATCH_EXPLANATION (job<->job comparison unchanged); learn/study/focus verb + priority word -> LEARNING_GUIDANCE (whole-word, so 'machine learning' does not fire); discovery verb + opportunity noun -> JOB_DISCOVERY after all specific rules.",
+      "baseline": {"conversation_turns_passing": "12/16"},
+      "result": {"conversation_turns_passing": "15/16"},
+      "regressions": "none (66 assistant tests; existing intent tests unchanged incl. 'Compare these two roles for me' staying a comparison)",
+      "decision": "ACCEPT"
+    },
+    {
+      "experiment_id": "E2b",
+      "name": "Substantive answers to free-form career questions",
+      "hypothesis": "General questions get a fixed capability message.",
+      "change": "None implemented. A substantive answer requires the LLM path; the automated evaluation is deterministic/null-LLM, so no improvement could be measured, and changing the fixed text to pass the check would be overfitting.",
+      "baseline": {"CV06": "fail"},
+      "result": {"CV06": "fail (unchanged)"},
+      "regressions": "n/a",
+      "decision": "REJECT (deferred; documented strict xfail remains)"
+    },
+    {
+      "experiment_id": "E3a",
+      "name": "Shared bidirectional related-skill table with partial credit for required and preferred skills",
+      "hypothesis": "Matching is exact-term only, while Skill Gap already has a related-technology table.",
+      "change": "RELATED_TERMS moved to skill_relationships.py with related_terms() used in both directions by matching, skill gap and customization; matching gave 0.5 credit for related-only required and preferred skills.",
+      "baseline": {"A": 54.8, "B": 52.0, "C": 21.1, "D": 21.1},
+      "result": {"A": 56.5, "B": 61.8, "C": 35.8, "D": 21.1, "grounding_violations": 1},
+      "regressions": "B (1/4 required) overtook A (3/4 required), breaking the required>preferred property; one new grounding violation (related note placed in strengths).",
+      "decision": "REJECT"
+    },
+    {
+      "experiment_id": "E3b",
+      "name": "E3a + preferred credit scaled by required coverage",
+      "hypothesis": "Gating preferred credit restores required-skill importance.",
+      "change": "_match_score multiplied preferred score by required score.",
+      "baseline": {"A": 54.8, "B": 52.0, "C": 21.1, "M2_score_behaviour_failures": ["P007"]},
+      "result": {"A": 56.1, "B": 53.4, "C": 32.1, "M2_score_behaviour_failures": ["P001", "P005", "P007"]},
+      "regressions": "P001 (60.0 -> 58.5) and P005 (51.2 -> 48.2) fell below their expected minimum scores.",
+      "decision": "REJECT"
+    },
+    {
+      "experiment_id": "E3c",
+      "name": "E3b + weights required 0.45 / preferred 0.10",
+      "hypothesis": "Raising the required weight widens A-B.",
+      "change": "MATCH_WEIGHTS changed.",
+      "baseline": {"A": 54.8, "B": 52.0},
+      "result": {"A": 60.6, "B": 53.3, "C": 32.6, "D": 20.0, "P005_top_score": 49.7},
+      "regressions": "A-B only 7.3 (target 10 not met); P005 score behaviour regressed.",
+      "decision": "REJECT"
+    },
+    {
+      "experiment_id": "E3e",
+      "name": "Shared related-skill table; related credit for preferred skills only",
+      "hypothesis": "A hard requirement needs direct evidence (Skill Gap reports related evidence for it as 'partial, not met'); related technologies are legitimate partial evidence for nice-to-have skills.",
+      "change": "skill_relationships.related_terms() (bidirectional, normalised with normalize_term) shared by matching, skill gap and customization; matching gives 0.5 credit only to related preferred skills, keeps them in 'missing', and explains them in the reasoning. Also fixed a latent defect: the table spelled 'node.js' while normalize_term produces 'nodejs', so Node.js relationships never fired.",
+      "baseline": {"A": 54.8, "B": 52.0, "C": 21.1, "D": 21.1, "M2_top1_domain_accuracy": 1.0},
+      "result": {"A": 56.5, "B": 52.0, "C": 26.1, "D": 21.1, "M2_top1_domain_accuracy": 1.0, "M2_score_behaviour": "identical to baseline"},
+      "regressions": "none. Targets A-B >= 10 (4.5) and C-D >= 10 (5.0) NOT met; C > D now holds (was equal).",
+      "decision": "ACCEPT"
+    },
+    {
+      "experiment_id": "E4",
+      "name": "One education assessment shared by matching and skill gap",
+      "hypothesis": "The services use divergent keyword logic; matching has no partial tier and neither recognises 'computing'/'engineering' as requirement fields.",
+      "change": "education_assessment.assess_education_text (met / partial / not_met / unknown, whole-word field detection; 'relevant X program' names fields, 'related field' accepts related technical fields; a bare B.Sc or 'it' is not a field) consumed by both services.",
+      "baseline": {"education_disagreement_findings": 2, "PO_JOB-0121": {"match": 44.3, "readiness": 51}},
+      "result": {"education_disagreement_findings": 0, "consistency_findings_total": 0, "PO_JOB-0121": {"match": 55.4, "readiness": 56}},
+      "regressions": "none (M2 profile outcomes identical; 145 focused tests)",
+      "decision": "ACCEPT"
+    },
+    {
+      "experiment_id": "E5",
+      "name": "Naming the target opportunity is not a skill claim",
+      "hypothesis": "The validator removed a cover-letter opening because the job title 'FastAPI Intern' contains a skill the student lacks.",
+      "change": "check_fabrication/validate_summary/validate_cover_letter accept allowed_phrases; customization passes the job title and company so exact occurrences are masked for the unsupported-keyword check only (metric/leadership/years checks still see the full text). Applied to the final validator and, after the prompt review, to the LLM-layer pre-validation (the prompt requires the letter to open with the job title and company). The M4 evaluator applies the same rule; a 10th fault injection (role named AND skill claimed in one sentence) proves claims are still caught.",
+      "baseline": {"validator_removed_claims_review_items": 1, "fault_injections_detected": "9/9"},
+      "result": {"validator_removed_claims_review_items": 0, "fault_injections_detected": "10/10", "grounding_violations": 0},
+      "regressions": "none (117 validator/customization tests)",
+      "decision": "ACCEPT"
+    },
+    {
+      "experiment_id": "E6",
+      "name": "Retrieval confidence for off-topic queries",
+      "hypothesis": "Score overlap makes a similarity threshold unsafe; whether the query's vocabulary exists in the catalogue separates off-topic from genuine queries.",
+      "variants": {
+        "A_absolute_threshold": {"top<0.50": "8/12 flagged, 0 genuine flagged", "top<0.55": "10/12 flagged, 1 genuine flagged (RP20)", "top<0.60": "11/12 flagged, 2 genuine flagged (RP20, RP21)"},
+        "B_margin_top1_minus_top5": {"<0.05": "11/12 flagged, 7 genuine flagged", "<0.08": "12/12 flagged, 13 genuine flagged"},
+        "C_query_term_coverage": {"<0.5": "11/12 flagged, 0 genuine flagged (miss: RO01 UI UX design)", "<0.67": "12/12 flagged, 2 genuine flagged"},
+        "E_hybrid_coverage_or_similarity": "no improvement over C",
+        "held_out_check_of_C": "off-topic 10/10 flagged; genuine 1/10 flagged ('Linux system administration trainee', coverage 0.33)"
+      },
+      "change": "retrieval_confidence.query_confidence (coverage of query content words in a catalogue vocabulary derived at runtime from titles, domains and skills; no hard-coded domains) -> each search result carries query_confidence ('confident' | 'unsupported_area'). Results are never suppressed. Careers page shows a notice; assistant discovery says the area is not covered.",
+      "baseline": {"negatives_flagged_or_suppressed": "0/12", "genuine_flagged": "0/26", "hit@5": 1.0},
+      "result": {"negatives_flagged_or_suppressed": "11/12", "genuine_flagged": "0/26", "hit@5": 1.0, "false_negative": "RO01 'UI UX design internship with Figma'"},
+      "regressions": "none (all positive retrieval metrics unchanged)",
+      "decision": "ACCEPT (variant C as a flag; A, B, E rejected)"
+    },
+    {
+      "experiment_id": "E7",
+      "name": "Provenance of profile-only (self-reported) skills",
+      "hypothesis": "Matching, skill gap and customization present profile-only skills as demonstrated.",
+      "change": "Skill gap (and customization, which reuses its reasons) says the skill is self-reported with no resume evidence and uses confidence 0.70 instead of 0.95; matching records self_reported_skills and names them in the reasoning. Skills still count — the student supplied them. Evaluator review check now flags only an unqualified 'demonstrated' presentation.",
+      "baseline": {"profile_only_review_items": 3},
+      "result": {"profile_only_review_items": 0, "scores": "unchanged (PO 55.4 / 56)"},
+      "regressions": "none (214 focused tests)",
+      "decision": "ACCEPT"
+    },
+    {
+      "experiment_id": "E8-V1",
+      "name": "Extra title/type chunk per posting",
+      "change": "4th chunk (1280 vectors), built in memory only.",
+      "result": {"hit@1": 1.0, "precision@5": 0.6385, "recall@5": 0.8577},
+      "regressions": "precision@5 and recall@5 below baseline (0.6538 / 0.8735); index +33%.",
+      "decision": "REJECT"
+    },
+    {
+      "experiment_id": "E8-V2",
+      "name": "Title/type prefix on every chunk",
+      "change": "All three chunks prefixed; canonical index rebuilt (v1.1) after the M4 evaluation looked clean.",
+      "result": {"hit@1": 1.0, "mrr@10": 1.0, "precision@5": 0.6692, "recall@5": 0.8895},
+      "regressions": "tests/test_job_matching_integration.py: the ML-student profile's best Machine Learning posting fell from rank 2 to rank 5, so no ML job appeared in the top 5. Missed by the first acceptance check (M4 ML profile P001 accepts Data Science as primary).",
+      "decision": "REJECT (reverted)"
+    },
+    {
+      "experiment_id": "E8-V3",
+      "name": "Title/type prefix on the overview chunk only",
+      "hypothesis": "Title and opportunity type are what distinguish postings inside a domain; adding them only where the overview describes the role avoids diluting skill chunks.",
+      "change": "job_chunking: overview chunk leads with '<title> (<employment type>). '; INDEX_VERSION 1.2; canonical index rebuilt with scripts/build_job_vector_index.py (960 vectors). Original v1.0 index backed up outside the repo during the experiment.",
+      "baseline": {"hit@1": 0.8846, "hit@5": 1.0, "precision@5": 0.6538, "recall@5": 0.8735, "mrr@10": 0.9423, "ndcg@5": 0.9607, "ndcg@10": 0.9383},
+      "result": {"hit@1": 1.0, "hit@5": 1.0, "precision@5": 0.6615, "recall@5": 0.8831, "mrr@10": 1.0, "ndcg@5": 0.9693, "ndcg@10": 0.9383, "integration_profiles": "4/4", "held_out_title_type_queries": "5/5 rank 1"},
+      "regressions": "none (off-topic flags unchanged 11/12, genuine 0/26)",
+      "decision": "ACCEPT"
+    },
+    {
+      "experiment_id": "E9",
+      "name": "Local-first embedding model loading",
+      "hypothesis": "SentenceTransformer(name) performs Hugging Face hub checks on every cold start (hung the test suite >20 min when the hub was unreachable).",
+      "change": "embedding_service.get_embedding_model loads with local_files_only=True first; downloads only on a cache miss and only if EMBEDDING_ALLOW_DOWNLOAD (default true); otherwise raises a clear EmbeddingError.",
+      "baseline": {"cold_model_load_network_allowed_s": [12.3, 12.1, 12.2], "cold_model_load_HF_HUB_OFFLINE_s": [7.4, 7.5], "full_suite_without_HF_HUB_OFFLINE": "hung > 20 min (M4.2A)"},
+      "result": {"cold_model_load_network_allowed_s": [7.3, 7.3], "full_suite_without_HF_HUB_OFFLINE": "464 passed, 1 xfailed in 30.5 s"},
+      "regressions": "none",
+      "decision": "ACCEPT"
+    },
+    {
+      "experiment_id": "E10",
+      "name": "In-process caches for the immutable dataset and vector store",
+      "hypothesis": "Each request re-reads and re-validates the 320-record dataset (twice per matching request) and re-reads the FAISS index.",
+      "change": "load_job_postings and load_vector_store cache their validated result keyed by file path, mtime and size (plus model name for the index); every validation still runs when a file changes; callers get fresh lists; clear_* functions reset them. No user data is cached.",
+      "baseline_median_ms": {"dataset_load_and_validate": 17.87, "vector_store_load": 4.94, "embed_query": 7.67, "faiss_search_all_960": 0.39, "search_jobs_total": 46.71, "match_jobs_for_resume_top10": 78.05, "skill_gap": 27.61, "customization_deterministic": 20.04},
+      "result_median_ms": {"dataset_load_and_validate": 0.24, "vector_store_load": 0.14, "embed_query": 5.27, "faiss_search_all_960": 0.09, "search_jobs_total": 9.44, "match_jobs_for_resume_top10": 16.31, "skill_gap": 3.07, "customization_deterministic": 4.57},
+      "regressions": "none (cache invalidation and validation-after-change covered by tests)",
+      "decision": "ACCEPT"
+    },
+    {
+      "experiment_id": "T1",
+      "name": "Token usage capture",
+      "change": "OpenAICompatibleProvider records the provider's reported `usage` (prompt/completion/total tokens) in last_usage and logs it; nothing is estimated.",
+      "result": "Verified with fake HTTP responses only. Token usage not measured in automated baseline because live LLM execution is intentionally disabled.",
+      "decision": "ACCEPT (instrumentation only)"
+    },
+    {
+      "experiment_id": "P1",
+      "name": "Prompt review",
+      "result": "All four system prompts (customization, interview prep, assistant, mock answer) already define role, inputs, an evidence list with ids, task, constraints, a strict JSON output and grounding rules. No prompt text was changed: improvements could not be measured without live LLM calls. One testable prompt/validator conflict was fixed under E5 (the prompt requires naming the job title; the LLM-layer validator rejected titles containing unsupported skills).",
+      "decision": "NO PROMPT CHANGE"
+    }
+  ],
+  "xfails": {
+    "before": "374 passed / 6 xfailed",
+    "after": "464 passed / 1 xfailed",
+    "resolved": [
+      "test_job_discovery_uses_the_requested_area (E1)",
+      "test_compare_me_with_job_phrasing_keeps_context_across_follow_ups (E2a)",
+      "test_semantically_related_profile_scores_above_unsuitable_profile (E3e)",
+      "test_matching_and_skill_gap_agree_on_education (E4)",
+      "test_unrelated_and_nonsense_queries_return_no_results -> restated as ..._are_suppressed_or_flagged (E6: flagged, not suppressed)"
+    ],
+    "remaining": {"test_general_career_question_gets_a_substantive_answer": "Needs the LLM path; not measurable with the deterministic evaluation (E2b)."}
+  }
+}

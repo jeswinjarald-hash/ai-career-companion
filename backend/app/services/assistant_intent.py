@@ -17,6 +17,23 @@ import re
 
 _JOB_ID_PATTERN = re.compile(r"\bJOB-\d{3,6}\b", re.IGNORECASE)
 
+# Words that only express "show me opportunities" (verbs, pronouns, filler, generic
+# opportunity nouns) — whatever is left after removing them is the area the student
+# actually asked about. Deliberately generic: no domain or skill names live here.
+_DISCOVERY_FILLER = frozenset(
+    "a an the any some all of in on at for to with from and or me my i i'm im we us you your please can could would will "
+    "do does is are there what which who where how find search show list give suggest recommend recommended looking look "
+    "want need get see good best top new more other based fit fits fitting match matches matching suit suits suitable "
+    "resume cv profile background skills experience opportunity opportunities job jobs role roles position positions "
+    "opening openings vacancy vacancies career careers work".split()
+)
+# Opportunity-type words narrow a request but are not an area on their own.
+_OPPORTUNITY_TYPE_WORDS = frozenset(
+    "internship internships intern interns entry level entry-level graduate graduates grad trainee trainees "
+    "traineeship apprenticeship apprenticeships apprentice program programs programme programmes junior fresher freshers".split()
+)
+_WORD_PATTERN = re.compile(r"[a-z0-9][a-z0-9+#./-]*")
+
 
 def extract_job_ids(message: str) -> list[str]:
     """Returns real job-id-shaped tokens found in the message, uppercased to match
@@ -57,6 +74,22 @@ def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
     return any(keyword in text for keyword in keywords)
 
 
+# The student (not a second job) is what is being compared: candidate <-> job fit.
+_SELF_COMPARISON = re.compile(
+    r"\bcompare\s+(me|myself|my\s+(profile|resume|cv|skills|background))\b"
+    r"|\b(how|where)\s+(do|would|will)\s+i\s+(compare|stack\s+up|measure\s+up)\b"
+    r"|\b(me|myself)\s+(vs\.?|versus|against)\b"
+)
+# Learning-priority wording ("which should I learn first", "what to prioritise"),
+# matched on whole words so "machine learning" never counts as a learning request.
+_LEARNING_VERB = re.compile(r"\b(learn|study|upskill|practice|practise|prioriti[sz]e|focus\s+on|work\s+on)\b")
+_LEARNING_ORDER = re.compile(r"\b(first|next|priority|most\s+important|which|what|should\s+i)\b")
+# General discovery wording ("find QA testing jobs", "suggest some cloud roles"),
+# used only after every more specific rule has had its chance.
+_DISCOVERY_VERB = re.compile(r"\b(find|search|look(ing)?\s+for|suggest|recommend|show|list|any)\b")
+_OPPORTUNITY_NOUN = re.compile(r"\b(jobs?|internships?|roles?|opportunit(y|ies)|positions?|openings?|apprenticeships?|traineeships?|vacanc(y|ies))\b")
+
+
 def classify_intent(message: str) -> tuple[str, float]:
     """Returns (intent, confidence). Pure text classification only — does not know
     about job ids, conversation history, or resume state; `detect_intent` layers
@@ -64,6 +97,8 @@ def classify_intent(message: str) -> tuple[str, float]:
     """
     text = f" {message.strip().lower()} "
 
+    if _SELF_COMPARISON.search(text) and len(extract_job_ids(message)) <= 1:
+        return "JOB_MATCH_EXPLANATION", 0.85
     if _contains_any(text, _COMPARISON_KEYWORDS):
         return "JOB_COMPARISON", 0.9
     if _contains_any(text, _INTERVIEW_KEYWORDS):
@@ -74,7 +109,7 @@ def classify_intent(message: str) -> tuple[str, float]:
         return "RESUME_CUSTOMIZATION", 0.85
     if _contains_any(text, _SKILL_GAP_KEYWORDS):
         return "SKILL_GAP", 0.85
-    if _contains_any(text, _LEARNING_KEYWORDS):
+    if _contains_any(text, _LEARNING_KEYWORDS) or (_LEARNING_VERB.search(text) and _LEARNING_ORDER.search(text)):
         return "LEARNING_GUIDANCE", 0.8
     # Also catches the "why does JOB-0035 fit me?" phrasing (an explicit job id
     # instead of "this role"), which the fixed-phrase keyword list above doesn't.
@@ -86,6 +121,8 @@ def classify_intent(message: str) -> tuple[str, float]:
         return "PROFILE_SUMMARY", 0.75
     if _contains_any(text, _NEXT_ACTION_KEYWORDS):
         return "NEXT_BEST_ACTION", 0.75
+    if _DISCOVERY_VERB.search(text) and _OPPORTUNITY_NOUN.search(text):
+        return "JOB_DISCOVERY", 0.7
     return "GENERAL_CAREER_CHAT", 0.5
 
 
@@ -97,6 +134,18 @@ _RESUME_CONTEXT_INTENTS = {
     "JOB_MATCH_EXPLANATION", "SKILL_GAP", "RESUME_CUSTOMIZATION", "COVER_LETTER",
     "INTERVIEW_PREP", "LEARNING_GUIDANCE", "PROFILE_SUMMARY", "JOB_DISCOVERY",
 }
+
+
+def extract_discovery_request(message: str) -> str | None:
+    """The area/role words of a job-discovery request, or None when the student only
+    asked generically ("which internships fit my resume?"). Opportunity-type words are
+    kept alongside area words ("cybersecurity internships") but never form a request
+    on their own, so a generic request keeps the resume-driven discovery."""
+    words = [word.strip("./-") for word in _WORD_PATTERN.findall(message.lower())]
+    kept = [word for word in words if word and word not in _DISCOVERY_FILLER and not _JOB_ID_PATTERN.fullmatch(word)]
+    if not any(word not in _OPPORTUNITY_TYPE_WORDS for word in kept):
+        return None
+    return " ".join(kept)
 
 
 def detect_intent(message: str, active_job_id: str | None) -> dict:

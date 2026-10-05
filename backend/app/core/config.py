@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     database_url: str | None = None
     resume_storage_dir: str = "./data/resumes"
     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
+    # The embedding model is always loaded from the local cache first (no network
+    # checks). Only when it is not cached yet is it downloaded — set this to false to
+    # forbid that download and fail with a clear error instead (e.g. air-gapped hosts).
+    embedding_allow_download: bool = True
 
     # Milestone 3.2 LLM rewrite layer. `llm_provider` defaults to "none" — the app
     # never pretends a model is configured; the deterministic pipeline (M3.2's

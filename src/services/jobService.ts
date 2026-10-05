@@ -13,6 +13,8 @@ export type JobSearchResult = {
   similarity_score: number
   matched_chunk_types: string[]
   matched_text_preview: string | null
+  // 'unsupported_area': few of the query's words exist in the opportunity catalogue.
+  query_confidence: 'confident' | 'unsupported_area'
 }
 
 export type JobPosting = {

@@ -18,6 +18,8 @@ from sqlalchemy.orm import Session
 
 from app.schemas.assistant import SuggestedAction
 from app.services.assistant_context import ResolvedContext
+from app.services.assistant_intent import extract_discovery_request
+from app.services.retrieval_confidence import query_confidence
 from app.services.interview_evidence import best_effort_m2_match
 from app.services.interview_prep_service import generate_interview_preparation, get_interview_preparation, list_interview_preparations
 from app.services.job_matching import match_jobs_for_resume
@@ -62,7 +64,9 @@ def _get_or_generate_interview_prep(db: Session, user_id: int, resume_id: int, j
 
 
 def handle_job_discovery(db: Session, user_id: int, ctx: ResolvedContext, message: str) -> HandlerResult:
-    matches = match_jobs_for_resume(db, ctx.resume.id, top_k=5)
+    # An explicitly requested area drives retrieval; the resume still drives scoring.
+    request = extract_discovery_request(message)
+    matches = match_jobs_for_resume(db, ctx.resume.id, top_k=5, query=request)
     if not matches:
         return HandlerResult(
             "I couldn't find any matching opportunities for your resume yet. Try exploring Career Recommendations directly.",
@@ -70,10 +74,17 @@ def handle_job_discovery(db: Session, user_id: int, ctx: ResolvedContext, messag
             context_used=["m2_job_match"], resume_id=ctx.resume.id,
         )
     lines = [f"{m.job_title} at {m.company} ({m.employment_type}) — {round(m.match_score)}% match" + (f" (matched: {', '.join(m.matched_required_skills[:3])})" if m.matched_required_skills else "") for m in matches]
-    message_out = "Based on your resume, here are your top opportunity matches:\n" + "\n".join(f"- {line}" for line in lines)
+    if request and query_confidence(request) == "unsupported_area":
+        heading = (f"I couldn't find opportunities that closely match \"{request}\" - that area is not covered by the "
+                   "opportunities available here. The closest ones, scored against your resume, are:")
+    elif request:
+        heading = f'Here are opportunities for "{request}", scored against your resume:'
+    else:
+        heading = "Based on your resume, here are your top opportunity matches:"
+    message_out = heading + "\n" + "\n".join(f"- {line}" for line in lines)
     actions = [SuggestedAction(label=f"View {m.job_title}", action="view_job", job_id=m.job_id) for m in matches[:3]]
     actions.append(SuggestedAction(label="View all recommendations", action="view_recommendations"))
-    facts = {"matches": [
+    facts = {"requested_area": request, "matches": [
         {"job_id": m.job_id, "job_title": m.job_title, "company": m.company, "opportunity_type": m.employment_type, "match_score": round(m.match_score),
          "matched_required_skills": m.matched_required_skills, "missing_required_skills": m.missing_required_skills}
         for m in matches

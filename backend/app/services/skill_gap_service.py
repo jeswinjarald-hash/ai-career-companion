@@ -36,6 +36,7 @@ from app.schemas.skill_gap import (
     SkillGapSummary,
     StrengthItem,
 )
+from app.services.education_assessment import assess_education_text
 from app.services.job_dataset_service import load_job_postings
 from app.services.job_matching import normalize_term
 from app.services.skill_gap_evidence import EvidenceUnit, build_evidence_units, evidence_item, match_requirement, mentions_term
@@ -213,7 +214,6 @@ def assess_experience(job: JobPosting, units: list[EvidenceUnit]) -> tuple[Match
     return "missing", 0.85, [], "No experience evidence was found for this requirement."
 
 
-_DEGREE_FIELD_TERMS = ("b.tech", "b.e", "bca", "b.sc", "m.tech", "mca", "m.sc", "computer", "information technology", "data science", "engineering", "mathematics", "statistics", "electronics")
 
 
 def assess_education(job: JobPosting, units: list[EvidenceUnit]) -> tuple[MatchType, float, list[EvidenceItem], str, bool]:
@@ -221,13 +221,12 @@ def assess_education(job: JobPosting, units: list[EvidenceUnit]) -> tuple[MatchT
     if not education_units:
         return "missing", 0.6, [], "No education evidence is available in your profile/resume yet.", False
 
-    norm_req = normalize_term(job.education_requirements)
+    # Shared with Job Matching (`education_assessment`), so both services agree.
     combined = " ".join(unit.normalized_text for unit in education_units)
-    has_relevant_field = any(term in combined for term in _DEGREE_FIELD_TERMS)
-    accepts_related = "related" in norm_req or "any discipline" in norm_req
-    if has_relevant_field and (("computer" in norm_req) or ("information technology" in norm_req) or accepts_related):
+    assessment = assess_education_text(combined, normalize_term(job.education_requirements))
+    if assessment.level == "met":
         return "demonstrated", 0.85, [evidence_item(education_units[0])], "Education evidence satisfies the stated or related-field requirement.", True
-    if has_relevant_field:
+    if assessment.level == "partial":
         return "partial", 0.6, [evidence_item(education_units[0])], "Available education is technical but does not clearly match the specific discipline stated in the requirement.", True
     return "missing", 0.75, [evidence_item(education_units[0])], "Available education does not clearly satisfy the stated requirement.", True
 

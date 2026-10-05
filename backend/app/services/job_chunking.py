@@ -20,13 +20,18 @@ def chunk_job_posting(job: JobPosting) -> list[JobChunk]:
         "work_mode": job.work_mode,
         "employment_type": job.employment_type,
     }
+    # The overview chunk leads with the title and opportunity type (M4.3 Experiment 8):
+    # within a domain all postings share identical skills, so title/type are what tell
+    # them apart. This lifted Hit@1 from 0.885 to 1.0 on the M4 cases. Prefixing every
+    # chunk was tried and rejected — it pushed skill-driven profile matches down.
+    heading = f"{job.job_title} ({job.employment_type}). "
     return [
         JobChunk(
             **context,
             chunk_id=f"{job.job_id}::overview",
             chunk_type="overview",
             text=(
-                f"Job title: {job.job_title}. Company: {job.company}. Domain: {job.domain}. "
+                f"{heading}Job title: {job.job_title}. Company: {job.company}. Domain: {job.domain}. "
                 f"Location: {job.location}. Work mode: {job.work_mode}. "
                 f"Employment type: {job.employment_type}. Description: {job.job_description}"
             ),

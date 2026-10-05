@@ -1,0 +1,1310 @@
+{
+  "version": "m4.2-1",
+  "dataset": "career_opportunities_320.json",
+  "label_policy": "Labels are derived from explicit rules over real postings (domain + exact job_title and/or employment_type). relevant = grade 2, acceptable = grade 1, everything else = grade 0. Within one domain every posting shares identical required/preferred skills, so job-level distinctions are by title and opportunity type only.",
+  "queries": [
+    {
+      "query_id": "RP01",
+      "query": "React developer internship",
+      "expected_domain": "Frontend Development",
+      "relevant_rule": {
+        "domain": "Frontend Development",
+        "titles": [
+          "React Developer Intern"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Frontend Development",
+          "Full Stack Development"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0038",
+        "JOB-0041",
+        "JOB-0044",
+        "JOB-0047"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0037",
+        "JOB-0039",
+        "JOB-0040",
+        "JOB-0042",
+        "JOB-0043",
+        "JOB-0045",
+        "JOB-0046",
+        "JOB-0048",
+        "JOB-0049",
+        "JOB-0050",
+        "JOB-0051",
+        "JOB-0052",
+        "JOB-0053",
+        "JOB-0054",
+        "JOB-0055",
+        "JOB-0056",
+        "JOB-0057",
+        "JOB-0058",
+        "JOB-0059",
+        "JOB-0060",
+        "JOB-0182",
+        "JOB-0190",
+        "JOB-0197",
+        "JOB-0207",
+        "JOB-0215",
+        "JOB-0222",
+        "JOB-0230",
+        "JOB-0237",
+        "JOB-0245",
+        "JOB-0255",
+        "JOB-0262",
+        "JOB-0270",
+        "JOB-0277",
+        "JOB-0285",
+        "JOB-0292",
+        "JOB-0300",
+        "JOB-0307",
+        "JOB-0315"
+      ],
+      "notes": "Title-specific; React is a preferred skill across all Frontend/Full Stack postings."
+    },
+    {
+      "query_id": "RP02",
+      "query": "graduate cloud engineer role",
+      "expected_domain": "Cloud Computing",
+      "relevant_rule": {
+        "domain": "Cloud Computing",
+        "types": [
+          "Graduate Role"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Cloud Computing"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0265",
+        "JOB-0280",
+        "JOB-0295"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0109",
+        "JOB-0110",
+        "JOB-0111",
+        "JOB-0112",
+        "JOB-0113",
+        "JOB-0114",
+        "JOB-0115",
+        "JOB-0116",
+        "JOB-0117",
+        "JOB-0118",
+        "JOB-0119",
+        "JOB-0120",
+        "JOB-0185",
+        "JOB-0200",
+        "JOB-0210",
+        "JOB-0225",
+        "JOB-0240",
+        "JOB-0310"
+      ],
+      "notes": "Opportunity-type-specific (Graduate Role)."
+    },
+    {
+      "query_id": "RP03",
+      "query": "SOC analyst security operations internship",
+      "expected_domain": "Cybersecurity",
+      "relevant_rule": {
+        "domain": "Cybersecurity",
+        "titles": [
+          "SOC Intern"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Cybersecurity"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0135",
+        "JOB-0138",
+        "JOB-0141",
+        "JOB-0144"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0133",
+        "JOB-0134",
+        "JOB-0136",
+        "JOB-0137",
+        "JOB-0139",
+        "JOB-0140",
+        "JOB-0142",
+        "JOB-0143",
+        "JOB-0186",
+        "JOB-0211",
+        "JOB-0226",
+        "JOB-0241",
+        "JOB-0251",
+        "JOB-0266",
+        "JOB-0281",
+        "JOB-0296",
+        "JOB-0311"
+      ],
+      "notes": "Title-specific."
+    },
+    {
+      "query_id": "RP04",
+      "query": "SQL data analyst internship",
+      "expected_domain": "Data Analytics",
+      "relevant_rule": {
+        "domain": "Data Analytics",
+        "titles": [
+          "Data Analyst Intern",
+          "Business Data Analyst Intern",
+          "Analytics Intern",
+          "Data Analytics Intern"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Data Analytics",
+          "Database / SQL"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0097",
+        "JOB-0098",
+        "JOB-0099",
+        "JOB-0100",
+        "JOB-0101",
+        "JOB-0102",
+        "JOB-0103",
+        "JOB-0104",
+        "JOB-0105",
+        "JOB-0106",
+        "JOB-0107",
+        "JOB-0108",
+        "JOB-0192"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0145",
+        "JOB-0146",
+        "JOB-0147",
+        "JOB-0148",
+        "JOB-0149",
+        "JOB-0150",
+        "JOB-0151",
+        "JOB-0152",
+        "JOB-0153",
+        "JOB-0154",
+        "JOB-0155",
+        "JOB-0156",
+        "JOB-0194",
+        "JOB-0202",
+        "JOB-0204",
+        "JOB-0217",
+        "JOB-0219",
+        "JOB-0232",
+        "JOB-0234",
+        "JOB-0247",
+        "JOB-0249",
+        "JOB-0257",
+        "JOB-0259",
+        "JOB-0272",
+        "JOB-0274",
+        "JOB-0287",
+        "JOB-0289",
+        "JOB-0302",
+        "JOB-0304",
+        "JOB-0317",
+        "JOB-0319"
+      ],
+      "notes": "All analyst-titled internship postings are relevant; Database/SQL acceptable."
+    },
+    {
+      "query_id": "RP05",
+      "query": "Spring Boot Java backend internship",
+      "expected_domain": "Java Backend",
+      "relevant_rule": {
+        "domain": "Java Backend",
+        "titles": [
+          "Spring Boot Intern"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Java Backend"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0015",
+        "JOB-0018",
+        "JOB-0021",
+        "JOB-0024"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0013",
+        "JOB-0014",
+        "JOB-0016",
+        "JOB-0017",
+        "JOB-0019",
+        "JOB-0020",
+        "JOB-0022",
+        "JOB-0023",
+        "JOB-0181",
+        "JOB-0196",
+        "JOB-0206",
+        "JOB-0221",
+        "JOB-0236",
+        "JOB-0261",
+        "JOB-0276",
+        "JOB-0291",
+        "JOB-0306"
+      ],
+      "notes": "Title-specific."
+    },
+    {
+      "query_id": "RP06",
+      "query": "FastAPI Python backend internship",
+      "expected_domain": "Python Backend",
+      "relevant_rule": {
+        "domain": "Python Backend",
+        "titles": [
+          "FastAPI Intern"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Python Backend"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0026",
+        "JOB-0029",
+        "JOB-0032",
+        "JOB-0035"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0025",
+        "JOB-0027",
+        "JOB-0028",
+        "JOB-0030",
+        "JOB-0031",
+        "JOB-0033",
+        "JOB-0034",
+        "JOB-0036",
+        "JOB-0189",
+        "JOB-0214",
+        "JOB-0229",
+        "JOB-0244",
+        "JOB-0254",
+        "JOB-0269",
+        "JOB-0284",
+        "JOB-0299",
+        "JOB-0314"
+      ],
+      "notes": "Title-specific."
+    },
+    {
+      "query_id": "RP07",
+      "query": "Flutter mobile app intern",
+      "expected_domain": "Mobile Development",
+      "relevant_rule": {
+        "domain": "Mobile Development",
+        "titles": [
+          "Flutter Intern"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Mobile Development"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0171",
+        "JOB-0174",
+        "JOB-0177",
+        "JOB-0180"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0169",
+        "JOB-0170",
+        "JOB-0172",
+        "JOB-0173",
+        "JOB-0175",
+        "JOB-0176",
+        "JOB-0178",
+        "JOB-0179",
+        "JOB-0195",
+        "JOB-0205",
+        "JOB-0220",
+        "JOB-0235",
+        "JOB-0250",
+        "JOB-0260",
+        "JOB-0275",
+        "JOB-0290",
+        "JOB-0305",
+        "JOB-0320"
+      ],
+      "notes": "Title-specific."
+    },
+    {
+      "query_id": "RP08",
+      "query": "Android developer internship with Kotlin",
+      "expected_domain": "Mobile Development",
+      "relevant_rule": {
+        "domain": "Mobile Development",
+        "titles": [
+          "Android Developer Intern"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Mobile Development"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0169",
+        "JOB-0172",
+        "JOB-0175",
+        "JOB-0178"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0170",
+        "JOB-0171",
+        "JOB-0173",
+        "JOB-0174",
+        "JOB-0176",
+        "JOB-0177",
+        "JOB-0179",
+        "JOB-0180",
+        "JOB-0195",
+        "JOB-0205",
+        "JOB-0220",
+        "JOB-0235",
+        "JOB-0250",
+        "JOB-0260",
+        "JOB-0275",
+        "JOB-0290",
+        "JOB-0305",
+        "JOB-0320"
+      ],
+      "notes": "Title-specific."
+    },
+    {
+      "query_id": "RP09",
+      "query": "generative AI internship working with LLMs and RAG",
+      "expected_domain": "Generative AI / NLP",
+      "relevant_rule": {
+        "domain": "Generative AI / NLP",
+        "titles": [
+          "Generative AI Intern"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Generative AI / NLP",
+          "Machine Learning"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0086",
+        "JOB-0089",
+        "JOB-0092",
+        "JOB-0095"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0073",
+        "JOB-0074",
+        "JOB-0075",
+        "JOB-0076",
+        "JOB-0077",
+        "JOB-0078",
+        "JOB-0079",
+        "JOB-0080",
+        "JOB-0081",
+        "JOB-0082",
+        "JOB-0083",
+        "JOB-0084",
+        "JOB-0085",
+        "JOB-0087",
+        "JOB-0088",
+        "JOB-0090",
+        "JOB-0091",
+        "JOB-0093",
+        "JOB-0094",
+        "JOB-0096",
+        "JOB-0184",
+        "JOB-0191",
+        "JOB-0199",
+        "JOB-0201",
+        "JOB-0209",
+        "JOB-0216",
+        "JOB-0224",
+        "JOB-0231",
+        "JOB-0239",
+        "JOB-0246",
+        "JOB-0256",
+        "JOB-0264",
+        "JOB-0271",
+        "JOB-0279",
+        "JOB-0286",
+        "JOB-0294",
+        "JOB-0301",
+        "JOB-0309",
+        "JOB-0316"
+      ],
+      "notes": "Title-specific; ML acceptable."
+    },
+    {
+      "query_id": "RP10",
+      "query": "NLP engineer graduate role",
+      "expected_domain": "Generative AI / NLP",
+      "relevant_rule": {
+        "domain": "Generative AI / NLP",
+        "types": [
+          "Graduate Role"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Generative AI / NLP"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0264",
+        "JOB-0279",
+        "JOB-0294"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0085",
+        "JOB-0086",
+        "JOB-0087",
+        "JOB-0088",
+        "JOB-0089",
+        "JOB-0090",
+        "JOB-0091",
+        "JOB-0092",
+        "JOB-0093",
+        "JOB-0094",
+        "JOB-0095",
+        "JOB-0096",
+        "JOB-0184",
+        "JOB-0199",
+        "JOB-0209",
+        "JOB-0224",
+        "JOB-0239",
+        "JOB-0309"
+      ],
+      "notes": "Opportunity-type-specific."
+    },
+    {
+      "query_id": "RP11",
+      "query": "machine learning apprenticeship",
+      "expected_domain": "Machine Learning",
+      "relevant_rule": {
+        "domain": "Machine Learning",
+        "types": [
+          "Apprenticeship"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Machine Learning"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0316"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0073",
+        "JOB-0074",
+        "JOB-0075",
+        "JOB-0076",
+        "JOB-0077",
+        "JOB-0078",
+        "JOB-0079",
+        "JOB-0080",
+        "JOB-0081",
+        "JOB-0082",
+        "JOB-0083",
+        "JOB-0084",
+        "JOB-0191",
+        "JOB-0201",
+        "JOB-0216",
+        "JOB-0231",
+        "JOB-0246",
+        "JOB-0256",
+        "JOB-0271",
+        "JOB-0286",
+        "JOB-0301"
+      ],
+      "notes": "Single relevant posting (JOB-0316); recall is bounded by 1."
+    },
+    {
+      "query_id": "RP12",
+      "query": "junior data science developer",
+      "expected_domain": "Data Science",
+      "relevant_rule": {
+        "domain": "Data Science",
+        "titles": [
+          "Junior Data Science Developer"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Data Science"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0208",
+        "JOB-0223",
+        "JOB-0238"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0061",
+        "JOB-0062",
+        "JOB-0063",
+        "JOB-0064",
+        "JOB-0065",
+        "JOB-0066",
+        "JOB-0067",
+        "JOB-0068",
+        "JOB-0069",
+        "JOB-0070",
+        "JOB-0071",
+        "JOB-0072",
+        "JOB-0183",
+        "JOB-0198",
+        "JOB-0263",
+        "JOB-0278",
+        "JOB-0293",
+        "JOB-0308"
+      ],
+      "notes": "Title-specific."
+    },
+    {
+      "query_id": "RP13",
+      "query": "test automation intern using Selenium",
+      "expected_domain": "Software Testing / QA",
+      "relevant_rule": {
+        "domain": "Software Testing / QA",
+        "titles": [
+          "Test Automation Intern"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Software Testing / QA"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0159",
+        "JOB-0162",
+        "JOB-0165",
+        "JOB-0168"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0157",
+        "JOB-0158",
+        "JOB-0160",
+        "JOB-0161",
+        "JOB-0163",
+        "JOB-0164",
+        "JOB-0166",
+        "JOB-0167",
+        "JOB-0187",
+        "JOB-0212",
+        "JOB-0227",
+        "JOB-0242",
+        "JOB-0252",
+        "JOB-0267",
+        "JOB-0282",
+        "JOB-0297",
+        "JOB-0312"
+      ],
+      "notes": "Title-specific."
+    },
+    {
+      "query_id": "RP14",
+      "query": "MERN stack intern with Node.js and MongoDB",
+      "expected_domain": "Full Stack Development",
+      "relevant_rule": {
+        "domain": "Full Stack Development",
+        "titles": [
+          "MERN Stack Intern"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Full Stack Development"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0051",
+        "JOB-0054",
+        "JOB-0057",
+        "JOB-0060"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0049",
+        "JOB-0050",
+        "JOB-0052",
+        "JOB-0053",
+        "JOB-0055",
+        "JOB-0056",
+        "JOB-0058",
+        "JOB-0059",
+        "JOB-0190",
+        "JOB-0215",
+        "JOB-0230",
+        "JOB-0245",
+        "JOB-0255",
+        "JOB-0270",
+        "JOB-0285",
+        "JOB-0300",
+        "JOB-0315"
+      ],
+      "notes": "Title-specific."
+    },
+    {
+      "query_id": "RP15",
+      "query": "CI/CD pipeline internship with Jenkins",
+      "expected_domain": "DevOps",
+      "relevant_rule": {
+        "domain": "DevOps",
+        "titles": [
+          "CI/CD Intern"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "DevOps",
+          "Cloud Computing"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0123",
+        "JOB-0126",
+        "JOB-0129",
+        "JOB-0132"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0109",
+        "JOB-0110",
+        "JOB-0111",
+        "JOB-0112",
+        "JOB-0113",
+        "JOB-0114",
+        "JOB-0115",
+        "JOB-0116",
+        "JOB-0117",
+        "JOB-0118",
+        "JOB-0119",
+        "JOB-0120",
+        "JOB-0121",
+        "JOB-0122",
+        "JOB-0124",
+        "JOB-0125",
+        "JOB-0127",
+        "JOB-0128",
+        "JOB-0130",
+        "JOB-0131",
+        "JOB-0185",
+        "JOB-0193",
+        "JOB-0200",
+        "JOB-0203",
+        "JOB-0210",
+        "JOB-0218",
+        "JOB-0225",
+        "JOB-0233",
+        "JOB-0240",
+        "JOB-0248",
+        "JOB-0258",
+        "JOB-0265",
+        "JOB-0273",
+        "JOB-0280",
+        "JOB-0288",
+        "JOB-0295",
+        "JOB-0303",
+        "JOB-0310",
+        "JOB-0318"
+      ],
+      "notes": "Title-specific; Cloud acceptable."
+    },
+    {
+      "query_id": "RP16",
+      "query": "database engineering trainee",
+      "expected_domain": "Database / SQL",
+      "relevant_rule": {
+        "domain": "Database / SQL",
+        "types": [
+          "Trainee"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Database / SQL"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0304"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0145",
+        "JOB-0146",
+        "JOB-0147",
+        "JOB-0148",
+        "JOB-0149",
+        "JOB-0150",
+        "JOB-0151",
+        "JOB-0152",
+        "JOB-0153",
+        "JOB-0154",
+        "JOB-0155",
+        "JOB-0156",
+        "JOB-0194",
+        "JOB-0204",
+        "JOB-0219",
+        "JOB-0234",
+        "JOB-0249",
+        "JOB-0259",
+        "JOB-0274",
+        "JOB-0289",
+        "JOB-0319"
+      ],
+      "notes": "Single relevant posting (JOB-0304)."
+    },
+    {
+      "query_id": "RP17",
+      "query": "graduate software engineer program",
+      "expected_domain": "Software Development",
+      "relevant_rule": {
+        "domain": "Software Development",
+        "types": [
+          "Graduate Role"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Software Development"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0253",
+        "JOB-0268",
+        "JOB-0283"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0001",
+        "JOB-0002",
+        "JOB-0003",
+        "JOB-0004",
+        "JOB-0005",
+        "JOB-0006",
+        "JOB-0007",
+        "JOB-0008",
+        "JOB-0009",
+        "JOB-0010",
+        "JOB-0011",
+        "JOB-0012",
+        "JOB-0188",
+        "JOB-0213",
+        "JOB-0228",
+        "JOB-0243",
+        "JOB-0298",
+        "JOB-0313"
+      ],
+      "notes": "Opportunity-type-specific."
+    },
+    {
+      "query_id": "RP18",
+      "query": "AWS cloud internship",
+      "expected_domain": "Cloud Computing",
+      "relevant_rule": {
+        "domain": "Cloud Computing",
+        "titles": [
+          "AWS Cloud Intern"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Cloud Computing",
+          "DevOps"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0110",
+        "JOB-0113",
+        "JOB-0116",
+        "JOB-0119"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0109",
+        "JOB-0111",
+        "JOB-0112",
+        "JOB-0114",
+        "JOB-0115",
+        "JOB-0117",
+        "JOB-0118",
+        "JOB-0120",
+        "JOB-0121",
+        "JOB-0122",
+        "JOB-0123",
+        "JOB-0124",
+        "JOB-0125",
+        "JOB-0126",
+        "JOB-0127",
+        "JOB-0128",
+        "JOB-0129",
+        "JOB-0130",
+        "JOB-0131",
+        "JOB-0132",
+        "JOB-0185",
+        "JOB-0193",
+        "JOB-0200",
+        "JOB-0203",
+        "JOB-0210",
+        "JOB-0218",
+        "JOB-0225",
+        "JOB-0233",
+        "JOB-0240",
+        "JOB-0248",
+        "JOB-0258",
+        "JOB-0265",
+        "JOB-0273",
+        "JOB-0280",
+        "JOB-0288",
+        "JOB-0295",
+        "JOB-0303",
+        "JOB-0310",
+        "JOB-0318"
+      ],
+      "notes": "Title-specific; DevOps acceptable."
+    },
+    {
+      "query_id": "RP19",
+      "query": "QA apprenticeship in software testing",
+      "expected_domain": "Software Testing / QA",
+      "relevant_rule": {
+        "domain": "Software Testing / QA",
+        "types": [
+          "Apprenticeship"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Software Testing / QA"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0312"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0157",
+        "JOB-0158",
+        "JOB-0159",
+        "JOB-0160",
+        "JOB-0161",
+        "JOB-0162",
+        "JOB-0163",
+        "JOB-0164",
+        "JOB-0165",
+        "JOB-0166",
+        "JOB-0167",
+        "JOB-0168",
+        "JOB-0187",
+        "JOB-0212",
+        "JOB-0227",
+        "JOB-0242",
+        "JOB-0252",
+        "JOB-0267",
+        "JOB-0282",
+        "JOB-0297"
+      ],
+      "notes": "Single relevant posting (JOB-0312)."
+    },
+    {
+      "query_id": "RP20",
+      "query": "Power BI and Tableau dashboard analyst",
+      "expected_domain": "Data Analytics",
+      "relevant_rule": {
+        "domain": "Data Analytics"
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Data Analytics"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0097",
+        "JOB-0098",
+        "JOB-0099",
+        "JOB-0100",
+        "JOB-0101",
+        "JOB-0102",
+        "JOB-0103",
+        "JOB-0104",
+        "JOB-0105",
+        "JOB-0106",
+        "JOB-0107",
+        "JOB-0108",
+        "JOB-0192",
+        "JOB-0202",
+        "JOB-0217",
+        "JOB-0232",
+        "JOB-0247",
+        "JOB-0257",
+        "JOB-0272",
+        "JOB-0287",
+        "JOB-0302",
+        "JOB-0317"
+      ],
+      "acceptable_job_ids": [],
+      "notes": "Skill-only query: every Data Analytics posting shares these skills, so the whole domain is relevant."
+    },
+    {
+      "query_id": "RP21",
+      "query": "Docker and Kubernetes DevOps role",
+      "expected_domain": "DevOps",
+      "relevant_rule": {
+        "domain": "DevOps"
+      },
+      "acceptable_rule": {
+        "domains": [
+          "DevOps",
+          "Cloud Computing"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0121",
+        "JOB-0122",
+        "JOB-0123",
+        "JOB-0124",
+        "JOB-0125",
+        "JOB-0126",
+        "JOB-0127",
+        "JOB-0128",
+        "JOB-0129",
+        "JOB-0130",
+        "JOB-0131",
+        "JOB-0132",
+        "JOB-0193",
+        "JOB-0203",
+        "JOB-0218",
+        "JOB-0233",
+        "JOB-0248",
+        "JOB-0258",
+        "JOB-0273",
+        "JOB-0288",
+        "JOB-0303",
+        "JOB-0318"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0109",
+        "JOB-0110",
+        "JOB-0111",
+        "JOB-0112",
+        "JOB-0113",
+        "JOB-0114",
+        "JOB-0115",
+        "JOB-0116",
+        "JOB-0117",
+        "JOB-0118",
+        "JOB-0119",
+        "JOB-0120",
+        "JOB-0185",
+        "JOB-0200",
+        "JOB-0210",
+        "JOB-0225",
+        "JOB-0240",
+        "JOB-0265",
+        "JOB-0280",
+        "JOB-0295",
+        "JOB-0310"
+      ],
+      "notes": "Skill-only query: whole DevOps domain relevant; Cloud acceptable."
+    },
+    {
+      "query_id": "RP22",
+      "query": "machine learning internship using PyTorch and TensorFlow",
+      "expected_domain": "Machine Learning",
+      "relevant_rule": {
+        "domain": "Machine Learning",
+        "types": [
+          "Internship"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Machine Learning",
+          "Data Science",
+          "Generative AI / NLP"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0073",
+        "JOB-0074",
+        "JOB-0075",
+        "JOB-0076",
+        "JOB-0077",
+        "JOB-0078",
+        "JOB-0079",
+        "JOB-0080",
+        "JOB-0081",
+        "JOB-0082",
+        "JOB-0191"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0061",
+        "JOB-0062",
+        "JOB-0063",
+        "JOB-0064",
+        "JOB-0065",
+        "JOB-0066",
+        "JOB-0067",
+        "JOB-0068",
+        "JOB-0069",
+        "JOB-0070",
+        "JOB-0071",
+        "JOB-0072",
+        "JOB-0083",
+        "JOB-0084",
+        "JOB-0085",
+        "JOB-0086",
+        "JOB-0087",
+        "JOB-0088",
+        "JOB-0089",
+        "JOB-0090",
+        "JOB-0091",
+        "JOB-0092",
+        "JOB-0093",
+        "JOB-0094",
+        "JOB-0095",
+        "JOB-0096",
+        "JOB-0183",
+        "JOB-0184",
+        "JOB-0198",
+        "JOB-0199",
+        "JOB-0201",
+        "JOB-0208",
+        "JOB-0209",
+        "JOB-0216",
+        "JOB-0223",
+        "JOB-0224",
+        "JOB-0231",
+        "JOB-0238",
+        "JOB-0239",
+        "JOB-0246",
+        "JOB-0256",
+        "JOB-0263",
+        "JOB-0264",
+        "JOB-0271",
+        "JOB-0278",
+        "JOB-0279",
+        "JOB-0286",
+        "JOB-0293",
+        "JOB-0294",
+        "JOB-0301",
+        "JOB-0308",
+        "JOB-0309",
+        "JOB-0316"
+      ],
+      "notes": "Internship-type ML postings relevant; adjacent AI domains acceptable."
+    },
+    {
+      "query_id": "RP23",
+      "query": "frontend engineering trainee program",
+      "expected_domain": "Frontend Development",
+      "relevant_rule": {
+        "domain": "Frontend Development",
+        "types": [
+          "Trainee"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Frontend Development"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0307"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0037",
+        "JOB-0038",
+        "JOB-0039",
+        "JOB-0040",
+        "JOB-0041",
+        "JOB-0042",
+        "JOB-0043",
+        "JOB-0044",
+        "JOB-0045",
+        "JOB-0046",
+        "JOB-0047",
+        "JOB-0048",
+        "JOB-0182",
+        "JOB-0197",
+        "JOB-0207",
+        "JOB-0222",
+        "JOB-0237",
+        "JOB-0262",
+        "JOB-0277",
+        "JOB-0292"
+      ],
+      "notes": "Single relevant posting (JOB-0307)."
+    },
+    {
+      "query_id": "RP24",
+      "query": "cybersecurity apprenticeship",
+      "expected_domain": "Cybersecurity",
+      "relevant_rule": {
+        "domain": "Cybersecurity",
+        "types": [
+          "Apprenticeship"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Cybersecurity"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0311"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0133",
+        "JOB-0134",
+        "JOB-0135",
+        "JOB-0136",
+        "JOB-0137",
+        "JOB-0138",
+        "JOB-0139",
+        "JOB-0140",
+        "JOB-0141",
+        "JOB-0142",
+        "JOB-0143",
+        "JOB-0144",
+        "JOB-0186",
+        "JOB-0211",
+        "JOB-0226",
+        "JOB-0241",
+        "JOB-0251",
+        "JOB-0266",
+        "JOB-0281",
+        "JOB-0296"
+      ],
+      "notes": "Single relevant posting (JOB-0311)."
+    },
+    {
+      "query_id": "RP25",
+      "query": "business analyst entry level",
+      "expected_domain": "Data Analytics",
+      "relevant_rule": {
+        "domain": "Data Analytics",
+        "titles": [
+          "Business Data Analyst Intern"
+        ],
+        "types": [
+          "Entry Level"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Data Analytics"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0107"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0097",
+        "JOB-0098",
+        "JOB-0099",
+        "JOB-0100",
+        "JOB-0101",
+        "JOB-0102",
+        "JOB-0103",
+        "JOB-0104",
+        "JOB-0105",
+        "JOB-0106",
+        "JOB-0108",
+        "JOB-0192",
+        "JOB-0202",
+        "JOB-0217",
+        "JOB-0232",
+        "JOB-0247",
+        "JOB-0257",
+        "JOB-0272",
+        "JOB-0287",
+        "JOB-0302",
+        "JOB-0317"
+      ],
+      "notes": "Only one Business Data Analyst posting is Entry Level (JOB-0107)."
+    },
+    {
+      "query_id": "RP26",
+      "query": "Java developer intern with OOP skills",
+      "expected_domain": "Java Backend",
+      "relevant_rule": {
+        "domain": "Java Backend",
+        "titles": [
+          "Java Developer Intern",
+          "Java Backend Intern"
+        ]
+      },
+      "acceptable_rule": {
+        "domains": [
+          "Java Backend",
+          "Software Development"
+        ]
+      },
+      "relevant_job_ids": [
+        "JOB-0013",
+        "JOB-0016",
+        "JOB-0019",
+        "JOB-0022",
+        "JOB-0181",
+        "JOB-0196"
+      ],
+      "acceptable_job_ids": [
+        "JOB-0001",
+        "JOB-0002",
+        "JOB-0003",
+        "JOB-0004",
+        "JOB-0005",
+        "JOB-0006",
+        "JOB-0007",
+        "JOB-0008",
+        "JOB-0009",
+        "JOB-0010",
+        "JOB-0011",
+        "JOB-0012",
+        "JOB-0014",
+        "JOB-0015",
+        "JOB-0017",
+        "JOB-0018",
+        "JOB-0020",
+        "JOB-0021",
+        "JOB-0023",
+        "JOB-0024",
+        "JOB-0188",
+        "JOB-0206",
+        "JOB-0213",
+        "JOB-0221",
+        "JOB-0228",
+        "JOB-0236",
+        "JOB-0243",
+        "JOB-0253",
+        "JOB-0261",
+        "JOB-0268",
+        "JOB-0276",
+        "JOB-0283",
+        "JOB-0291",
+        "JOB-0298",
+        "JOB-0306",
+        "JOB-0313"
+      ],
+      "notes": "Title-specific."
+    }
+  ]
+}

@@ -1,0 +1,3389 @@
+{
+  "generated_at": "2026-10-05T08:20:31+00:00",
+  "evaluation_version": "m4.2-1",
+  "llm_mode": "null provider (deterministic pipeline only)",
+  "configuration": {
+    "dataset_file": "backend/data/internships/career_opportunities_320.json",
+    "dataset_size": 320,
+    "chunk_count": 960,
+    "vector_count": 960,
+    "index_type": "IndexFlatIP",
+    "similarity": "inner product on L2-normalised embeddings (cosine)",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "embedding_dimension": 384,
+    "index_file": "data/vector_store/internship_jobs.faiss",
+    "retrieval": "all chunks searched; per-job score = best chunk + 0.05 x sum(other chunks); no threshold"
+  },
+  "case_counts": {
+    "positive_queries": 26,
+    "relevant_job_labels": 136,
+    "acceptable_job_labels": 612,
+    "negative_queries": 12,
+    "candidates": 5,
+    "candidate_job_pairs": 8,
+    "matching_scenarios": 4,
+    "conversations": 7,
+    "conversation_turns": 16,
+    "job_discovery_probes": 3
+  },
+  "metric_definitions": {
+    "hit@k": "1 if any grade-2 (relevant) job is in the top k, averaged over queries.",
+    "precision@k": "grade-2 jobs in the top k divided by k.",
+    "relaxed_precision@k": "grade-1 or grade-2 jobs in the top k divided by k.",
+    "recall@k": "grade-2 jobs in the top k divided by all grade-2 jobs for the query (bounded by k / label count).",
+    "capped_recall@k": "grade-2 jobs in the top k divided by min(label count, k).",
+    "mrr@10": "mean of 1 / rank of the first grade-2 job within the top 10 (0 if none).",
+    "ndcg@k": "graded nDCG with gains 3 (relevant) and 1 (acceptable); ideal ranking built from the labels.",
+    "top1_domain_accuracy": "top-ranked job's domain equals the query's expected domain.",
+    "negative: above_weakest_positive_top1": "an off-topic query's top score is at least the lowest top-1 score of any genuine labelled query, i.e. no single threshold could separate them."
+  },
+  "retrieval_positive": {
+    "rows": [
+      {
+        "query_id": "RP01",
+        "query": "React developer internship",
+        "expected_domain": "Frontend Development",
+        "relevant_count": 4,
+        "retrieved_job_ids": [
+          "JOB-0041",
+          "JOB-0038",
+          "JOB-0044",
+          "JOB-0047",
+          "JOB-0004",
+          "JOB-0043",
+          "JOB-0010",
+          "JOB-0173",
+          "JOB-0052",
+          "JOB-0046"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          2,
+          0,
+          1,
+          0,
+          0,
+          1,
+          1
+        ],
+        "retrieved_domains": [
+          "Frontend Development",
+          "Frontend Development",
+          "Frontend Development",
+          "Frontend Development",
+          "Software Development",
+          "Frontend Development",
+          "Software Development",
+          "Mobile Development",
+          "Full Stack Development",
+          "Frontend Development"
+        ],
+        "top1_score": 0.9237,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.25,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.75,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.8,
+            "relaxed_precision": 0.8,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.9520727775370877
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.4,
+            "relaxed_precision": 0.7,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.8928648548355779
+          }
+        },
+        "latency_ms": 240.1
+      },
+      {
+        "query_id": "RP02",
+        "query": "graduate cloud engineer role",
+        "expected_domain": "Cloud Computing",
+        "relevant_count": 3,
+        "retrieved_job_ids": [
+          "JOB-0295",
+          "JOB-0265",
+          "JOB-0280",
+          "JOB-0118",
+          "JOB-0112",
+          "JOB-0310",
+          "JOB-0253",
+          "JOB-0109",
+          "JOB-0225",
+          "JOB-0288"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          0,
+          1,
+          1,
+          0
+        ],
+        "retrieved_domains": [
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Software Development",
+          "Cloud Computing",
+          "Cloud Computing",
+          "DevOps"
+        ],
+        "top1_score": 0.8463,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.3333333333333333,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.6,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.3,
+            "relaxed_precision": 0.8,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.9293164617616921
+          }
+        },
+        "latency_ms": 14.0
+      },
+      {
+        "query_id": "RP03",
+        "query": "SOC analyst security operations internship",
+        "expected_domain": "Cybersecurity",
+        "relevant_count": 4,
+        "retrieved_job_ids": [
+          "JOB-0138",
+          "JOB-0141",
+          "JOB-0135",
+          "JOB-0137",
+          "JOB-0144",
+          "JOB-0140",
+          "JOB-0143",
+          "JOB-0134",
+          "JOB-0186",
+          "JOB-0139"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "retrieved_domains": [
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity"
+        ],
+        "top1_score": 0.8513,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.25,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.75,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.8,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.9891413446337513
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.4,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.9909331158293706
+          }
+        },
+        "latency_ms": 13.7
+      },
+      {
+        "query_id": "RP04",
+        "query": "SQL data analyst internship",
+        "expected_domain": "Data Analytics",
+        "relevant_count": 13,
+        "retrieved_job_ids": [
+          "JOB-0098",
+          "JOB-0106",
+          "JOB-0100",
+          "JOB-0097",
+          "JOB-0104",
+          "JOB-0103",
+          "JOB-0101",
+          "JOB-0107",
+          "JOB-0146",
+          "JOB-0069"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          0
+        ],
+        "retrieved_domains": [
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Database / SQL",
+          "Data Science"
+        ],
+        "top1_score": 0.861,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.07692307692307693,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.23076923076923078,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.38461538461538464,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.8,
+            "relaxed_precision": 0.9,
+            "recall": 0.6153846153846154,
+            "capped_recall": 0.8,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.8922097294981223
+          }
+        },
+        "latency_ms": 13.4
+      },
+      {
+        "query_id": "RP05",
+        "query": "Spring Boot Java backend internship",
+        "expected_domain": "Java Backend",
+        "relevant_count": 4,
+        "retrieved_job_ids": [
+          "JOB-0018",
+          "JOB-0024",
+          "JOB-0021",
+          "JOB-0015",
+          "JOB-0181",
+          "JOB-0017",
+          "JOB-0196",
+          "JOB-0020",
+          "JOB-0019",
+          "JOB-0022"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "retrieved_domains": [
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend"
+        ],
+        "top1_score": 0.8628,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.25,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.75,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.8,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.4,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          }
+        },
+        "latency_ms": 13.7
+      },
+      {
+        "query_id": "RP06",
+        "query": "FastAPI Python backend internship",
+        "expected_domain": "Python Backend",
+        "relevant_count": 4,
+        "retrieved_job_ids": [
+          "JOB-0026",
+          "JOB-0032",
+          "JOB-0035",
+          "JOB-0029",
+          "JOB-0034",
+          "JOB-0030",
+          "JOB-0189",
+          "JOB-0031",
+          "JOB-0025",
+          "JOB-0028"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "retrieved_domains": [
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend"
+        ],
+        "top1_score": 0.9126,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.25,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.75,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.8,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.4,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          }
+        },
+        "latency_ms": 13.4
+      },
+      {
+        "query_id": "RP07",
+        "query": "Flutter mobile app intern",
+        "expected_domain": "Mobile Development",
+        "relevant_count": 4,
+        "retrieved_job_ids": [
+          "JOB-0174",
+          "JOB-0171",
+          "JOB-0180",
+          "JOB-0177",
+          "JOB-0176",
+          "JOB-0170",
+          "JOB-0173",
+          "JOB-0179",
+          "JOB-0175",
+          "JOB-0172"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "retrieved_domains": [
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development"
+        ],
+        "top1_score": 0.8401,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.25,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.75,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.8,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.4,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          }
+        },
+        "latency_ms": 13.0
+      },
+      {
+        "query_id": "RP08",
+        "query": "Android developer internship with Kotlin",
+        "expected_domain": "Mobile Development",
+        "relevant_count": 4,
+        "retrieved_job_ids": [
+          "JOB-0175",
+          "JOB-0178",
+          "JOB-0169",
+          "JOB-0172",
+          "JOB-0174",
+          "JOB-0019",
+          "JOB-0176",
+          "JOB-0171",
+          "JOB-0020",
+          "JOB-0195"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          2,
+          1,
+          0,
+          1,
+          1,
+          0,
+          1
+        ],
+        "retrieved_domains": [
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development",
+          "Mobile Development",
+          "Java Backend",
+          "Mobile Development",
+          "Mobile Development",
+          "Java Backend",
+          "Mobile Development"
+        ],
+        "top1_score": 0.7702,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.25,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.75,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.8,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.4,
+            "relaxed_precision": 0.8,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.9320106871872138
+          }
+        },
+        "latency_ms": 13.4
+      },
+      {
+        "query_id": "RP09",
+        "query": "generative AI internship working with LLMs and RAG",
+        "expected_domain": "Generative AI / NLP",
+        "relevant_count": 4,
+        "retrieved_job_ids": [
+          "JOB-0086",
+          "JOB-0089",
+          "JOB-0092",
+          "JOB-0095",
+          "JOB-0093",
+          "JOB-0077",
+          "JOB-0088",
+          "JOB-0087",
+          "JOB-0074",
+          "JOB-0091"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "retrieved_domains": [
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Machine Learning",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Machine Learning",
+          "Generative AI / NLP"
+        ],
+        "top1_score": 0.7362,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.25,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.75,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.8,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.4,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          }
+        },
+        "latency_ms": 13.7
+      },
+      {
+        "query_id": "RP10",
+        "query": "NLP engineer graduate role",
+        "expected_domain": "Generative AI / NLP",
+        "relevant_count": 3,
+        "retrieved_job_ids": [
+          "JOB-0264",
+          "JOB-0279",
+          "JOB-0294",
+          "JOB-0309",
+          "JOB-0239",
+          "JOB-0091",
+          "JOB-0209",
+          "JOB-0088",
+          "JOB-0199",
+          "JOB-0085"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "retrieved_domains": [
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Generative AI / NLP"
+        ],
+        "top1_score": 0.8334,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.3333333333333333,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.6,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.3,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          }
+        },
+        "latency_ms": 11.1
+      },
+      {
+        "query_id": "RP11",
+        "query": "machine learning apprenticeship",
+        "expected_domain": "Machine Learning",
+        "relevant_count": 1,
+        "retrieved_job_ids": [
+          "JOB-0316",
+          "JOB-0313",
+          "JOB-0076",
+          "JOB-0301",
+          "JOB-0314",
+          "JOB-0311",
+          "JOB-0191",
+          "JOB-0312",
+          "JOB-0083",
+          "JOB-0082"
+        ],
+        "retrieved_grades": [
+          2,
+          0,
+          1,
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          1
+        ],
+        "retrieved_domains": [
+          "Machine Learning",
+          "Software Development",
+          "Machine Learning",
+          "Machine Learning",
+          "Python Backend",
+          "Cybersecurity",
+          "Machine Learning",
+          "Software Testing / QA",
+          "Machine Learning",
+          "Machine Learning"
+        ],
+        "top1_score": 0.806,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 0.3333333333333333,
+            "relaxed_precision": 0.6666666666666666,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.8472668887613066
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.2,
+            "relaxed_precision": 0.6,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.7943233365467345
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.1,
+            "relaxed_precision": 0.6,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.7418141202042935
+          }
+        },
+        "latency_ms": 12.5
+      },
+      {
+        "query_id": "RP12",
+        "query": "junior data science developer",
+        "expected_domain": "Data Science",
+        "relevant_count": 3,
+        "retrieved_job_ids": [
+          "JOB-0238",
+          "JOB-0223",
+          "JOB-0208",
+          "JOB-0062",
+          "JOB-0247",
+          "JOB-0217",
+          "JOB-0202",
+          "JOB-0068",
+          "JOB-0232",
+          "JOB-0071"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          1
+        ],
+        "retrieved_domains": [
+          "Data Science",
+          "Data Science",
+          "Data Science",
+          "Data Science",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Science",
+          "Data Analytics",
+          "Data Science"
+        ],
+        "top1_score": 0.8501,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.3333333333333333,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.6,
+            "relaxed_precision": 0.8,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.946347335353756
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.3,
+            "relaxed_precision": 0.6,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.8435709478958121
+          }
+        },
+        "latency_ms": 13.9
+      },
+      {
+        "query_id": "RP13",
+        "query": "test automation intern using Selenium",
+        "expected_domain": "Software Testing / QA",
+        "relevant_count": 4,
+        "retrieved_job_ids": [
+          "JOB-0162",
+          "JOB-0159",
+          "JOB-0165",
+          "JOB-0168",
+          "JOB-0164",
+          "JOB-0158",
+          "JOB-0161",
+          "JOB-0167",
+          "JOB-0157",
+          "JOB-0166"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "retrieved_domains": [
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA"
+        ],
+        "top1_score": 0.6666,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.25,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.75,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.8,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.4,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          }
+        },
+        "latency_ms": 13.7
+      },
+      {
+        "query_id": "RP14",
+        "query": "MERN stack intern with Node.js and MongoDB",
+        "expected_domain": "Full Stack Development",
+        "relevant_count": 4,
+        "retrieved_job_ids": [
+          "JOB-0051",
+          "JOB-0054",
+          "JOB-0060",
+          "JOB-0057",
+          "JOB-0190",
+          "JOB-0053",
+          "JOB-0055",
+          "JOB-0058",
+          "JOB-0049",
+          "JOB-0052"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "retrieved_domains": [
+          "Full Stack Development",
+          "Full Stack Development",
+          "Full Stack Development",
+          "Full Stack Development",
+          "Full Stack Development",
+          "Full Stack Development",
+          "Full Stack Development",
+          "Full Stack Development",
+          "Full Stack Development",
+          "Full Stack Development"
+        ],
+        "top1_score": 0.7065,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.25,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.75,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.8,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.4,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          }
+        },
+        "latency_ms": 13.7
+      },
+      {
+        "query_id": "RP15",
+        "query": "CI/CD pipeline internship with Jenkins",
+        "expected_domain": "DevOps",
+        "relevant_count": 4,
+        "retrieved_job_ids": [
+          "JOB-0129",
+          "JOB-0126",
+          "JOB-0123",
+          "JOB-0132",
+          "JOB-0127",
+          "JOB-0121",
+          "JOB-0124",
+          "JOB-0193",
+          "JOB-0130",
+          "JOB-0110"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "retrieved_domains": [
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "Cloud Computing"
+        ],
+        "top1_score": 0.7128,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.25,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.75,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.8,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.4,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          }
+        },
+        "latency_ms": 12.7
+      },
+      {
+        "query_id": "RP16",
+        "query": "database engineering trainee",
+        "expected_domain": "Database / SQL",
+        "relevant_count": 1,
+        "retrieved_job_ids": [
+          "JOB-0304",
+          "JOB-0156",
+          "JOB-0274",
+          "JOB-0319",
+          "JOB-0150",
+          "JOB-0259",
+          "JOB-0153",
+          "JOB-0147",
+          "JOB-0148",
+          "JOB-0145"
+        ],
+        "retrieved_grades": [
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "retrieved_domains": [
+          "Database / SQL",
+          "Database / SQL",
+          "Database / SQL",
+          "Database / SQL",
+          "Database / SQL",
+          "Database / SQL",
+          "Database / SQL",
+          "Database / SQL",
+          "Database / SQL",
+          "Database / SQL"
+        ],
+        "top1_score": 0.8489,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 0.3333333333333333,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.2,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.1,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          }
+        },
+        "latency_ms": 13.6
+      },
+      {
+        "query_id": "RP17",
+        "query": "graduate software engineer program",
+        "expected_domain": "Software Development",
+        "relevant_count": 3,
+        "retrieved_job_ids": [
+          "JOB-0283",
+          "JOB-0268",
+          "JOB-0253",
+          "JOB-0002",
+          "JOB-0011",
+          "JOB-0276",
+          "JOB-0260",
+          "JOB-0005",
+          "JOB-0278",
+          "JOB-0292"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          1,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "retrieved_domains": [
+          "Software Development",
+          "Software Development",
+          "Software Development",
+          "Software Development",
+          "Software Development",
+          "Java Backend",
+          "Mobile Development",
+          "Software Development",
+          "Data Science",
+          "Frontend Development"
+        ],
+        "top1_score": 0.7805,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.3333333333333333,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.6,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.3,
+            "relaxed_precision": 0.6,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.8546763799752427
+          }
+        },
+        "latency_ms": 13.7
+      },
+      {
+        "query_id": "RP18",
+        "query": "AWS cloud internship",
+        "expected_domain": "Cloud Computing",
+        "relevant_count": 4,
+        "retrieved_job_ids": [
+          "JOB-0110",
+          "JOB-0116",
+          "JOB-0113",
+          "JOB-0119",
+          "JOB-0117",
+          "JOB-0185",
+          "JOB-0112",
+          "JOB-0118",
+          "JOB-0109",
+          "JOB-0053"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0
+        ],
+        "retrieved_domains": [
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Cloud Computing",
+          "Full Stack Development"
+        ],
+        "top1_score": 0.9194,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.25,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.75,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.8,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.4,
+            "relaxed_precision": 0.9,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.97009706782442
+          }
+        },
+        "latency_ms": 13.3
+      },
+      {
+        "query_id": "RP19",
+        "query": "QA apprenticeship in software testing",
+        "expected_domain": "Software Testing / QA",
+        "relevant_count": 1,
+        "retrieved_job_ids": [
+          "JOB-0312",
+          "JOB-0297",
+          "JOB-0162",
+          "JOB-0157",
+          "JOB-0187",
+          "JOB-0160",
+          "JOB-0159",
+          "JOB-0161",
+          "JOB-0166",
+          "JOB-0168"
+        ],
+        "retrieved_grades": [
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "retrieved_domains": [
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA",
+          "Software Testing / QA"
+        ],
+        "top1_score": 0.8615,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 0.3333333333333333,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.2,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.1,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          }
+        },
+        "latency_ms": 13.9
+      },
+      {
+        "query_id": "RP20",
+        "query": "Power BI and Tableau dashboard analyst",
+        "expected_domain": "Data Analytics",
+        "relevant_count": 22,
+        "retrieved_job_ids": [
+          "JOB-0317",
+          "JOB-0098",
+          "JOB-0101",
+          "JOB-0099",
+          "JOB-0097",
+          "JOB-0192",
+          "JOB-0107",
+          "JOB-0103",
+          "JOB-0105",
+          "JOB-0104"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "retrieved_domains": [
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics"
+        ],
+        "top1_score": 0.4877,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.045454545454545456,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.13636363636363635,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.22727272727272727,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.45454545454545453,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          }
+        },
+        "latency_ms": 14.2
+      },
+      {
+        "query_id": "RP21",
+        "query": "Docker and Kubernetes DevOps role",
+        "expected_domain": "DevOps",
+        "relevant_count": 22,
+        "retrieved_job_ids": [
+          "JOB-0130",
+          "JOB-0122",
+          "JOB-0318",
+          "JOB-0193",
+          "JOB-0288",
+          "JOB-0218",
+          "JOB-0273",
+          "JOB-0258",
+          "JOB-0124",
+          "JOB-0203"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "retrieved_domains": [
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "DevOps",
+          "DevOps"
+        ],
+        "top1_score": 0.5787,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.045454545454545456,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.13636363636363635,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.22727272727272727,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.45454545454545453,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          }
+        },
+        "latency_ms": 14.0
+      },
+      {
+        "query_id": "RP22",
+        "query": "machine learning internship using PyTorch and TensorFlow",
+        "expected_domain": "Machine Learning",
+        "relevant_count": 11,
+        "retrieved_job_ids": [
+          "JOB-0076",
+          "JOB-0079",
+          "JOB-0082",
+          "JOB-0073",
+          "JOB-0078",
+          "JOB-0075",
+          "JOB-0191",
+          "JOB-0080",
+          "JOB-0077",
+          "JOB-0083"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1
+        ],
+        "retrieved_domains": [
+          "Machine Learning",
+          "Machine Learning",
+          "Machine Learning",
+          "Machine Learning",
+          "Machine Learning",
+          "Machine Learning",
+          "Machine Learning",
+          "Machine Learning",
+          "Machine Learning",
+          "Machine Learning"
+        ],
+        "top1_score": 0.7535,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.09090909090909091,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.2727272727272727,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.45454545454545453,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.9,
+            "relaxed_precision": 1.0,
+            "recall": 0.8181818181818182,
+            "capped_recall": 0.9,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.9575861412006988
+          }
+        },
+        "latency_ms": 14.0
+      },
+      {
+        "query_id": "RP23",
+        "query": "frontend engineering trainee program",
+        "expected_domain": "Frontend Development",
+        "relevant_count": 1,
+        "retrieved_job_ids": [
+          "JOB-0307",
+          "JOB-0299",
+          "JOB-0306",
+          "JOB-0300",
+          "JOB-0277",
+          "JOB-0262",
+          "JOB-0298",
+          "JOB-0292",
+          "JOB-0043",
+          "JOB-0303"
+        ],
+        "retrieved_grades": [
+          2,
+          0,
+          0,
+          0,
+          1,
+          1,
+          0,
+          1,
+          1,
+          0
+        ],
+        "retrieved_domains": [
+          "Frontend Development",
+          "Python Backend",
+          "Java Backend",
+          "Full Stack Development",
+          "Frontend Development",
+          "Frontend Development",
+          "Software Development",
+          "Frontend Development",
+          "Frontend Development",
+          "DevOps"
+        ],
+        "top1_score": 0.8597,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 0.3333333333333333,
+            "relaxed_precision": 0.3333333333333333,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.7262287617954056
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.2,
+            "relaxed_precision": 0.4,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.6844257426140997
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.1,
+            "relaxed_precision": 0.5,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.6662360103340771
+          }
+        },
+        "latency_ms": 13.5
+      },
+      {
+        "query_id": "RP24",
+        "query": "cybersecurity apprenticeship",
+        "expected_domain": "Cybersecurity",
+        "relevant_count": 1,
+        "retrieved_job_ids": [
+          "JOB-0311",
+          "JOB-0296",
+          "JOB-0142",
+          "JOB-0133",
+          "JOB-0143",
+          "JOB-0313",
+          "JOB-0139",
+          "JOB-0136",
+          "JOB-0186",
+          "JOB-0137"
+        ],
+        "retrieved_grades": [
+          2,
+          1,
+          1,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        "retrieved_domains": [
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Software Development",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity",
+          "Cybersecurity"
+        ],
+        "top1_score": 0.8666,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 0.3333333333333333,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.2,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.1,
+            "relaxed_precision": 0.9,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.9455636957344249
+          }
+        },
+        "latency_ms": 14.2
+      },
+      {
+        "query_id": "RP25",
+        "query": "business analyst entry level",
+        "expected_domain": "Data Analytics",
+        "relevant_count": 1,
+        "retrieved_job_ids": [
+          "JOB-0107",
+          "JOB-0098",
+          "JOB-0104",
+          "JOB-0101",
+          "JOB-0143",
+          "JOB-0071",
+          "JOB-0140",
+          "JOB-0232",
+          "JOB-0106",
+          "JOB-0072"
+        ],
+        "retrieved_grades": [
+          2,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          1,
+          1,
+          0
+        ],
+        "retrieved_domains": [
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Analytics",
+          "Cybersecurity",
+          "Data Science",
+          "Cybersecurity",
+          "Data Analytics",
+          "Data Analytics",
+          "Data Science"
+        ],
+        "top1_score": 0.6819,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 0.3333333333333333,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.2,
+            "relaxed_precision": 0.8,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.9218235822624828
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.1,
+            "relaxed_precision": 0.6,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.7913279175072486
+          }
+        },
+        "latency_ms": 15.5
+      },
+      {
+        "query_id": "RP26",
+        "query": "Java developer intern with OOP skills",
+        "expected_domain": "Java Backend",
+        "relevant_count": 6,
+        "retrieved_job_ids": [
+          "JOB-0013",
+          "JOB-0022",
+          "JOB-0019",
+          "JOB-0016",
+          "JOB-0014",
+          "JOB-0196",
+          "JOB-0017",
+          "JOB-0181",
+          "JOB-0306",
+          "JOB-0276"
+        ],
+        "retrieved_grades": [
+          2,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1
+        ],
+        "retrieved_domains": [
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend",
+          "Java Backend"
+        ],
+        "top1_score": 0.7753,
+        "top1_domain_correct": true,
+        "query_confidence": "confident",
+        "metrics": {
+          "@1": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.16666666666666666,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@3": {
+            "hit": 1.0,
+            "precision": 1.0,
+            "relaxed_precision": 1.0,
+            "recall": 0.5,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 1.0
+          },
+          "@5": {
+            "hit": 1.0,
+            "precision": 0.8,
+            "relaxed_precision": 1.0,
+            "recall": 0.6666666666666666,
+            "capped_recall": 0.8,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.9125299483251055
+          },
+          "@10": {
+            "hit": 1.0,
+            "precision": 0.6,
+            "relaxed_precision": 1.0,
+            "recall": 1.0,
+            "capped_recall": 1.0,
+            "reciprocal_rank": 1.0,
+            "ndcg": 0.9871983103990514
+          }
+        },
+        "latency_ms": 19.4
+      }
+    ],
+    "summary": {
+      "query_count": 26,
+      "hit@1": 1.0,
+      "precision@1": 1.0,
+      "relaxed_precision@1": 1.0,
+      "recall@1": 0.4042,
+      "capped_recall@1": 1.0,
+      "ndcg@1": 1.0,
+      "hit@3": 1.0,
+      "precision@3": 0.8462,
+      "relaxed_precision@3": 0.9615,
+      "recall@3": 0.751,
+      "capped_recall@3": 1.0,
+      "ndcg@3": 0.9836,
+      "hit@5": 1.0,
+      "precision@5": 0.6615,
+      "relaxed_precision@5": 0.9385,
+      "recall@5": 0.8831,
+      "capped_recall@5": 0.9923,
+      "ndcg@5": 0.9693,
+      "hit@10": 1.0,
+      "precision@10": 0.4038,
+      "relaxed_precision@10": 0.8808,
+      "recall@10": 0.9363,
+      "capped_recall@10": 0.9885,
+      "ndcg@10": 0.9383,
+      "mrr@10": 1.0,
+      "top1_domain_accuracy": 1.0,
+      "top1_score": {
+        "min": 0.4877,
+        "median": 0.8367,
+        "max": 0.9237
+      },
+      "top1_scores": [
+        0.9237,
+        0.8463,
+        0.8513,
+        0.861,
+        0.8628,
+        0.9126,
+        0.8401,
+        0.7702,
+        0.7362,
+        0.8334,
+        0.806,
+        0.8501,
+        0.6666,
+        0.7065,
+        0.7128,
+        0.8489,
+        0.7805,
+        0.9194,
+        0.8615,
+        0.4877,
+        0.5787,
+        0.7535,
+        0.8597,
+        0.8666,
+        0.6819,
+        0.7753
+      ],
+      "flagged_unsupported_area": [],
+      "latency_ms": {
+        "median": 13.7,
+        "max": 240.1
+      }
+    },
+    "weak_cases": []
+  },
+  "retrieval_negative": {
+    "rows": [
+      {
+        "query_id": "RN01",
+        "query": "chef pastry baking",
+        "category": "unrelated",
+        "returned_count": 5,
+        "top_score": 0.1879,
+        "displayed_relevance_percent": 19,
+        "scores": [
+          0.1879,
+          0.1861,
+          0.1715,
+          0.1704,
+          0.1505
+        ],
+        "top_results": [
+          "JOB-0273 Graduate DevOps Engineer (DevOps)",
+          "JOB-0320 Mobile Apprentice (Mobile Development)",
+          "JOB-0318 DevOps Apprentice (DevOps)"
+        ],
+        "above_weakest_positive_top1": false,
+        "query_confidence": "unsupported_area",
+        "latency_ms": 10.9
+      },
+      {
+        "query_id": "RN02",
+        "query": "truck driver heavy vehicle licence",
+        "category": "unrelated",
+        "returned_count": 5,
+        "top_score": 0.2484,
+        "displayed_relevance_percent": 25,
+        "scores": [
+          0.2484,
+          0.2379,
+          0.235,
+          0.2314,
+          0.2312
+        ],
+        "top_results": [
+          "JOB-0058 Full Stack Developer Intern (Full Stack Development)",
+          "JOB-0315 Full Stack Apprentice (Full Stack Development)",
+          "JOB-0008 Software Engineering Intern (Software Development)"
+        ],
+        "above_weakest_positive_top1": false,
+        "query_confidence": "unsupported_area",
+        "latency_ms": 10.8
+      },
+      {
+        "query_id": "RN03",
+        "query": "registered nurse hospital ward shifts",
+        "category": "unrelated",
+        "returned_count": 5,
+        "top_score": 0.1578,
+        "displayed_relevance_percent": 16,
+        "scores": [
+          0.1578,
+          0.1565,
+          0.1533,
+          0.1517,
+          0.1455
+        ],
+        "top_results": [
+          "JOB-0304 Database Engineering Trainee (Database / SQL)",
+          "JOB-0155 SQL Developer Intern (Database / SQL)",
+          "JOB-0305 Mobile Engineering Trainee (Mobile Development)"
+        ],
+        "above_weakest_positive_top1": false,
+        "query_confidence": "unsupported_area",
+        "latency_ms": 9.3
+      },
+      {
+        "query_id": "RN04",
+        "query": "civil engineering site supervisor concrete",
+        "category": "unrelated",
+        "returned_count": 5,
+        "top_score": 0.3936,
+        "displayed_relevance_percent": 39,
+        "scores": [
+          0.3936,
+          0.384,
+          0.3825,
+          0.3768,
+          0.3733
+        ],
+        "top_results": [
+          "JOB-0285 Graduate Full Stack Engineer (Full Stack Development)",
+          "JOB-0262 Graduate Frontend Engineer (Frontend Development)",
+          "JOB-0277 Graduate Frontend Engineer (Frontend Development)"
+        ],
+        "above_weakest_positive_top1": false,
+        "query_confidence": "unsupported_area",
+        "latency_ms": 12.9
+      },
+      {
+        "query_id": "RN05",
+        "query": "real estate sales agent commission",
+        "category": "unrelated",
+        "returned_count": 5,
+        "top_score": 0.2678,
+        "displayed_relevance_percent": 27,
+        "scores": [
+          0.2678,
+          0.2658,
+          0.2476,
+          0.2397,
+          0.2388
+        ],
+        "top_results": [
+          "JOB-0224 Junior NLP Developer (Generative AI / NLP)",
+          "JOB-0317 Data Analytics Apprentice (Data Analytics)",
+          "JOB-0227 Junior QA Developer (Software Testing / QA)"
+        ],
+        "above_weakest_positive_top1": false,
+        "query_confidence": "unsupported_area",
+        "latency_ms": 14.6
+      },
+      {
+        "query_id": "RN06",
+        "query": "chartered accountant tax audit",
+        "category": "unrelated",
+        "returned_count": 5,
+        "top_score": 0.238,
+        "displayed_relevance_percent": 24,
+        "scores": [
+          0.238,
+          0.2302,
+          0.2284,
+          0.2281,
+          0.2266
+        ],
+        "top_results": [
+          "JOB-0227 Junior QA Developer (Software Testing / QA)",
+          "JOB-0107 Business Data Analyst Intern (Data Analytics)",
+          "JOB-0101 Business Data Analyst Intern (Data Analytics)"
+        ],
+        "above_weakest_positive_top1": false,
+        "query_confidence": "unsupported_area",
+        "latency_ms": 14.7
+      },
+      {
+        "query_id": "RN07",
+        "query": "plumbing and electrician apprenticeship",
+        "category": "unrelated",
+        "returned_count": 5,
+        "top_score": 0.5448,
+        "displayed_relevance_percent": 54,
+        "scores": [
+          0.5448,
+          0.5388,
+          0.5369,
+          0.5329,
+          0.522
+        ],
+        "top_results": [
+          "JOB-0317 Data Analytics Apprentice (Data Analytics)",
+          "JOB-0314 Python Backend Apprentice (Python Backend)",
+          "JOB-0315 Full Stack Apprentice (Full Stack Development)"
+        ],
+        "above_weakest_positive_top1": true,
+        "query_confidence": "unsupported_area",
+        "latency_ms": 13.8
+      },
+      {
+        "query_id": "RN08",
+        "query": "zzzz qqqq",
+        "category": "nonsense",
+        "returned_count": 5,
+        "top_score": 0.2748,
+        "displayed_relevance_percent": 27,
+        "scores": [
+          0.2748,
+          0.2484,
+          0.2419,
+          0.2305,
+          0.229
+        ],
+        "top_results": [
+          "JOB-0154 Database Intern (Database / SQL)",
+          "JOB-0163 QA Intern (Software Testing / QA)",
+          "JOB-0212 Junior QA Developer (Software Testing / QA)"
+        ],
+        "above_weakest_positive_top1": false,
+        "query_confidence": "unsupported_area",
+        "latency_ms": 13.8
+      },
+      {
+        "query_id": "RN09",
+        "query": "asdf lorem ipsum 12345",
+        "category": "nonsense",
+        "returned_count": 5,
+        "top_score": 0.2985,
+        "displayed_relevance_percent": 30,
+        "scores": [
+          0.2985,
+          0.2608,
+          0.2584,
+          0.2539,
+          0.2521
+        ],
+        "top_results": [
+          "JOB-0264 Graduate NLP Engineer (Generative AI / NLP)",
+          "JOB-0226 Junior Security Developer (Cybersecurity)",
+          "JOB-0306 Java Backend Engineering Trainee (Java Backend)"
+        ],
+        "above_weakest_positive_top1": false,
+        "query_confidence": "unsupported_area",
+        "latency_ms": 14.3
+      },
+      {
+        "query_id": "RO01",
+        "query": "UI UX design internship with Figma",
+        "category": "out_of_coverage",
+        "returned_count": 5,
+        "top_score": 0.6365,
+        "displayed_relevance_percent": 64,
+        "scores": [
+          0.6365,
+          0.6287,
+          0.6056,
+          0.6001,
+          0.5796
+        ],
+        "top_results": [
+          "JOB-0045 UI Engineering Intern (Frontend Development)",
+          "JOB-0039 UI Engineering Intern (Frontend Development)",
+          "JOB-0042 UI Engineering Intern (Frontend Development)"
+        ],
+        "above_weakest_positive_top1": true,
+        "query_confidence": "confident",
+        "latency_ms": 12.7
+      },
+      {
+        "query_id": "RO02",
+        "query": "digital marketing SEO intern",
+        "category": "out_of_coverage",
+        "returned_count": 5,
+        "top_score": 0.5759,
+        "displayed_relevance_percent": 58,
+        "scores": [
+          0.5759,
+          0.5561,
+          0.5466,
+          0.5378,
+          0.5317
+        ],
+        "top_results": [
+          "JOB-0056 Web Application Intern (Full Stack Development)",
+          "JOB-0050 Web Application Intern (Full Stack Development)",
+          "JOB-0053 Web Application Intern (Full Stack Development)"
+        ],
+        "above_weakest_positive_top1": true,
+        "query_confidence": "unsupported_area",
+        "latency_ms": 13.3
+      },
+      {
+        "query_id": "RO03",
+        "query": "mechanical engineering CAD internship",
+        "category": "out_of_coverage",
+        "returned_count": 5,
+        "top_score": 0.651,
+        "displayed_relevance_percent": 65,
+        "scores": [
+          0.651,
+          0.6222,
+          0.6186,
+          0.6111,
+          0.6049
+        ],
+        "top_results": [
+          "JOB-0005 Software Engineering Intern (Software Development)",
+          "JOB-0039 UI Engineering Intern (Frontend Development)",
+          "JOB-0042 UI Engineering Intern (Frontend Development)"
+        ],
+        "above_weakest_positive_top1": true,
+        "query_confidence": "unsupported_area",
+        "latency_ms": 15.5
+      }
+    ],
+    "summary": {
+      "query_count": 12,
+      "queries_returning_results": 12,
+      "by_category": {
+        "nonsense": {
+          "count": 2,
+          "always_returned_results": true,
+          "top_score_max": 0.2985,
+          "top_score_median": 0.2866
+        },
+        "out_of_coverage": {
+          "count": 3,
+          "always_returned_results": true,
+          "top_score_max": 0.651,
+          "top_score_median": 0.6365
+        },
+        "unrelated": {
+          "count": 7,
+          "always_returned_results": true,
+          "top_score_max": 0.5448,
+          "top_score_median": 0.2484
+        }
+      },
+      "positive_top1_score_min": 0.4877,
+      "unrelated_or_nonsense_top_score_max": 0.5448,
+      "score_ranges_overlap": true,
+      "gap_between_ranges": -0.0571,
+      "out_of_coverage_top_score_max": 0.651,
+      "positive_queries_below_max_offtopic_score": 2,
+      "positive_query_count": 26,
+      "confidence": {
+        "negatives_flagged_or_suppressed": 11,
+        "negative_query_count": 12,
+        "negatives_not_flagged": [
+          "RO01"
+        ],
+        "positives_flagged_or_suppressed": 0,
+        "positives_flagged": []
+      }
+    }
+  },
+  "matching_scenarios": {
+    "target_job_id": "JOB-0035",
+    "weights": {
+      "required_skills": 0.35,
+      "preferred_skills": 0.15,
+      "experience": 0.15,
+      "education": 0.1,
+      "project_relevance": 0.15,
+      "qualifications": 0.1
+    },
+    "rows": [
+      {
+        "scenario_id": "A_required_strong",
+        "description": "Has 3 of 4 required skills (missing REST APIs) and no preferred skills.",
+        "match_score": 56.5,
+        "required_skills_score": 0.75,
+        "preferred_skills_score": 0.1,
+        "project_relevance_score": 0.2727272727272727,
+        "matched_required": [
+          "Python",
+          "SQL",
+          "Git"
+        ],
+        "missing_required": [
+          "REST APIs"
+        ],
+        "matched_preferred": [],
+        "semantic_top5_domains": [
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend"
+        ],
+        "semantic_target_domain_in_top5": true,
+        "latency_ms": 14.6
+      },
+      {
+        "scenario_id": "B_preferred_strong",
+        "description": "Has every preferred skill but only 1 of 4 required skills (Git) \u2014 missing Python, SQL and REST APIs.",
+        "match_score": 52.0,
+        "required_skills_score": 0.25,
+        "preferred_skills_score": 1.0,
+        "project_relevance_score": 0.2727272727272727,
+        "matched_required": [
+          "Git"
+        ],
+        "missing_required": [
+          "Python",
+          "SQL",
+          "REST APIs"
+        ],
+        "matched_preferred": [
+          "FastAPI",
+          "Flask",
+          "PostgreSQL",
+          "Docker",
+          "Agile"
+        ],
+        "semantic_top5_domains": [
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend"
+        ],
+        "semantic_target_domain_in_top5": true,
+        "latency_ms": 15.5
+      },
+      {
+        "scenario_id": "C_semantic_not_exact",
+        "description": "A clear backend profile described with related but non-identical terms (Django, Node.js, MySQL, API development).",
+        "match_score": 26.1,
+        "required_skills_score": 0.0,
+        "preferred_skills_score": 0.3,
+        "project_relevance_score": 0.0,
+        "matched_required": [],
+        "missing_required": [
+          "Python",
+          "SQL",
+          "REST APIs",
+          "Git"
+        ],
+        "matched_preferred": [],
+        "semantic_top5_domains": [
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Python Backend",
+          "Database / SQL"
+        ],
+        "semantic_target_domain_in_top5": true,
+        "latency_ms": 11.6
+      },
+      {
+        "scenario_id": "D_unsuitable",
+        "description": "Graphic design profile with no overlap.",
+        "match_score": 21.1,
+        "required_skills_score": 0.0,
+        "preferred_skills_score": 0.0,
+        "project_relevance_score": 0.0,
+        "matched_required": [],
+        "missing_required": [
+          "Python",
+          "SQL",
+          "REST APIs",
+          "Git"
+        ],
+        "matched_preferred": [],
+        "semantic_top5_domains": [
+          "Machine Learning",
+          "Generative AI / NLP",
+          "Generative AI / NLP",
+          "Software Development",
+          "Generative AI / NLP"
+        ],
+        "semantic_target_domain_in_top5": false,
+        "latency_ms": 9.9
+      }
+    ],
+    "desired_properties": [
+      {
+        "property": "A_required_strong scores above B_preferred_strong",
+        "holds": true,
+        "values": [
+          56.5,
+          52.0
+        ]
+      },
+      {
+        "property": "D_unsuitable scores lowest and below 40",
+        "holds": true,
+        "values": [
+          21.1
+        ]
+      },
+      {
+        "property": "C_semantic_not_exact scores above D_unsuitable",
+        "holds": true,
+        "values": [
+          26.1,
+          21.1
+        ]
+      }
+    ]
+  },
+  "matching_m2_profiles": {
+    "profile_count": 8,
+    "labelled_profile_count": 7,
+    "top1_domain_accuracy": 1.0,
+    "top3_hit_rate": 1.0,
+    "mrr": 1.0,
+    "rows": [
+      {
+        "profile_id": "P001",
+        "top_domain": "Data Science",
+        "top_score": 60.0,
+        "top1_correct": true,
+        "score_behavior_pass": true
+      },
+      {
+        "profile_id": "P002",
+        "top_domain": "Frontend Development",
+        "top_score": 71.5,
+        "top1_correct": true,
+        "score_behavior_pass": true
+      },
+      {
+        "profile_id": "P003",
+        "top_domain": "Python Backend",
+        "top_score": 71.6,
+        "top1_correct": true,
+        "score_behavior_pass": true
+      },
+      {
+        "profile_id": "P004",
+        "top_domain": "Java Backend",
+        "top_score": 73.0,
+        "top1_correct": true,
+        "score_behavior_pass": true
+      },
+      {
+        "profile_id": "P005",
+        "top_domain": "Cybersecurity",
+        "top_score": 51.2,
+        "top1_correct": true,
+        "score_behavior_pass": true
+      },
+      {
+        "profile_id": "P006",
+        "top_domain": "Data Analytics",
+        "top_score": 70.1,
+        "top1_correct": true,
+        "score_behavior_pass": true
+      },
+      {
+        "profile_id": "P007",
+        "top_domain": "Cloud Computing",
+        "top_score": 54.2,
+        "top1_correct": true,
+        "score_behavior_pass": false
+      },
+      {
+        "profile_id": "P008",
+        "top_domain": "Frontend Development",
+        "top_score": 41.2,
+        "top1_correct": false,
+        "score_behavior_pass": true
+      }
+    ]
+  },
+  "consistency": {
+    "pairs_checked": 8,
+    "findings_by_type": {},
+    "high_severity": 0,
+    "findings": []
+  },
+  "grounding": {
+    "pairs_checked": 8,
+    "checks_run": 926,
+    "violations": [],
+    "violations_by_service": {
+      "matching": 0,
+      "skill_gap": 0,
+      "customization": 0,
+      "cover_letter": 0,
+      "interview_prep": 0
+    },
+    "needs_human_review": []
+  },
+  "pairs": [
+    {
+      "candidate_id": "SB",
+      "job_id": "JOB-0035",
+      "job_title": "FastAPI Intern",
+      "match_score": 73.0,
+      "skill_gap_readiness": 78,
+      "required_met": "4/4",
+      "consistency_findings": [],
+      "grounding": {
+        "checks_run": 134,
+        "violations": [],
+        "needs_review": [],
+        "customization_validation_passed": true,
+        "interview_validation_passed": true
+      }
+    },
+    {
+      "candidate_id": "SB",
+      "job_id": "JOB-0097",
+      "job_title": "Data Analyst Intern",
+      "match_score": 39.5,
+      "skill_gap_readiness": 43,
+      "required_met": "1/4",
+      "consistency_findings": [],
+      "grounding": {
+        "checks_run": 114,
+        "violations": [],
+        "needs_review": [],
+        "customization_validation_passed": true,
+        "interview_validation_passed": true
+      }
+    },
+    {
+      "candidate_id": "GA",
+      "job_id": "JOB-0035",
+      "job_title": "FastAPI Intern",
+      "match_score": 43.7,
+      "skill_gap_readiness": 52,
+      "required_met": "2/4",
+      "consistency_findings": [],
+      "grounding": {
+        "checks_run": 115,
+        "violations": [],
+        "needs_review": [],
+        "customization_validation_passed": true,
+        "interview_validation_passed": false
+      }
+    },
+    {
+      "candidate_id": "GA",
+      "job_id": "JOB-0109",
+      "job_title": "Cloud Engineering Intern",
+      "match_score": 26.0,
+      "skill_gap_readiness": 33,
+      "required_met": "0/4",
+      "consistency_findings": [],
+      "grounding": {
+        "checks_run": 108,
+        "violations": [],
+        "needs_review": [],
+        "customization_validation_passed": true,
+        "interview_validation_passed": true
+      }
+    },
+    {
+      "candidate_id": "GA",
+      "job_id": "JOB-0121",
+      "job_title": "DevOps Intern",
+      "match_score": 22.2,
+      "skill_gap_readiness": 25,
+      "required_met": "0/4",
+      "consistency_findings": [],
+      "grounding": {
+        "checks_run": 98,
+        "violations": [],
+        "needs_review": [],
+        "customization_validation_passed": true,
+        "interview_validation_passed": true
+      }
+    },
+    {
+      "candidate_id": "DA",
+      "job_id": "JOB-0097",
+      "job_title": "Data Analyst Intern",
+      "match_score": 57.1,
+      "skill_gap_readiness": 63,
+      "required_met": "4/4",
+      "consistency_findings": [],
+      "grounding": {
+        "checks_run": 122,
+        "violations": [],
+        "needs_review": [],
+        "customization_validation_passed": true,
+        "interview_validation_passed": true
+      }
+    },
+    {
+      "candidate_id": "PO",
+      "job_id": "JOB-0121",
+      "job_title": "DevOps Intern",
+      "match_score": 55.4,
+      "skill_gap_readiness": 56,
+      "required_met": "2/4",
+      "consistency_findings": [],
+      "grounding": {
+        "checks_run": 113,
+        "violations": [],
+        "needs_review": [],
+        "customization_validation_passed": true,
+        "interview_validation_passed": true
+      }
+    },
+    {
+      "candidate_id": "LO",
+      "job_id": "JOB-0035",
+      "job_title": "FastAPI Intern",
+      "match_score": 56.5,
+      "skill_gap_readiness": 63,
+      "required_met": "3/4",
+      "consistency_findings": [],
+      "grounding": {
+        "checks_run": 122,
+        "violations": [],
+        "needs_review": [],
+        "customization_validation_passed": true,
+        "interview_validation_passed": true
+      }
+    }
+  ],
+  "handoff": {
+    "candidate_id": "SB",
+    "job_id": "JOB-0035",
+    "checks": [
+      {
+        "check": "context_belongs_to_resume",
+        "holds": true,
+        "detail": ""
+      },
+      {
+        "check": "matches_reference_canonical_jobs",
+        "holds": true,
+        "detail": ""
+      },
+      {
+        "check": "target_job_retrieved_in_top10",
+        "holds": true,
+        "detail": "retrieved: ['JOB-0029', 'JOB-0032', 'JOB-0036', 'JOB-0254', 'JOB-0299', 'JOB-0035', 'JOB-0214', 'JOB-0284', 'JOB-0026', 'JOB-0034']"
+      },
+      {
+        "check": "skill_gap_same_job",
+        "holds": true,
+        "detail": ""
+      },
+      {
+        "check": "skill_gap_same_resume",
+        "holds": true,
+        "detail": ""
+      },
+      {
+        "check": "customization_same_job",
+        "holds": true,
+        "detail": ""
+      },
+      {
+        "check": "customization_same_resume",
+        "holds": true,
+        "detail": ""
+      },
+      {
+        "check": "cover_letter_present_in_same_customization",
+        "holds": true,
+        "detail": ""
+      },
+      {
+        "check": "interview_prep_same_job",
+        "holds": true,
+        "detail": ""
+      },
+      {
+        "check": "interview_prep_same_resume",
+        "holds": true,
+        "detail": ""
+      },
+      {
+        "check": "candidate_evidence_unchanged",
+        "holds": true,
+        "detail": ""
+      },
+      {
+        "check": "matched_skills_agree_with_customization_supported_keywords",
+        "holds": true,
+        "detail": "match: ['Python', 'SQL', 'REST APIs', 'Git']; supported: ['Python', 'SQL', 'REST APIs', 'Git', 'FastAPI', 'PostgreSQL']"
+      }
+    ],
+    "all_hold": true
+  },
+  "conversation": {
+    "conversations": [
+      {
+        "conversation_id": "CV01_context_retention_compare_phrasing",
+        "purpose": "Context retention when the first turn uses 'Compare me with <job>' phrasing.",
+        "turns": [
+          {
+            "message": "Compare me with JOB-0035.",
+            "intent": "JOB_MATCH_EXPLANATION",
+            "job_id": "JOB-0035",
+            "active_job_id": "JOB-0035",
+            "asked_for_context": false,
+            "response_preview": "For FastAPI Intern at QuantumLeaf Technologies: Your M2 match score is 73%. You already demonstrate: Python, SQL, REST APIs, Git, FastAPI.",
+            "outcomes": {
+              "job_id": true,
+              "not_asking_for_context": true
+            },
+            "passed": true
+          },
+          {
+            "message": "What skills am I missing?",
+            "intent": "SKILL_GAP",
+            "job_id": "JOB-0035",
+            "active_job_id": "JOB-0035",
+            "asked_for_context": false,
+            "response_preview": "For FastAPI Intern at QuantumLeaf Technologies, your readiness is 78%. You meet all required skills. Preferred (non-mandatory) gaps: Flask, Docker, Agile.",
+            "outcomes": {
+              "intent": true,
+              "job_id": true,
+              "not_asking_for_context": true
+            },
+            "passed": true
+          },
+          {
+            "message": "Which of those should I learn first?",
+            "intent": "LEARNING_GUIDANCE",
+            "job_id": "JOB-0035",
+            "active_job_id": "JOB-0035",
+            "asked_for_context": false,
+            "response_preview": "Based on your skill gap analysis for FastAPI Intern, focus on:\n- Flask (low priority): Build or extend a REST API using Flask and connect it to a real database.\n- Docker (low priority): Containerize one of your existing ",
+            "outcomes": {
+              "intent": true,
+              "job_id": true,
+              "not_asking_for_context": true
+            },
+            "passed": true
+          }
+        ],
+        "passed": true
+      },
+      {
+        "conversation_id": "CV02_context_retention_supported_phrasing",
+        "purpose": "Context retention using phrasings the intent keywords already cover.",
+        "turns": [
+          {
+            "message": "Why does JOB-0035 fit me?",
+            "intent": "JOB_MATCH_EXPLANATION",
+            "job_id": "JOB-0035",
+            "active_job_id": "JOB-0035",
+            "asked_for_context": false,
+            "response_preview": "For FastAPI Intern at QuantumLeaf Technologies: Your M2 match score is 73%. You already demonstrate: Python, SQL, REST APIs, Git, FastAPI.",
+            "outcomes": {
+              "intent": true,
+              "job_id": true,
+              "not_asking_for_context": true
+            },
+            "passed": true
+          },
+          {
+            "message": "What skills am I missing?",
+            "intent": "SKILL_GAP",
+            "job_id": "JOB-0035",
+            "active_job_id": "JOB-0035",
+            "asked_for_context": false,
+            "response_preview": "For FastAPI Intern at QuantumLeaf Technologies, your readiness is 78%. You meet all required skills. Preferred (non-mandatory) gaps: Flask, Docker, Agile.",
+            "outcomes": {
+              "intent": true,
+              "job_id": true,
+              "not_asking_for_context": true
+            },
+            "passed": true
+          },
+          {
+            "message": "What should I learn next?",
+            "intent": "LEARNING_GUIDANCE",
+            "job_id": "JOB-0035",
+            "active_job_id": "JOB-0035",
+            "asked_for_context": false,
+            "response_preview": "Based on your skill gap analysis for FastAPI Intern, focus on:\n- Flask (low priority): Build or extend a REST API using Flask and connect it to a real database.\n- Docker (low priority): Containerize one of your existing ",
+            "outcomes": {
+              "intent": true,
+              "job_id": true,
+              "not_asking_for_context": true
+            },
+            "passed": true
+          }
+        ],
+        "passed": true
+      },
+      {
+        "conversation_id": "CV03_job_switch",
+        "purpose": "Switching jobs must move the active context to the new job without leaking the old one.",
+        "turns": [
+          {
+            "message": "What skills am I missing for JOB-0035?",
+            "intent": "SKILL_GAP",
+            "job_id": "JOB-0035",
+            "active_job_id": "JOB-0035",
+            "asked_for_context": false,
+            "response_preview": "For FastAPI Intern at QuantumLeaf Technologies, your readiness is 78%. You meet all required skills. Preferred (non-mandatory) gaps: Flask, Docker, Agile.",
+            "outcomes": {
+              "intent": true,
+              "job_id": true
+            },
+            "passed": true
+          },
+          {
+            "message": "What skills am I missing for JOB-0097?",
+            "intent": "SKILL_GAP",
+            "job_id": "JOB-0097",
+            "active_job_id": "JOB-0097",
+            "asked_for_context": false,
+            "response_preview": "For Data Analyst Intern at SignalPeak Systems, your readiness is 43%. Critical gaps (required, missing): Excel, Data Analysis, Statistics. Preferred (non-mandatory) gaps: Power BI, Tableau, Data Visualization, Communicat",
+            "outcomes": {
+              "intent": true,
+              "job_id": true,
+              "no_mention_of_JOB-0035": true
+            },
+            "passed": true
+          },
+          {
+            "message": "What should I learn next?",
+            "intent": "LEARNING_GUIDANCE",
+            "job_id": "JOB-0097",
+            "active_job_id": "JOB-0097",
+            "asked_for_context": false,
+            "response_preview": "Based on your skill gap analysis for Data Analyst Intern, focus on:\n- Excel (high priority): Learn the fundamentals of Excel and apply it directly in a small, focused project so you have concrete evidence to show.\n- Data",
+            "outcomes": {
+              "intent": true,
+              "job_id": true,
+              "no_mention_of_JOB-0035": true
+            },
+            "passed": true
+          }
+        ],
+        "passed": true
+      },
+      {
+        "conversation_id": "CV04_short_follow_up",
+        "purpose": "A short follow-up that names no job should reuse the established job.",
+        "turns": [
+          {
+            "message": "Why does JOB-0035 fit me?",
+            "intent": "JOB_MATCH_EXPLANATION",
+            "job_id": "JOB-0035",
+            "active_job_id": "JOB-0035",
+            "asked_for_context": false,
+            "response_preview": "For FastAPI Intern at QuantumLeaf Technologies: Your M2 match score is 73%. You already demonstrate: Python, SQL, REST APIs, Git, FastAPI.",
+            "outcomes": {
+              "job_id": true
+            },
+            "passed": true
+          },
+          {
+            "message": "Help me prepare for the interview.",
+            "intent": "INTERVIEW_PREP",
+            "job_id": "JOB-0035",
+            "active_job_id": "JOB-0035",
+            "asked_for_context": false,
+            "response_preview": "Interview preparation for FastAPI Intern at QuantumLeaf Technologies (version 1) is ready: 13 technical, 2 resume, 5 project, 5 role, 6 hr, 3 skill_gap questions. Top revision priority: Library API \u2014 One of your most job",
+            "outcomes": {
+              "intent": true,
+              "job_id": true,
+              "not_asking_for_context": true
+            },
+            "passed": true
+          },
+          {
+            "message": "And the cover letter?",
+            "intent": "COVER_LETTER",
+            "job_id": "JOB-0035",
+            "active_job_id": "JOB-0035",
+            "asked_for_context": false,
+            "response_preview": "I've drafted a cover letter for FastAPI Intern at QuantumLeaf Technologies (version 1):\n\nDear Hiring Team,\n\nI am writing to express my interest in the FastAPI Intern position at QuantumLeaf Technologies. I was drawn to t",
+            "outcomes": {
+              "intent": true,
+              "job_id": true,
+              "not_asking_for_context": true
+            },
+            "passed": true
+          }
+        ],
+        "passed": true
+      },
+      {
+        "conversation_id": "CV05_profile_awareness",
+        "purpose": "Answers about the student's own profile must use their real projects and not invent skills.",
+        "turns": [
+          {
+            "message": "Summarize my resume.",
+            "intent": "PROFILE_SUMMARY",
+            "job_id": null,
+            "active_job_id": null,
+            "asked_for_context": false,
+            "response_preview": "Your resume lists 6 skills: Python, SQL, REST APIs, Git, FastAPI, PostgreSQL. Your projects: Library API. Your target roles: Backend Developer Intern.",
+            "outcomes": {
+              "intent": true,
+              "mentions_expected_profile_fact": true,
+              "no_absent_skill_claimed": true
+            },
+            "passed": true
+          },
+          {
+            "message": "What are my strongest projects?",
+            "intent": "PROFILE_SUMMARY",
+            "job_id": null,
+            "active_job_id": null,
+            "asked_for_context": false,
+            "response_preview": "Your resume lists 6 skills: Python, SQL, REST APIs, Git, FastAPI, PostgreSQL. Your projects: Library API. Your target roles: Backend Developer Intern.",
+            "outcomes": {
+              "mentions_expected_profile_fact": true,
+              "no_absent_skill_claimed": true
+            },
+            "passed": true
+          }
+        ],
+        "passed": true
+      },
+      {
+        "conversation_id": "CV06_general_question",
+        "purpose": "Record behaviour for a free-form career question outside the supported intents.",
+        "turns": [
+          {
+            "message": "How should I negotiate a salary offer for my first job?",
+            "intent": "GENERAL_CAREER_CHAT",
+            "job_id": null,
+            "active_job_id": null,
+            "asked_for_context": false,
+            "response_preview": "I can help with job recommendations, skill gaps, resume customization, cover letters, and interview preparation. Try asking about a specific opportunity, or ask what you should do next.",
+            "outcomes": {
+              "substantive_answer": false
+            },
+            "passed": false
+          }
+        ],
+        "passed": false
+      },
+      {
+        "conversation_id": "CV07_explicit_comparison",
+        "purpose": "Comparison of two explicitly named opportunities.",
+        "turns": [
+          {
+            "message": "Compare JOB-0035 and JOB-0097.",
+            "intent": "JOB_COMPARISON",
+            "job_id": "JOB-0035",
+            "active_job_id": "JOB-0035",
+            "asked_for_context": false,
+            "response_preview": "FastAPI Intern (QuantumLeaf Technologies) vs Data Analyst Intern (SignalPeak Systems):\nType: Entry Level vs Internship.\nLocation/mode: Remote, India/Remote vs Coimbatore, Tamil Nadu/On-site.\nRequired skills: Python, SQL,",
+            "outcomes": {
+              "intent": true,
+              "mentions_JOB-0035": true,
+              "mentions_JOB-0097": true
+            },
+            "passed": true
+          }
+        ],
+        "passed": true
+      }
+    ],
+    "summary": {
+      "conversations": 7,
+      "conversations_fully_passing": 6,
+      "turns": 16,
+      "turns_passing": 15
+    },
+    "job_discovery": {
+      "rows": [
+        {
+          "message": "Find internships in cybersecurity.",
+          "expected_domain": "Cybersecurity",
+          "intent": "JOB_DISCOVERY",
+          "suggested_job_ids": [
+            "JOB-0139",
+            "JOB-0133",
+            "JOB-0142"
+          ],
+          "listed_titles": [
+            "Cybersecurity Intern",
+            "Cybersecurity Intern",
+            "Cybersecurity Intern",
+            "Security Analyst Intern",
+            "Cybersecurity Intern"
+          ],
+          "suggested_domains": [
+            "Cybersecurity"
+          ],
+          "expected_domain_present": true
+        },
+        {
+          "message": "Find internships in frontend React development.",
+          "expected_domain": "Frontend Development",
+          "intent": "JOB_DISCOVERY",
+          "suggested_job_ids": [
+            "JOB-0041",
+            "JOB-0038",
+            "JOB-0047"
+          ],
+          "listed_titles": [
+            "React Developer Intern",
+            "React Developer Intern",
+            "React Developer Intern",
+            "Frontend Developer Intern",
+            "React Developer Intern"
+          ],
+          "suggested_domains": [
+            "Frontend Development"
+          ],
+          "expected_domain_present": true
+        },
+        {
+          "message": "Find internships for data analysts.",
+          "expected_domain": "Data Analytics",
+          "intent": "JOB_DISCOVERY",
+          "suggested_job_ids": [
+            "JOB-0103",
+            "JOB-0100",
+            "JOB-0097"
+          ],
+          "listed_titles": [
+            "Data Analyst Intern",
+            "Data Analyst Intern",
+            "Data Analyst Intern",
+            "Data Analyst Intern",
+            "Business Data Analyst Intern"
+          ],
+          "suggested_domains": [
+            "Data Analytics"
+          ],
+          "expected_domain_present": true
+        }
+      ],
+      "identical_results_for_different_queries": false,
+      "expected_domain_hit_rate": 1.0
+    }
+  },
+  "runtime_seconds": 2.2
+}

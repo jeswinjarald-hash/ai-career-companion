@@ -1,0 +1,72 @@
+{
+  "version": "m4.2-1",
+  "policy": "Multi-turn Career Assistant scripts run against candidate SB with the deterministic (null) LLM. 'expect' entries describe the DESIRED behaviour per turn; the evaluation records whether the current system meets them — failures are baseline evidence, not test errors.",
+  "conversations": [
+    {
+      "conversation_id": "CV01_context_retention_compare_phrasing",
+      "purpose": "Context retention when the first turn uses 'Compare me with <job>' phrasing.",
+      "turns": [
+        {"message": "Compare me with JOB-0035.", "expect": {"job_id": "JOB-0035", "not_asking_for_context": true}},
+        {"message": "What skills am I missing?", "expect": {"intent": "SKILL_GAP", "job_id": "JOB-0035", "not_asking_for_context": true}},
+        {"message": "Which of those should I learn first?", "expect": {"intent": "LEARNING_GUIDANCE", "job_id": "JOB-0035", "not_asking_for_context": true}}
+      ]
+    },
+    {
+      "conversation_id": "CV02_context_retention_supported_phrasing",
+      "purpose": "Context retention using phrasings the intent keywords already cover.",
+      "turns": [
+        {"message": "Why does JOB-0035 fit me?", "expect": {"intent": "JOB_MATCH_EXPLANATION", "job_id": "JOB-0035", "not_asking_for_context": true}},
+        {"message": "What skills am I missing?", "expect": {"intent": "SKILL_GAP", "job_id": "JOB-0035", "not_asking_for_context": true}},
+        {"message": "What should I learn next?", "expect": {"intent": "LEARNING_GUIDANCE", "job_id": "JOB-0035", "not_asking_for_context": true}}
+      ]
+    },
+    {
+      "conversation_id": "CV03_job_switch",
+      "purpose": "Switching jobs must move the active context to the new job without leaking the old one.",
+      "turns": [
+        {"message": "What skills am I missing for JOB-0035?", "expect": {"intent": "SKILL_GAP", "job_id": "JOB-0035"}},
+        {"message": "What skills am I missing for JOB-0097?", "expect": {"intent": "SKILL_GAP", "job_id": "JOB-0097", "must_not_mention_job_titles_of": ["JOB-0035"]}},
+        {"message": "What should I learn next?", "expect": {"intent": "LEARNING_GUIDANCE", "job_id": "JOB-0097", "must_not_mention_job_titles_of": ["JOB-0035"]}}
+      ]
+    },
+    {
+      "conversation_id": "CV04_short_follow_up",
+      "purpose": "A short follow-up that names no job should reuse the established job.",
+      "turns": [
+        {"message": "Why does JOB-0035 fit me?", "expect": {"job_id": "JOB-0035"}},
+        {"message": "Help me prepare for the interview.", "expect": {"intent": "INTERVIEW_PREP", "job_id": "JOB-0035", "not_asking_for_context": true}},
+        {"message": "And the cover letter?", "expect": {"intent": "COVER_LETTER", "job_id": "JOB-0035", "not_asking_for_context": true}}
+      ]
+    },
+    {
+      "conversation_id": "CV05_profile_awareness",
+      "purpose": "Answers about the student's own profile must use their real projects and not invent skills.",
+      "turns": [
+        {"message": "Summarize my resume.", "expect": {"intent": "PROFILE_SUMMARY", "must_mention_any": ["Library API"], "must_not_claim_skills": true}},
+        {"message": "What are my strongest projects?", "expect": {"must_mention_any": ["Library API"], "must_not_claim_skills": true}}
+      ]
+    },
+    {
+      "conversation_id": "CV06_general_question",
+      "purpose": "Record behaviour for a free-form career question outside the supported intents.",
+      "turns": [
+        {"message": "How should I negotiate a salary offer for my first job?", "expect": {"substantive_answer": true}}
+      ]
+    },
+    {
+      "conversation_id": "CV07_explicit_comparison",
+      "purpose": "Comparison of two explicitly named opportunities.",
+      "turns": [
+        {"message": "Compare JOB-0035 and JOB-0097.", "expect": {"intent": "JOB_COMPARISON", "must_mention_job_titles_of": ["JOB-0035", "JOB-0097"]}}
+      ]
+    }
+  ],
+  "job_discovery_probe": {
+    "purpose": "Does assistant job discovery use the student's query text? Each message asks for a clearly different area; if every request returns the same jobs, the query text is being ignored.",
+    "messages": [
+      {"message": "Find internships in cybersecurity.", "expected_domain": "Cybersecurity"},
+      {"message": "Find internships in frontend React development.", "expected_domain": "Frontend Development"},
+      {"message": "Find internships for data analysts.", "expected_domain": "Data Analytics"}
+    ]
+  }
+}

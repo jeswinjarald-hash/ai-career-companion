@@ -5,6 +5,7 @@ from app.schemas.job_posting import JobPosting
 from app.schemas.job_chunk import JobSearchResult
 from app.services.embedding_service import embed_query
 from app.services.job_vector_store import load_vector_store
+from app.services.retrieval_confidence import query_confidence
 
 
 class JobSearchError(ValueError):
@@ -25,6 +26,7 @@ def search_jobs(query: str, top_k: int = 5) -> list[JobSearchResult]:
             grouped[chunks[int(position)].job_id].append((float(score), chunks[int(position)]))
 
     jobs_by_id = {job.job_id: job for job in _load_jobs()}
+    confidence = query_confidence(query)
     results: list[JobSearchResult] = []
     for job_id, matches in grouped.items():
         job = jobs_by_id[job_id]
@@ -45,6 +47,7 @@ def search_jobs(query: str, top_k: int = 5) -> list[JobSearchResult]:
                 similarity_score=best_score + additional_score,
                 matched_chunk_types=sorted({chunk.chunk_type for _, chunk in matches}),
                 matched_text_preview=matches[0][1].text[:240],
+                query_confidence=confidence,
             )
         )
     results.sort(key=lambda result: result.similarity_score, reverse=True)

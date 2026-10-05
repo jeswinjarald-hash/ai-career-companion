@@ -59,6 +59,9 @@ class OpenAICompatibleProvider:
         self.api_key = api_key
         self.model = model
         self.timeout_seconds = timeout_seconds
+        # Token usage reported by the provider for the most recent call, exactly as
+        # returned (never estimated); None when the provider omits it (M4.3).
+        self.last_usage: dict[str, int] | None = None
 
     def generate_json(self, system_prompt: str, user_payload: dict) -> dict:
         headers = {"Content-Type": "application/json"}
@@ -86,6 +89,11 @@ class OpenAICompatibleProvider:
 
         try:
             body_json = response.json()
+            usage = body_json.get("usage") if isinstance(body_json, dict) else None
+            self.last_usage = {key: value for key, value in usage.items() if isinstance(value, int)} if isinstance(usage, dict) else None
+            if self.last_usage:
+                logger.info("llm_usage model=%s prompt_tokens=%s completion_tokens=%s total_tokens=%s", self.model,
+                            self.last_usage.get("prompt_tokens"), self.last_usage.get("completion_tokens"), self.last_usage.get("total_tokens"))
             content = body_json["choices"][0]["message"]["content"]
             return json.loads(content)
         except (KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:

@@ -1,0 +1,118 @@
+{
+  "version": "m4.2-1",
+  "policy": "Synthetic, non-personal candidate fixtures. 'structured_data' uses the same shape the resume parser persists (StructuredResume.data). 'must_not_claim' lists skills/claims the candidate does NOT have and that no downstream output may attribute to them.",
+  "candidates": [
+    {
+      "candidate_id": "SB",
+      "description": "Strong Python backend student — a genuine fit for the Python Backend postings.",
+      "profile": {"skills": [], "education": "B.Tech Computer Science", "degree": "B.Tech", "specialization": "Computer Science", "experience_level": "Internship", "target_roles": ["Backend Developer Intern"], "career_interests": ["backend development"], "career_goals": "Build reliable APIs"},
+      "structured_data": {
+        "header": "Sam Backend",
+        "skills": ["Python", "SQL", "REST APIs", "Git", "FastAPI", "PostgreSQL"],
+        "education": [{"degree": "B.Tech", "raw_text": "B.Tech Computer Science, Example Institute of Technology, 2026"}],
+        "experience": [],
+        "internships": [{"raw_text": "Backend Intern at Example Labs, Jan 2025 - Jun 2025. Built REST APIs with FastAPI and PostgreSQL and used Git for version control."}],
+        "projects": [{"title": "Library API", "description": "Built a REST API using Python, FastAPI and PostgreSQL.", "raw_text": "Library API - Built a REST API using Python, FastAPI and PostgreSQL.", "technologies": ["Python", "FastAPI", "PostgreSQL", "SQL"]}],
+        "certifications": [], "achievements": [], "qualifications": [], "learning": []
+      },
+      "must_not_claim": ["Kubernetes", "AWS", "Terraform", "Jenkins"],
+      "target_job_ids": ["JOB-0035", "JOB-0097"]
+    },
+    {
+      "candidate_id": "GA",
+      "description": "Grounding-adversarial: Python, SQL, Pandas and one basic ML project only — no infrastructure, cloud or API experience, no employment history, no certifications.",
+      "profile": {"skills": [], "education": "B.Sc Mathematics", "degree": "B.Sc", "specialization": "Mathematics", "experience_level": "Fresher", "target_roles": [], "career_interests": ["data"], "career_goals": null},
+      "structured_data": {
+        "header": "Grace Analyst",
+        "skills": ["Python", "SQL", "Pandas"],
+        "education": [{"degree": "B.Sc", "raw_text": "B.Sc Mathematics, Example College, 2026"}],
+        "experience": [],
+        "internships": [],
+        "projects": [{"title": "Iris Classifier", "description": "Basic machine learning project classifying flowers with Python and Pandas.", "raw_text": "Iris Classifier - Basic machine learning project classifying flowers with Python and Pandas.", "technologies": ["Python", "Pandas"]}],
+        "certifications": [], "achievements": [], "qualifications": [], "learning": []
+      },
+      "must_not_claim": ["FastAPI", "Docker", "AWS", "Kubernetes", "PostgreSQL", "Terraform", "Jenkins", "Linux", "REST APIs", "Flask", "GitHub Actions"],
+      "target_job_ids": ["JOB-0035", "JOB-0109", "JOB-0121"]
+    },
+    {
+      "candidate_id": "DA",
+      "description": "Data analyst student — a genuine fit for the Data Analytics postings.",
+      "profile": {"skills": [], "education": "B.Com with Data Analytics minor", "degree": "B.Com", "specialization": "Data Analytics", "experience_level": "Fresher", "target_roles": ["Data Analyst Intern"], "career_interests": ["analytics"], "career_goals": "Turn data into decisions"},
+      "structured_data": {
+        "header": "Dana Data",
+        "skills": ["SQL", "Excel", "Data Analysis", "Statistics", "Power BI"],
+        "education": [{"degree": "B.Com", "raw_text": "B.Com with Data Analytics minor, Example University, 2026"}],
+        "experience": [], "internships": [],
+        "projects": [{"title": "Sales Dashboard", "description": "Built a Power BI dashboard from SQL queries and Excel data analysis.", "raw_text": "Sales Dashboard - Built a Power BI dashboard from SQL queries and Excel data analysis.", "technologies": ["Power BI", "SQL", "Excel"]}],
+        "certifications": [], "achievements": [], "qualifications": [], "learning": []
+      },
+      "must_not_claim": ["Tableau", "Python"],
+      "target_job_ids": ["JOB-0097"]
+    },
+    {
+      "candidate_id": "PO",
+      "description": "Profile-only skills: Docker and Kubernetes are typed into the career profile but appear nowhere in the resume (no project, internship or skills-section evidence).",
+      "profile": {"skills": ["Docker", "Kubernetes", "Linux"], "education": "B.Tech Information Technology", "degree": "B.Tech", "specialization": "Information Technology", "experience_level": "Fresher", "target_roles": ["DevOps Intern"], "career_interests": ["devops"], "career_goals": null},
+      "structured_data": {
+        "header": "Pat Profile",
+        "skills": ["Git", "Python"],
+        "education": [{"degree": "B.Tech", "raw_text": "B.Tech Information Technology, Example University, 2026"}],
+        "experience": [], "internships": [],
+        "projects": [{"title": "Todo CLI", "description": "Command line todo app in Python tracked with Git.", "raw_text": "Todo CLI - Command line todo app in Python tracked with Git.", "technologies": ["Python", "Git"]}],
+        "certifications": [], "achievements": [], "qualifications": [], "learning": []
+      },
+      "must_not_claim": ["Jenkins", "GitHub Actions", "AWS"],
+      "target_job_ids": ["JOB-0121"]
+    },
+    {
+      "candidate_id": "LO",
+      "description": "Learning-only: lists Docker and FastAPI only as things currently being learned.",
+      "profile": {"skills": [], "education": "B.Tech Computer Science", "degree": "B.Tech", "specialization": "Computer Science", "experience_level": "Fresher", "target_roles": [], "career_interests": [], "career_goals": null},
+      "structured_data": {
+        "header": "Lee Learner",
+        "skills": ["Python", "SQL", "Git"],
+        "education": [{"degree": "B.Tech", "raw_text": "B.Tech Computer Science, Example University, 2026"}],
+        "experience": [], "internships": [],
+        "projects": [{"title": "Expense Tracker", "description": "Python and SQL expense tracker tracked with Git.", "raw_text": "Expense Tracker - Python and SQL expense tracker tracked with Git.", "technologies": ["Python", "SQL", "Git"]}],
+        "certifications": [], "achievements": [], "qualifications": [], "learning": [{"raw_text": "Docker, FastAPI"}]
+      },
+      "must_not_claim": ["Kubernetes", "AWS"],
+      "target_job_ids": ["JOB-0035"]
+    }
+  ],
+  "matching_scenarios": {
+    "target_job_id": "JOB-0035",
+    "notes": "JOB-0035 (FastAPI Intern): required Python, SQL, REST APIs, Git; preferred FastAPI, Flask, PostgreSQL, Docker, Agile. Scenarios record current behaviour; the 'desired' fields describe what a reasonable ranking should show and are reported, not enforced.",
+    "scenarios": [
+      {
+        "scenario_id": "A_required_strong",
+        "description": "Has 3 of 4 required skills (missing REST APIs) and no preferred skills.",
+        "skills": ["Python", "SQL", "Git"],
+        "project": {"title": "Grade Book", "description": "Python and SQL grade book tracked with Git.", "technologies": ["Python", "SQL", "Git"]}
+      },
+      {
+        "scenario_id": "B_preferred_strong",
+        "description": "Has every preferred skill but only 1 of 4 required skills (Git) — missing Python, SQL and REST APIs.",
+        "skills": ["FastAPI", "Flask", "PostgreSQL", "Docker", "Agile", "Git"],
+        "project": {"title": "Container Demo", "description": "Docker and PostgreSQL demo deployed with Git.", "technologies": ["Docker", "PostgreSQL", "Git"]}
+      },
+      {
+        "scenario_id": "C_semantic_not_exact",
+        "description": "A clear backend profile described with related but non-identical terms (Django, Node.js, MySQL, API development).",
+        "skills": ["Django", "Node.js", "Express", "MySQL", "API Development", "Backend Development"],
+        "project": {"title": "Shop Backend", "description": "Built an e-commerce backend with Django and MySQL exposing JSON APIs.", "technologies": ["Django", "MySQL"]}
+      },
+      {
+        "scenario_id": "D_unsuitable",
+        "description": "Graphic design profile with no overlap.",
+        "skills": ["Photoshop", "Illustrator", "Figma", "Video Editing", "Content Writing"],
+        "project": {"title": "Brand Kit", "description": "Designed a brand identity kit in Illustrator.", "technologies": ["Illustrator"]}
+      }
+    ],
+    "desired_properties": [
+      "A_required_strong scores above B_preferred_strong (required skills carry more weight).",
+      "D_unsuitable scores lowest and below 40.",
+      "C_semantic_not_exact scores above D_unsuitable."
+    ]
+  }
+}

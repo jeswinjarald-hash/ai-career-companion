@@ -72,21 +72,34 @@ def check_fabrication_patterns_excluding_metrics(sentence: str) -> str | None:
     return None
 
 
-def check_fabrication(sentence: str, unsupported_terms: set[str]) -> str | None:
+def _mask_phrases(sentence: str, phrases: tuple[str, ...]) -> str:
+    # Only exact (case-insensitive) occurrences of a whole phrase are masked, so a
+    # skill mentioned anywhere outside the opportunity's own name is still checked.
+    for phrase in sorted((p for p in phrases if p and p.strip()), key=len, reverse=True):
+        sentence = re.sub(re.escape(phrase.strip()), " ", sentence, flags=re.I)
+    return sentence
+
+
+def check_fabrication(sentence: str, unsupported_terms: set[str], allowed_phrases: tuple[str, ...] = ()) -> str | None:
     """Scans arbitrary generated text (deterministic-template or LLM-produced) for an
     unsupported keyword or a fabricated metric/leadership/years-of-experience claim.
     Returns a human-readable reason, or `None` if the text is clean. Public so the
     LLM rewrite layer (`customization_llm.py`) can run the identical check on model
     output instead of duplicating these patterns.
+
+    `allowed_phrases` are names the text may legitimately repeat without claiming a
+    skill — the target opportunity's title and company ("the FastAPI Intern role at
+    Acme" names the role; it does not claim FastAPI experience). They are masked only
+    for the unsupported-keyword check; metric/leadership/years checks see the full text.
     """
-    unsupported_hit = _sentence_has_unsupported_keyword(sentence, unsupported_terms)
+    unsupported_hit = _sentence_has_unsupported_keyword(_mask_phrases(sentence, allowed_phrases), unsupported_terms)
     if unsupported_hit:
         return f'references unsupported keyword "{unsupported_hit}"'
     return check_fabrication_patterns(sentence)
 
 
-def validate_summary(summary: str, unsupported_terms: set[str]) -> tuple[str, list[str], list[str]]:
-    violation = check_fabrication(summary, unsupported_terms)
+def validate_summary(summary: str, unsupported_terms: set[str], allowed_phrases: tuple[str, ...] = ()) -> tuple[str, list[str], list[str]]:
+    violation = check_fabrication(summary, unsupported_terms, allowed_phrases)
     if violation is None:
         return summary, [], []
     warning = f'Removed from summary: "{summary}" ({violation}).'
@@ -94,13 +107,13 @@ def validate_summary(summary: str, unsupported_terms: set[str]) -> tuple[str, li
 
 
 def validate_cover_letter(
-    sentences: list[CoverLetterSentence], unsupported_terms: set[str]
+    sentences: list[CoverLetterSentence], unsupported_terms: set[str], allowed_phrases: tuple[str, ...] = ()
 ) -> tuple[list[CoverLetterSentence], list[str], list[str]]:
     kept: list[CoverLetterSentence] = []
     warnings: list[str] = []
     removed: list[str] = []
     for sentence in sentences:
-        violation = check_fabrication(sentence.text, unsupported_terms)
+        violation = check_fabrication(sentence.text, unsupported_terms, allowed_phrases)
         if violation is None:
             kept.append(sentence)
         else:

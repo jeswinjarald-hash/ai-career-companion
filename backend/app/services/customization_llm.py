@@ -148,13 +148,16 @@ def validate_llm_response(
     allowed_evidence_ids: set[str],
     expected_source_paths: set[str],
     unsupported_terms: set[str],
+    allowed_phrases: tuple[str, ...] = (),
 ) -> list[str]:
+    # `allowed_phrases` (the target job title and company) may be named freely: the
+    # prompt requires the cover letter to open with them (M4.3 prompt review / Exp. 5).
     violations: list[str] = []
 
     if not response.summary.strip():
         violations.append("summary must not be empty")
     else:
-        hit = check_fabrication(response.summary, unsupported_terms)
+        hit = check_fabrication(response.summary, unsupported_terms, allowed_phrases)
         if hit:
             violations.append(f"summary: {hit}")
     unknown = [i for i in response.summary_evidence_ids if i not in allowed_evidence_ids]
@@ -186,7 +189,7 @@ def validate_llm_response(
         if not paragraph.text.strip():
             violations.append(f"cover_letter_paragraphs[{index}]: text must not be empty")
             continue
-        hit = check_fabrication(paragraph.text, unsupported_terms)
+        hit = check_fabrication(paragraph.text, unsupported_terms, allowed_phrases)
         if hit:
             violations.append(f"cover_letter_paragraphs[{index}]: {hit}")
         unknown = [i for i in paragraph.evidence_ids if i not in allowed_evidence_ids]
@@ -225,7 +228,8 @@ def rewrite_with_llm(
         meta["fallback_reason"] = f"provider_unavailable: {exc}"
         return None, meta
 
-    response, violations = _parse_and_validate(raw, allowed_ids, expected_paths, unsupported_terms)
+    opportunity_names = (job.job_title, job.company)
+    response, violations = _parse_and_validate(raw, allowed_ids, expected_paths, unsupported_terms, opportunity_names)
 
     if violations:
         meta["repair_attempted"] = True
@@ -238,7 +242,7 @@ def rewrite_with_llm(
         except LLMUnavailableError as exc:
             meta["fallback_reason"] = f"repair_call_failed: {exc}"
             return None, meta
-        response, violations = _parse_and_validate(repaired_raw, allowed_ids, expected_paths, unsupported_terms)
+        response, violations = _parse_and_validate(repaired_raw, allowed_ids, expected_paths, unsupported_terms, opportunity_names)
 
     if violations:
         logger.warning("customization_llm_validation_failed_after_repair provider=%s violation_count=%s", provider.name, len(violations))
@@ -249,10 +253,10 @@ def rewrite_with_llm(
 
 
 def _parse_and_validate(
-    raw: dict, allowed_ids: set[str], expected_paths: set[str], unsupported_terms: set[str]
+    raw: dict, allowed_ids: set[str], expected_paths: set[str], unsupported_terms: set[str], allowed_phrases: tuple[str, ...] = (),
 ) -> tuple[LLMRewriteResponse | None, list[str]]:
     try:
         response = LLMRewriteResponse.model_validate(raw)
     except ValidationError as exc:
         return None, [f"response did not match the required JSON schema: {exc}"]
-    return response, validate_llm_response(response, allowed_ids, expected_paths, unsupported_terms)
+    return response, validate_llm_response(response, allowed_ids, expected_paths, unsupported_terms, allowed_phrases)

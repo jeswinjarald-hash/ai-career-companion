@@ -10,6 +10,11 @@ from app.schemas.job_posting import JobPosting
 from app.schemas.job_chunk import JobSearchResult
 from app.services.job_dataset_service import load_job_postings
 from app.services.job_search_service import search_jobs
+from app.services.education_assessment import assess_education_text
+from app.services.skill_relationships import related_terms
+
+# Credit for a requirement supported only by a related technology (never reported as matched).
+RELATED_SKILL_CREDIT = 0.5
 
 MATCH_WEIGHTS = {
     "required_skills": 0.35,
@@ -47,6 +52,8 @@ class MatchingProfile:
     qualification_text: str
     retrieval_terms: list[str]
     project_evidence: list[tuple[str, list[str]]] = field(default_factory=list)
+    # Skills typed into the career profile with no resume evidence at all (M4.3 Exp. 7).
+    self_reported_skills: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -55,6 +62,7 @@ class ComponentResult:
     matched: list[str] = field(default_factory=list)
     missing: list[str] = field(default_factory=list)
     reasons: list[str] = field(default_factory=list)
+    related: list[tuple[str, str]] = field(default_factory=list)
 
 
 def normalize_term(value: str) -> str:
@@ -124,7 +132,14 @@ def normalize_profile(profile: CandidateProfile, structured_data: dict) -> Match
         + education_entries
         + project_texts
     )
+    resume_terms = set(_unique_terms(structured_data.get("skills", []))) | set(project_skills)
+    resume_text = normalize_term(" ".join(project_texts + experience_entries))
+    self_reported = [
+        skill for skill in _unique_terms(list(profile.skills))
+        if skill not in resume_terms and not re.search(r"(?<![\w+#.])" + re.escape(skill) + r"(?![\w+#])", resume_text)
+    ]
     return MatchingProfile(
+        self_reported_skills=self_reported,
         skills=skills,
         education_text=" ".join(education_entries),
         experience_text=" ".join(experience_entries),
@@ -136,12 +151,22 @@ def normalize_profile(profile: CandidateProfile, structured_data: dict) -> Match
     )
 
 
-def _matched_terms(student_terms: list[str], job_terms: list[str]) -> ComponentResult:
+def _matched_terms(student_terms: list[str], job_terms: list[str], allow_related: bool = False) -> ComponentResult:
+    """Exact/alias matches score 1. With `allow_related`, a requirement supported only
+    by a related technology (the shared `skill_relationships` table also used by Skill
+    Gap) scores RELATED_SKILL_CREDIT and stays in `missing`, with the related term
+    recorded. Required skills never take related credit: a hard requirement needs
+    direct evidence (Skill Gap likewise reports related evidence as "partial", not met)."""
     student_set = set(student_terms)
     matched = [term for term in job_terms if normalize_term(term) in student_set]
     missing = [term for term in job_terms if normalize_term(term) not in student_set]
-    score = len(matched) / len(job_terms) if job_terms else 1.0
-    return ComponentResult(score=score, matched=matched, missing=missing)
+    related = []
+    for term in missing if allow_related else []:
+        hit = sorted(related_terms(normalize_term(term)) & student_set)
+        if hit:
+            related.append((term, hit[0]))
+    score = (len(matched) + RELATED_SKILL_CREDIT * len(related)) / len(job_terms) if job_terms else 1.0
+    return ComponentResult(score=score, matched=matched, missing=missing, related=related)
 
 
 def score_required_skills(profile: MatchingProfile, job: JobPosting) -> ComponentResult:
@@ -149,20 +174,18 @@ def score_required_skills(profile: MatchingProfile, job: JobPosting) -> Componen
 
 
 def score_preferred_skills(profile: MatchingProfile, job: JobPosting) -> ComponentResult:
-    return _matched_terms(profile.skills, job.preferred_skills)
+    return _matched_terms(profile.skills, job.preferred_skills, allow_related=True)
+
+
+_EDUCATION_SCORE = {"met": 1.0, "partial": 0.5, "not_met": 0.0}
 
 
 def score_education(profile: MatchingProfile, job: JobPosting) -> ComponentResult:
-    student = normalize_term(profile.education_text)
-    requirement = normalize_term(job.education_requirements)
-    if not student:
+    # Shared with Skill Gap (`education_assessment`), so both services agree.
+    assessment = assess_education_text(normalize_term(profile.education_text), normalize_term(job.education_requirements))
+    if assessment.level == "unknown":
         return ComponentResult(None, reasons=["Education evidence is unavailable."])
-    degree_terms = ("b.tech", "b.e", "bca", "b.sc", "m.tech", "mca", "m.sc", "computer", "information technology", "data science", "engineering", "mathematics", "statistics", "electronics")
-    student_has_field = any(term in student for term in degree_terms)
-    requirement_accepts_related = "related" in requirement or "any discipline" in requirement
-    if student_has_field and ("computer" in requirement or "information technology" in requirement or requirement_accepts_related):
-        return ComponentResult(1.0, reasons=["Education evidence satisfies the stated or related-field requirement."])
-    return ComponentResult(0.0, reasons=["Available education does not clearly satisfy the stated requirement."])
+    return ComponentResult(_EDUCATION_SCORE[assessment.level], reasons=[assessment.reason])
 
 
 def score_experience(profile: MatchingProfile, job: JobPosting) -> ComponentResult:
@@ -244,11 +267,15 @@ def _result(job: JobPosting, retrieval: JobSearchResult, profile: MatchingProfil
         strengths.append(f"Relevant project evidence: {relevant_projects[0]}")
     gaps = [f"{skill} missing" for skill in required.missing]
     gaps.extend(f"{skill} preferred skill not found" for skill in preferred.missing)
+    self_reported_set = set(profile.self_reported_skills)
+    self_reported = [skill for skill in required.matched + preferred.matched if normalize_term(skill) in self_reported_set]
     reasoning = (
         f"The candidate matches {len(required.matched)} of {len(job.required_skills)} required skills"
         f" and {len(preferred.matched)} of {len(job.preferred_skills)} preferred skills. "
         + (f"Relevant project evidence includes {relevant_projects[0]}. " if relevant_projects else "No directly overlapping project evidence was found. ")
         + (f"The main gap is {required.missing[0]}." if required.missing else "No required skill gaps were found.")
+        + ("".join(f" {evidence} is related to {skill}, which earns partial (not full) credit." for skill, evidence in required.related + preferred.related))
+        + (f" Self-reported in your career profile (no resume evidence yet): {', '.join(self_reported)}." if self_reported else "")
     )
     return JobMatchResult(
         job_id=job.job_id,
@@ -277,11 +304,17 @@ def _result(job: JobPosting, retrieval: JobSearchResult, profile: MatchingProfil
     )
 
 
-def match_jobs_for_profile(profile: CandidateProfile, structured_data: dict, top_k: int = 10) -> list[JobMatchResult]:
+def match_jobs_for_profile(profile: CandidateProfile, structured_data: dict, top_k: int = 10, query: str | None = None) -> list[JobMatchResult]:
+    """Retrieves candidate jobs, then scores each against the student's profile.
+
+    By default retrieval is driven by the profile's own terms. An explicit `query`
+    (e.g. an area the student asked the assistant about) replaces only the retrieval
+    step — every retrieved job is still scored against the same profile.
+    """
     if not 1 <= top_k <= 20:
         raise ValueError("top_k must be between 1 and 20.")
     normalized = normalize_profile(profile, structured_data)
-    query = " ".join(normalized.retrieval_terms[:40])
+    query = (query or "").strip() or " ".join(normalized.retrieval_terms[:40])
     if not query:
         raise ValueError("The structured profile does not contain enough information for job retrieval.")
     retrievals = search_jobs(query, top_k=top_k)
@@ -290,7 +323,7 @@ def match_jobs_for_profile(profile: CandidateProfile, structured_data: dict, top
     return sorted(results, key=lambda item: (-item.match_score, -item.retrieval_score, item.job_id))
 
 
-def match_jobs_for_resume(db: Session, resume_id: int, top_k: int = 10) -> list[JobMatchResult]:
+def match_jobs_for_resume(db: Session, resume_id: int, top_k: int = 10, query: str | None = None) -> list[JobMatchResult]:
     resume = db.get(Resume, resume_id)
     if resume is None:
         raise LookupError("Resume not found.")
@@ -298,4 +331,4 @@ def match_jobs_for_resume(db: Session, resume_id: int, top_k: int = 10) -> list[
     structured = db.scalar(select(StructuredResume).where(StructuredResume.resume_id == resume_id))
     if profile is None or structured is None:
         raise ValueError("A structured resume is required before matching jobs.")
-    return match_jobs_for_profile(profile, structured.data, top_k)
+    return match_jobs_for_profile(profile, structured.data, top_k, query=query)

@@ -16,7 +16,8 @@ from app.models import CandidateProfile
 from app.schemas.customization import EvidenceRecord, KeywordClassification
 from app.schemas.job_posting import JobPosting
 from app.services.job_matching import normalize_term
-from app.services.skill_gap_evidence import RELATED_TERMS, build_evidence_units, match_requirement, mentions_term
+from app.services.skill_gap_evidence import build_evidence_units, match_requirement, mentions_term
+from app.services.skill_relationships import related_terms
 
 
 def _unique_preserve(values: list[str]) -> list[str]:
@@ -37,7 +38,7 @@ def _matched_evidence_ids(keyword: str, evidence_records: list[EvidenceRecord]) 
     `match_requirement` produced the status.
     """
     keyword_norm = normalize_term(keyword)
-    related_pool = RELATED_TERMS.get(keyword_norm, set())
+    related_pool = related_terms(keyword_norm)
     matched: list[str] = []
     for record in evidence_records:
         normalized_text = normalize_term(record.raw_text)

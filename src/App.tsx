@@ -21,12 +21,18 @@ import {
   createConversation, deleteConversation, getConversation, listConversations, sendMessage,
   type ActionType, type ConversationDetail, type ConversationSummary, type MessageOut, type SuggestedAction,
 } from './services/assistantService'
+import { PageHeading, Stat } from './components/common'
+import { ApplicationTrackerView } from './components/applications/ApplicationTrackerView'
+import { ApplicationDetailView } from './components/applications/ApplicationDetailView'
+import { ApplicationActivity, TrackJobButton, TrackerLinkPanel } from './components/applications/ApplicationWidgets'
+import './components/applications/applications.css'
 
 type ResumeLifecycle = 'no_resume' | 'uploading' | 'processing' | 'processed' | 'failed'
 
-type View = 'dashboard' | 'profile' | 'resume' | 'resume-results' | 'careers' | 'job-details' | 'skills' | 'customize' | 'interview-prep' | 'roadmap' | 'assistant' | 'progress' | 'settings'
-const nav = [{ id: 'dashboard' as View, label: 'Dashboard', note: 'Your next best action' }, { id: 'profile' as View, label: 'Career Profile', note: 'Your structured context' }, { id: 'resume' as View, label: 'Resume Analyzer', note: 'Upload and feedback' }, { id: 'careers' as View, label: 'Career Recommendations', note: 'Paths that fit you' }, { id: 'skills' as View, label: 'Skill Gap Analysis', note: 'Compare your skills' }, { id: 'roadmap' as View, label: 'Learning Roadmap', note: 'Your learning path' }, { id: 'assistant' as View, label: 'AI Career Assistant', note: 'Contextual guidance' }, { id: 'progress' as View, label: 'Progress Tracker', note: 'Your development' }]
-const viewFromPath = (): View => { const path = window.location.pathname; if (path.startsWith('/jobs/')) return 'job-details'; if (path === '/resume/results') return 'resume-results'; if (path === '/customize') return 'customize'; if (path === '/interview-prep') return 'interview-prep'; const match = nav.find((item) => `/${item.id}` === path); return match?.id ?? (path === '/settings' ? 'settings' : 'dashboard') }
+type View = 'dashboard' | 'profile' | 'resume' | 'resume-results' | 'careers' | 'job-details' | 'skills' | 'customize' | 'interview-prep' | 'roadmap' | 'assistant' | 'progress' | 'settings' | 'applications' | 'application-details'
+const nav = [{ id: 'dashboard' as View, label: 'Dashboard', note: 'Your next best action' }, { id: 'profile' as View, label: 'Career Profile', note: 'Your structured context' }, { id: 'resume' as View, label: 'Resume Analyzer', note: 'Upload and feedback' }, { id: 'careers' as View, label: 'Career Recommendations', note: 'Paths that fit you' }, { id: 'applications' as View, label: 'Application Tracker', note: 'Statuses and deadlines' }, { id: 'skills' as View, label: 'Skill Gap Analysis', note: 'Compare your skills' }, { id: 'roadmap' as View, label: 'Learning Roadmap', note: 'Your learning path' }, { id: 'assistant' as View, label: 'AI Career Assistant', note: 'Contextual guidance' }, { id: 'progress' as View, label: 'Progress Tracker', note: 'Your development' }]
+const viewFromPath = (): View => { const path = window.location.pathname; if (path.startsWith('/jobs/')) return 'job-details'; if (path.startsWith('/applications/')) return 'application-details'; if (path === '/resume/results') return 'resume-results'; if (path === '/customize') return 'customize'; if (path === '/interview-prep') return 'interview-prep'; const match = nav.find((item) => `/${item.id}` === path); return match?.id ?? (path === '/settings' ? 'settings' : 'dashboard') }
+const applicationIdFromPath = (): number | null => { const match = /^\/applications\/(\d+)$/.exec(window.location.pathname); return match ? Number(match[1]) : null }
 const greetingForTime = () => { const hour = new Date().getHours(); return hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening' }
 const ACTION_VIEW: Partial<Record<ActionType, View>> = {
   upload_resume: 'resume', process_resume: 'resume', view_resume: 'resume-results',
@@ -44,6 +50,7 @@ function App() {
   const [activeProfile, setActiveProfile] = useState<CandidateProfile | null>(null)
   const [view, setView] = useState<View>(viewFromPath)
   const [selectedJobId, setSelectedJobId] = useState<string | null>(() => window.location.pathname.startsWith('/jobs/') ? window.location.pathname.slice('/jobs/'.length) : null)
+  const [selectedApplicationId, setSelectedApplicationId] = useState<number | null>(applicationIdFromPath)
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [resumeLifecycle, setResumeLifecycle] = useState<ResumeLifecycle>('no_resume')
   const [resumeRestoring, setResumeRestoring] = useState(true)
@@ -66,7 +73,7 @@ function App() {
     }).catch(() => { if (!cancelled) setAuthStatus('unauthenticated') })
     return () => { cancelled = true }
   }, [])
-  useEffect(() => { const onPopState = () => setView(viewFromPath()); window.addEventListener('popstate', onPopState); return () => window.removeEventListener('popstate', onPopState) }, [])
+  useEffect(() => { const onPopState = () => { setView(viewFromPath()); setSelectedApplicationId(applicationIdFromPath()) }; window.addEventListener('popstate', onPopState); return () => window.removeEventListener('popstate', onPopState) }, [])
   // Restores the active resume purely from the backend (most recently uploaded resume for this profile).
   // Browser storage plays no role here, so ownership can never be spoofed by editing localStorage.
   useEffect(() => {
@@ -96,11 +103,14 @@ function App() {
       setNotice(error instanceof Error ? error.message : 'We could not restore your saved resume.')
     }).finally(() => setResumeRestoring(false))
   }, [authStatus, activeProfile])
-  const go = (next: View) => { setView(next); setNotice(''); window.history.pushState({}, '', `/${next === 'dashboard' ? 'dashboard' : next === 'job-details' ? `jobs/${selectedJobId ?? ''}` : next === 'resume-results' ? 'resume/results' : next}`) }
+  const go = (next: View) => { setView(next); setNotice(''); window.history.pushState({}, '', `/${next === 'dashboard' ? 'dashboard' : next === 'job-details' ? `jobs/${selectedJobId ?? ''}` : next === 'application-details' ? `applications/${selectedApplicationId ?? ''}` : next === 'resume-results' ? 'resume/results' : next}`) }
   // Sets the URL directly with the just-selected job id rather than going through
   // go('job-details'), which would otherwise read selectedJobId from this render's
   // closure before the setSelectedJobId update above has been applied.
   const openJobDetails = (jobId: string) => { setSelectedJobId(jobId); setView('job-details'); setNotice(''); window.history.pushState({}, '', `/jobs/${jobId}`) }
+  const openApplication = (applicationId: number) => { setSelectedApplicationId(applicationId); setView('application-details'); setNotice(''); window.history.pushState({}, '', `/applications/${applicationId}`) }
+  // Opens an existing generated-materials workspace for a tracked dataset opportunity.
+  const openJobWorkspace = (jobId: string, next: 'customize' | 'interview-prep') => { setSelectedJobId(jobId); go(next) }
   const handleAssistantAction = (action: SuggestedAction) => {
     if (action.action === 'view_job' && action.job_id) { openJobDetails(action.job_id); return }
     if (action.job_id) setSelectedJobId(action.job_id)
@@ -165,10 +175,10 @@ function App() {
     }
   }
   const activeResumeId = resumeLifecycle === 'processed' ? resumeRecord?.id ?? null : null
-  const content = view === 'profile' ? <ProfileView profile={activeProfile} onProfileSaved={setActiveProfile} /> : view === 'resume' ? <RealResumeView file={resumeFile} lifecycle={resumeLifecycle} restoring={resumeRestoring} notice={notice} resumeRecord={resumeRecord} onDrop={(event) => { event.preventDefault(); chooseFile(event.dataTransfer.files[0]) }} onFileChange={(event) => chooseFile(event.target.files?.[0])} onAnalyze={analyze} onReprocess={reprocessResume} /> : view === 'resume-results' ? <RealResumeResults structuredResume={structuredResume} onNavigate={go} /> : view === 'careers' ? <CareersView resumeId={activeResumeId} onOpenJob={openJobDetails} /> : view === 'job-details' ? <JobDetailsView jobId={selectedJobId} resumeId={activeResumeId} onBack={() => go('careers')} onAnalyzeSkillGap={() => go('skills')} onCustomizeApplication={() => go('customize')} onInterviewPrep={() => go('interview-prep')} /> : view === 'skills' ? <SkillsView resumeId={activeResumeId} jobId={selectedJobId} onRoadmap={() => go('roadmap')} onSearchJobs={() => go('careers')} onCustomizeApplication={() => go('customize')} onInterviewPrep={() => go('interview-prep')} /> : view === 'customize' ? <CustomizeView resumeId={activeResumeId} jobId={selectedJobId} structuredResume={structuredResume} onSearchJobs={() => go('careers')} onInterviewPrep={() => go('interview-prep')} /> : view === 'interview-prep' ? <InterviewPrepView resumeId={activeResumeId} jobId={selectedJobId} structuredResume={structuredResume} onSearchJobs={() => go('careers')} /> : view === 'roadmap' ? <RoadmapView resumeId={activeResumeId} /> : view === 'assistant' ? <AssistantView resumeId={activeResumeId} jobId={selectedJobId} onAction={handleAssistantAction} /> : view === 'progress' ? <ProgressView profile={activeProfile} resumeLifecycle={resumeLifecycle} structuredResume={structuredResume} /> : view === 'settings' ? <SettingsView /> : <DashboardView currentUser={currentUser} profile={activeProfile} resumeLifecycle={resumeLifecycle} resumeRestoring={resumeRestoring} resumeRecord={resumeRecord} structuredResume={structuredResume} notice={notice} onNavigate={go} />
+  const content = view === 'profile' ? <ProfileView profile={activeProfile} onProfileSaved={setActiveProfile} /> : view === 'resume' ? <RealResumeView file={resumeFile} lifecycle={resumeLifecycle} restoring={resumeRestoring} notice={notice} resumeRecord={resumeRecord} onDrop={(event) => { event.preventDefault(); chooseFile(event.dataTransfer.files[0]) }} onFileChange={(event) => chooseFile(event.target.files?.[0])} onAnalyze={analyze} onReprocess={reprocessResume} /> : view === 'resume-results' ? <RealResumeResults structuredResume={structuredResume} onNavigate={go} /> : view === 'careers' ? <CareersView resumeId={activeResumeId} onOpenJob={openJobDetails} /> : view === 'job-details' ? <JobDetailsView jobId={selectedJobId} resumeId={activeResumeId} onBack={() => go('careers')} onAnalyzeSkillGap={() => go('skills')} onCustomizeApplication={() => go('customize')} onInterviewPrep={() => go('interview-prep')} onOpenApplication={openApplication} /> : view === 'skills' ? <SkillsView resumeId={activeResumeId} jobId={selectedJobId} onRoadmap={() => go('roadmap')} onSearchJobs={() => go('careers')} onCustomizeApplication={() => go('customize')} onInterviewPrep={() => go('interview-prep')} /> : view === 'customize' ? <CustomizeView resumeId={activeResumeId} jobId={selectedJobId} structuredResume={structuredResume} onSearchJobs={() => go('careers')} onInterviewPrep={() => go('interview-prep')} onOpenApplication={openApplication} /> : view === 'interview-prep' ? <InterviewPrepView resumeId={activeResumeId} jobId={selectedJobId} structuredResume={structuredResume} onSearchJobs={() => go('careers')} onOpenApplication={openApplication} /> : view === 'applications' ? <ApplicationTrackerView onOpenApplication={openApplication} onBrowseOpportunities={() => go('careers')} /> : view === 'application-details' ? <ApplicationDetailView applicationId={selectedApplicationId} resumeId={activeResumeId} onBack={() => go('applications')} onOpenCustomization={(jobId) => openJobWorkspace(jobId, 'customize')} onOpenInterviewPrep={(jobId) => openJobWorkspace(jobId, 'interview-prep')} onOpenJob={openJobDetails} /> : view === 'roadmap' ? <RoadmapView resumeId={activeResumeId} /> : view === 'assistant' ? <AssistantView resumeId={activeResumeId} jobId={selectedJobId} onAction={handleAssistantAction} /> : view === 'progress' ? <ProgressView profile={activeProfile} resumeLifecycle={resumeLifecycle} structuredResume={structuredResume} /> : view === 'settings' ? <SettingsView /> : <DashboardView currentUser={currentUser} profile={activeProfile} resumeLifecycle={resumeLifecycle} resumeRestoring={resumeRestoring} resumeRecord={resumeRecord} structuredResume={structuredResume} notice={notice} onNavigate={go} onOpenApplication={openApplication} />
   if (authStatus === 'checking') return <main className="auth-page"><section className="auth-panel"><div className="auth-brand"><span>AC</span><div><strong>AI Career</strong><small>Companion</small></div></div><p className="muted">Loading your workspace...</p></section></main>
   if (authStatus === 'unauthenticated') { const path = window.location.pathname; if (path === '/signup') return <SignupView onAuthenticated={handleAuthenticated} />; if (path === '/onboarding') return <OnboardingView />; return <LoginView onAuthenticated={handleAuthenticated} /> }
-  const currentLabel = nav.find((item) => item.id === view)?.label ?? (view === 'job-details' ? 'Job Details' : view === 'resume-results' ? 'Resume Results' : view === 'customize' ? 'Customize Application' : view === 'interview-prep' ? 'Interview Preparation' : 'Settings')
+  const currentLabel = nav.find((item) => item.id === view)?.label ?? (view === 'job-details' ? 'Job Details' : view === 'resume-results' ? 'Resume Results' : view === 'customize' ? 'Customize Application' : view === 'interview-prep' ? 'Interview Preparation' : view === 'application-details' ? 'Application' : 'Settings')
   return <div className="app-shell"><aside className="sidebar"><div className="brand-mark"><span>AC</span><div><strong>AI Career</strong><small>Companion</small></div></div><div className="workspace-label">STUDENT WORKSPACE</div><nav aria-label="Primary navigation">{nav.map((item) => <button className={`nav-item ${view === item.id ? 'active' : ''}`} key={item.id} onClick={() => go(item.id)}><span className="nav-dot" aria-hidden="true" /><span><strong>{item.label}</strong><small>{item.note}</small></span></button>)}</nav><div className="sidebar-divider" /><button className={`nav-item ${view === 'settings' ? 'active' : ''}`} onClick={() => go('settings')}><span className="nav-dot" aria-hidden="true" /><span><strong>Settings</strong><small>Workspace preferences</small></span></button><div className="sidebar-footer"><span className="status-pulse" /> Career workspace</div></aside><main className="main-content"><header className="topbar"><div className="breadcrumbs"><span>Workspace</span><span>/</span><strong>{currentLabel}</strong></div><div className="account"><div className="avatar">{initials(currentUser?.full_name ?? '')}</div><div><strong>{currentUser?.full_name}</strong><small>{currentUser?.email}</small></div><button className="text-button" onClick={() => void handleLogout()}>Sign out</button></div></header><div className="mobile-nav" aria-label="Mobile navigation">{nav.slice(0, 5).map((item) => <button className={view === item.id ? 'active' : ''} key={item.id} onClick={() => go(item.id)}>{item.label}</button>)}</div><div className="page-wrap">{content}</div></main></div>
 }
 
@@ -220,8 +230,7 @@ function SignupView({ onAuthenticated }: { onAuthenticated: (session: AuthSessio
   return <main className="auth-page"><section className="auth-panel"><div className="auth-brand"><span>AC</span><div><strong>AI Career</strong><small>Companion</small></div></div><div className="auth-copy"><p className="eyebrow">CREATE YOUR WORKSPACE</p><h1>Start with your career context.</h1><p>Create an account, then complete your career profile.</p></div><form className="auth-form" onSubmit={(event) => { event.preventDefault(); void submit() }}><label>Full name<input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Your name" disabled={submitting} /></label><label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" disabled={submitting} /></label><label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" disabled={submitting} /></label><label>Confirm password<input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Re-enter your password" disabled={submitting} /></label>{error && <p className="auth-error" role="alert">{error}</p>}<button className="primary-button auth-submit" disabled={submitting}>{submitting ? 'Creating account...' : 'Create account'}</button></form><button className="text-button" onClick={() => { window.history.pushState({}, '', '/'); window.location.reload() }}>Already have an account? Sign in</button></section><aside className="auth-aside"><p className="eyebrow">YOUR FIRST STEPS</p><h2>Build a profile that can grow with you.</h2><div className="auth-flow"><span>01</span><div><strong>Tell us about your direction</strong><small>Interests and experience</small></div></div><div className="auth-flow"><span>02</span><div><strong>Add your resume</strong><small>Skills and projects extracted</small></div></div></aside></main>
 }
 function OnboardingView() { return <main className="auth-page"><section className="auth-panel"><div className="auth-brand"><span>AC</span><div><strong>AI Career</strong><small>Companion</small></div></div><div className="auth-copy"><p className="eyebrow">CREATE YOUR ACCOUNT</p><h1>Let's get your workspace set up.</h1><p>Create an account to build your career profile and upload your resume.</p></div><button className="primary-button auth-submit" onClick={() => { window.history.pushState({}, '', '/signup'); window.location.reload() }}>Go to sign up</button></section><aside className="auth-aside"><p className="eyebrow">A CLEAR START</p><h2>Your profile becomes the context behind every next step.</h2><div className="auth-flow"><span>01</span><div><strong>Profile</strong><small>Personal and career details</small></div></div><div className="auth-flow"><span>02</span><div><strong>Guidance</strong><small>Recommendations shaped around you</small></div></div></aside></main> }
-function PageHeading({ eyebrow, title, lede, action }: { eyebrow: string; title: string; lede: React.ReactNode; action?: React.ReactNode }) { return <section className="page-heading"><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p className="lede">{lede}</p></div>{action}</section> }
-function DashboardView({ currentUser, profile, resumeLifecycle, resumeRestoring, resumeRecord, structuredResume, notice, onNavigate }: {
+function DashboardView({ currentUser, profile, resumeLifecycle, resumeRestoring, resumeRecord, structuredResume, notice, onNavigate, onOpenApplication }: {
   currentUser: AuthUser | null
   profile: CandidateProfile | null
   resumeLifecycle: ResumeLifecycle
@@ -230,18 +239,20 @@ function DashboardView({ currentUser, profile, resumeLifecycle, resumeRestoring,
   structuredResume: StructuredResume | null
   notice: string
   onNavigate: (view: View) => void
+  onOpenApplication: (applicationId: number) => void
 }) {
+  const applicationActivity = <ApplicationActivity onOpenTracker={() => onNavigate('applications')} onOpenApplication={onOpenApplication} />
   const displayName = (currentUser?.full_name ?? '').trim().split(/\s+/)[0] || 'there'
   const heading = `Good ${greetingForTime()}, ${displayName}.`
   const data = structuredResume?.data
 
   if (resumeRestoring) return <PageHeading eyebrow="DASHBOARD" title={heading} lede="Loading your workspace..." />
 
-  if (resumeLifecycle === 'no_resume') return <><PageHeading eyebrow="DASHBOARD" title={heading} lede="Upload your resume to build your career profile." action={<button className="primary-button" onClick={() => onNavigate('resume')}>Upload resume -&gt;</button>} /><div className="architecture-note" role="status">No resume analyzed yet. No skills extracted yet. No job matches yet.</div></>
+  if (resumeLifecycle === 'no_resume') return <><PageHeading eyebrow="DASHBOARD" title={heading} lede="Upload your resume to build your career profile." action={<button className="primary-button" onClick={() => onNavigate('resume')}>Upload resume -&gt;</button>} /><div className="architecture-note" role="status">No resume analyzed yet. No skills extracted yet. No job matches yet.</div>{applicationActivity}</>
 
   if (resumeLifecycle === 'uploading' || resumeLifecycle === 'processing') return <><PageHeading eyebrow="DASHBOARD" title={heading} lede="Your resume is being processed." /><div className="architecture-note" role="status">{resumeLifecycle === 'uploading' ? 'Uploading' : 'Processing'} {resumeRecord?.original_filename ?? 'your resume'}...</div></>
 
-  if (resumeLifecycle === 'failed') return <><PageHeading eyebrow="DASHBOARD" title={heading} lede="We could not finish processing your resume." action={<button className="primary-button" onClick={() => onNavigate('resume')}>Upload again -&gt;</button>} /><div className="error-notice" role="alert">{notice || 'Resume processing failed.'}</div></>
+  if (resumeLifecycle === 'failed') return <><PageHeading eyebrow="DASHBOARD" title={heading} lede="We could not finish processing your resume." action={<button className="primary-button" onClick={() => onNavigate('resume')}>Upload again -&gt;</button>} /><div className="error-notice" role="alert">{notice || 'Resume processing failed.'}</div>{applicationActivity}</>
 
   return <>
     <PageHeading eyebrow="DASHBOARD" title={heading} lede="Your career profile, built from your latest processed resume." action={<button className="primary-button" onClick={() => onNavigate('resume-results')}>View resume results -&gt;</button>} />
@@ -251,6 +262,7 @@ function DashboardView({ currentUser, profile, resumeLifecycle, resumeRestoring,
       <Stat label="Education entries" value={String(data?.education.length ?? 0)} detail="From your latest resume" />
       <Stat label="Projects" value={String(data?.projects.length ?? 0)} detail="From your latest resume" />
     </section>
+    {applicationActivity}
     <div className="dashboard-columns">
       <section>
         <div className="section-heading"><div><p className="eyebrow">EXTRACTED SKILLS</p><h2>From your latest resume</h2></div><button className="text-button" onClick={() => onNavigate('resume-results')}>View all -&gt;</button></div>
@@ -275,7 +287,6 @@ function DashboardView({ currentUser, profile, resumeLifecycle, resumeRestoring,
     </section>
   </>
 }
-function Stat({ label, value, detail }: { label: string; value: string; detail: string }) { return <article className="card stat-card"><p className="eyebrow">{label}</p><strong>{value}</strong><small>{detail}</small></article> }
 function CareersView({ resumeId, onOpenJob }: { resumeId: number | null; onOpenJob: (jobId: string) => void }) {
   const [matches, setMatches] = useState<JobMatchResult[] | null>(null)
   const [matchError, setMatchError] = useState('')
@@ -313,6 +324,7 @@ function CareersView({ resumeId, onOpenJob }: { resumeId: number | null; onOpenJ
       </form>
       {searchStatus === 'error' && <div className="error-notice" role="alert">{searchError}</div>}
       {searchStatus !== 'error' && searchResults !== null && searchResults.length === 0 && <p className="muted">No opportunities matched that search.</p>}
+      {searchResults !== null && searchResults.some((result) => result.query_confidence === 'unsupported_area') && <div className="architecture-note" role="status">Few of your search terms appear in the opportunities available here, so these closest results may not match what you are looking for.</div>}
       {searchResults !== null && searchResults.length > 0 && <section className="career-list">
         {searchResults.map((result) => <article className="card career-card" key={result.job_id}>
           <div className="career-card-top"><span className="role-mark">{result.job_title.slice(0, 1)}</span><span className="match-badge">{Math.round(result.similarity_score * 100)}% relevance</span></div>
@@ -334,7 +346,7 @@ function CareersView({ resumeId, onOpenJob }: { resumeId: number | null; onOpenJ
     </section>
   </>
 }
-function JobDetailsView({ jobId, resumeId, onBack, onAnalyzeSkillGap, onCustomizeApplication, onInterviewPrep }: { jobId: string | null; resumeId: number | null; onBack: () => void; onAnalyzeSkillGap: () => void; onCustomizeApplication: () => void; onInterviewPrep: () => void }) {
+function JobDetailsView({ jobId, resumeId, onBack, onAnalyzeSkillGap, onCustomizeApplication, onInterviewPrep, onOpenApplication }: { jobId: string | null; resumeId: number | null; onBack: () => void; onAnalyzeSkillGap: () => void; onCustomizeApplication: () => void; onInterviewPrep: () => void; onOpenApplication: (applicationId: number) => void }) {
   const [job, setJob] = useState<JobPosting | null>(null)
   const [jobError, setJobError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -367,7 +379,7 @@ function JobDetailsView({ jobId, resumeId, onBack, onAnalyzeSkillGap, onCustomiz
   const matchResult = matches?.[0] ?? null
 
   return <>
-    <PageHeading eyebrow="JOB DETAILS" title={job.job_title} lede={<><span className="opportunity-type-chip inline">{job.employment_type}</span> {job.company} · {job.domain}</>} action={<button className="text-button" onClick={onBack}>Back to search -&gt;</button>} />
+    <PageHeading eyebrow="JOB DETAILS" title={job.job_title} lede={<><span className="opportunity-type-chip inline">{job.employment_type}</span> {job.company} · {job.domain}</>} action={<div className="heading-actions"><TrackJobButton jobId={job.job_id} onOpenApplication={onOpenApplication} /><button className="text-button" onClick={onBack}>Back to search -&gt;</button></div>} />
     <section className="results-grid resume-result-grid">
       <article className="card result-card"><p className="eyebrow">OVERVIEW</p><p className="result-bullet">Location: {job.location}</p><p className="result-bullet">Work mode: {job.work_mode}</p><p className="result-bullet">Employment type: {job.employment_type}</p><p className="result-bullet">Posted: {job.posted_date}</p></article>
       <article className="card result-card"><p className="eyebrow">DESCRIPTION</p><p className="muted">{job.job_description}</p></article>
@@ -533,12 +545,13 @@ function BulletComparison({ original, tailored, draft, sourcePath, jobKeywordsUs
 const GENERATION_LABEL: Record<GenerationMode, string> = { llm: 'AI Enhanced', deterministic_fallback: 'Grounded Fallback' }
 const GENERATION_TONE: Record<GenerationMode, string> = { llm: 'strong', deterministic_fallback: 'adequate' }
 
-function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs, onInterviewPrep }: {
+function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs, onInterviewPrep, onOpenApplication }: {
   resumeId: number | null
   jobId: string | null
   structuredResume: StructuredResume | null
   onSearchJobs: () => void
   onInterviewPrep: () => void
+  onOpenApplication: (applicationId: number) => void
 }) {
   const [customization, setCustomization] = useState<ApplicationCustomization | null>(null)
   const [versions, setVersions] = useState<ApplicationCustomizationSummary[]>([])
@@ -671,6 +684,7 @@ function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs, onInte
     {versions.length > 1 && <div className="tag-row">{versions.map((item) => <span key={item.id}><button className={`text-button ${customization?.id === item.id ? 'active' : ''}`} onClick={() => void selectVersion(item.id)}>v{item.version} · {GENERATION_LABEL[item.generation_mode]}{item.stale ? ' (stale)' : ''}</button></span>)}</div>}
 
     {customization && <>
+      <TrackerLinkPanel kind="customization" jobId={customization.job_id} artifactId={customization.id} onOpenApplication={onOpenApplication} />
       <div className="mini-gap">
         <span className={`skill-status ${GENERATION_TONE[customization.generation.mode]}`}>{GENERATION_LABEL[customization.generation.mode]}</span>
         <span className="muted">
@@ -807,11 +821,12 @@ function InterviewQuestionCard({ question, index, evidenceById, mockState, onSta
   </details>
 }
 
-function InterviewPrepView({ resumeId, jobId, structuredResume, onSearchJobs }: {
+function InterviewPrepView({ resumeId, jobId, structuredResume, onSearchJobs, onOpenApplication }: {
   resumeId: number | null
   jobId: string | null
   structuredResume: StructuredResume | null
   onSearchJobs: () => void
+  onOpenApplication: (applicationId: number) => void
 }) {
   const [prep, setPrep] = useState<InterviewPreparation | null>(null)
   const [versions, setVersions] = useState<InterviewPreparationSummary[]>([])
@@ -906,6 +921,7 @@ function InterviewPrepView({ resumeId, jobId, structuredResume, onSearchJobs }: 
     {versions.length > 1 && <div className="tag-row">{versions.map((item) => <span key={item.id}><button className={`text-button ${prep?.id === item.id ? 'active' : ''}`} onClick={() => void selectVersion(item.id)}>v{item.version} · {GENERATION_LABEL[item.generation_mode]}{item.stale ? ' (stale)' : ''}</button></span>)}</div>}
 
     {prep && <>
+      <TrackerLinkPanel kind="interview_preparation" jobId={prep.job_id} artifactId={prep.id} onOpenApplication={onOpenApplication} />
       <div className="mini-gap">
         <span className={`skill-status ${GENERATION_TONE[prep.generation.mode]}`}>{GENERATION_LABEL[prep.generation.mode]}</span>
         <span className="muted">
@@ -1167,6 +1183,6 @@ function RealResumeResults({ structuredResume, onNavigate }: { structuredResume:
   </>}</section>
 }
 function ProcessingStep({ label, complete, active }: { label: string; complete: boolean; active: boolean }) { return <div className="processing-step"><span className={`process-icon ${complete ? 'complete' : active ? 'active' : ''}`}>{complete ? 'OK' : active ? '...' : '00'}</span><strong>{label}</strong><span className="muted">{complete ? 'Done' : active ? 'Working' : 'Waiting'}</span></div> }
-function SettingsView() { return <><PageHeading eyebrow="SETTINGS" title="Keep your workspace focused." lede="Manage the preferences that shape your career companion experience." /><section className="settings-list"><article className="card setting-row"><div><strong>Profile preferences</strong><p>Your saved career interests and target roles guide the recommendations shown to you.</p></div><span className="planned-tag">ACTIVE</span></article><article className="card setting-row"><div><strong>Data connection</strong><p>Resume analysis, your candidate profile, and job search and matching are backed by the AI Career Companion API. Skill gap, learning roadmap, and AI assistant features are still in development.</p></div><span className="planned-tag">ACTIVE</span></article><article className="card setting-row"><div><strong>Privacy</strong><p>Your resume file and extracted profile data are uploaded to and stored by the AI Career Companion backend for processing. They are not sent to any external AI provider or third-party service.</p></div><span className="planned-tag">ACTIVE</span></article></section></> }
+function SettingsView() { return <><PageHeading eyebrow="SETTINGS" title="Keep your workspace focused." lede="Manage the preferences that shape your career companion experience." /><section className="settings-list"><article className="card setting-row"><div><strong>Profile preferences</strong><p>Your saved career interests and target roles guide the recommendations shown to you.</p></div><span className="planned-tag">ACTIVE</span></article><article className="card setting-row"><div><strong>Data connection</strong><p>Your profile, resume analysis, opportunity search and matching, skill gap analysis, resume and cover letter customization, interview preparation, the AI career assistant and the application tracker are all backed by the AI Career Companion API. The learning roadmap is not available yet.</p></div><span className="planned-tag">ACTIVE</span></article><article className="card setting-row"><div><strong>Privacy</strong><p>Your resume file, extracted profile data and application tracker entries are stored by the AI Career Companion backend. When an external AI language model is configured for this workspace, relevant excerpts of your resume and profile, together with the selected opportunity (and, for the assistant, your recent chat messages), are sent to that provider to help write tailored materials, interview preparation and assistant replies; otherwise these features run without any external AI service. Your uploaded resume file itself is not sent.</p></div><span className="planned-tag">ACTIVE</span></article></section></> }
 
 export default App

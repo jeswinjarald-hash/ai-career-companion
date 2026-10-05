@@ -13,42 +13,9 @@ from dataclasses import dataclass, field
 from app.models import CandidateProfile
 from app.schemas.skill_gap import EvidenceItem, MatchType
 from app.services.job_matching import normalize_term
+from app.services.skill_relationships import RELATED_TERMS, related_terms  # noqa: F401  (RELATED_TERMS re-exported)
 
-# Technologies that are conceptually related to a requirement but must never be treated
-# as an exact/equivalent match (e.g. TensorFlow experience does not demonstrate PyTorch).
-# A hit here only ever produces a "partial" match, and the evidence always names the
-# related technology that was actually found so the student is never misled.
-RELATED_TERMS: dict[str, set[str]] = {
-    "fastapi": {"rest apis", "flask", "django", "web framework", "backend framework"},
-    "flask": {"rest apis", "fastapi", "django", "web framework"},
-    "django": {"rest apis", "fastapi", "flask", "web framework"},
-    "aws": {"cloud", "azure", "gcp", "deployment"},
-    "azure": {"cloud", "aws", "gcp", "deployment"},
-    "gcp": {"cloud", "aws", "azure", "deployment"},
-    "docker": {"deployment", "containerization", "devops", "cloud"},
-    "kubernetes": {"docker", "containerization", "devops", "deployment"},
-    "pytorch": {"tensorflow", "deep learning", "machine learning", "neural network"},
-    "tensorflow": {"pytorch", "deep learning", "machine learning", "neural network"},
-    "react": {"javascript", "frontend", "angular", "vue", "web development"},
-    "angular": {"javascript", "frontend", "react", "vue", "web development"},
-    "vue": {"javascript", "frontend", "react", "angular", "web development"},
-    "mongodb": {"database", "sql", "mysql", "postgresql", "nosql"},
-    "mysql": {"database", "sql", "postgresql", "mongodb"},
-    "postgresql": {"database", "sql", "mysql", "mongodb"},
-    "node.js": {"javascript", "backend", "express", "web development"},
-    "express": {"node.js", "javascript", "backend"},
-    "kotlin": {"java", "android", "mobile development"},
-    "swift": {"ios", "mobile development", "objective-c"},
-    "spring boot": {"java", "backend framework", "rest apis"},
-    "graphql": {"rest apis", "api development"},
-    "ci/cd": {"devops", "automation", "deployment"},
-    # Deliberately excludes "python": Python alone is far too general-purpose to imply
-    # hands-on Pandas/NumPy/Scikit-learn work — only an explicit data-science/ML signal
-    # (or the sibling library itself) counts as related evidence for these.
-    "scikit-learn": {"machine learning", "data science"},
-    "pandas": {"data science", "numpy"},
-    "numpy": {"data science", "pandas"},
-}
+# Related-technology table and lookup are shared with Job Matching (M4.3).
 
 # A conservative, explicitly-curated bridge from a qualification requirement's stated
 # concept to related (but not verbatim) student evidence phrases — scoped only to
@@ -74,6 +41,9 @@ def qualification_related_terms(requirement: str) -> set[str]:
     return set()
 
 EvidenceSource = str
+
+# Confidence for a requirement whose only evidence is the student's own profile skill list.
+SELF_REPORTED_CONFIDENCE = 0.7
 
 _BOUNDARY_BEFORE = r"(?<![\w+#.])"
 _BOUNDARY_AFTER = r"(?![\w+#])"
@@ -233,12 +203,19 @@ def match_requirement(requirement: str, units: list[EvidenceUnit]) -> tuple[Matc
     exact_hits += [unit for unit in real_units if unit not in exact_hits and mentions_term(req_term, unit.normalized_text)]
     if exact_hits:
         evidence = [evidence_item(unit, requirement) for unit in exact_hits[:3]]
+        if all(unit.source == "profile_skills" for unit in exact_hits):
+            # Provenance (M4.3 Experiment 7): the student listed this skill themselves but
+            # nothing in the resume shows it. It still counts — the student supplied it —
+            # but is never described as demonstrated by resume evidence.
+            reason = (f'"{requirement}" is self-reported in your career profile skills; no resume evidence '
+                      '(skills section, project or experience) was found for it yet.')
+            return "demonstrated", SELF_REPORTED_CONFIDENCE, evidence, reason
         confidence = 0.95 if any(unit.source in ("profile_skills", "resume_skills") for unit in exact_hits) else 0.85
         location = exact_hits[0].source_name if exact_hits[0].source not in ("profile_skills", "resume_skills") else "profile"
         reason = f'"{requirement}" is explicitly demonstrated, evidenced in your {location}.'
         return "demonstrated", confidence, evidence, reason
 
-    related_pool = RELATED_TERMS.get(req_term, set()) | qualification_related_terms(requirement)
+    related_pool = related_terms(req_term) | qualification_related_terms(requirement)
 
     partial_hits = _find_hits(real_units, related_pool) if related_pool else []
     if partial_hits:

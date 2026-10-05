@@ -1,0 +1,18 @@
+{
+  "version": "m4.2-1",
+  "policy": "No posting in the 320-record dataset is relevant to these queries. 'unrelated' and 'nonsense' cases should ideally return nothing; 'out_of_coverage' cases name real student career areas the dataset does not contain (the closest postings are only loosely related). The current system has no relevance threshold, so this file measures what a student would be shown, not a pass/fail target.",
+  "queries": [
+    {"query_id": "RN01", "query": "chef pastry baking", "category": "unrelated"},
+    {"query_id": "RN02", "query": "truck driver heavy vehicle licence", "category": "unrelated"},
+    {"query_id": "RN03", "query": "registered nurse hospital ward shifts", "category": "unrelated"},
+    {"query_id": "RN04", "query": "civil engineering site supervisor concrete", "category": "unrelated"},
+    {"query_id": "RN05", "query": "real estate sales agent commission", "category": "unrelated"},
+    {"query_id": "RN06", "query": "chartered accountant tax audit", "category": "unrelated"},
+    {"query_id": "RN07", "query": "plumbing and electrician apprenticeship", "category": "unrelated", "notes": "Shares the word 'apprenticeship' with real postings."},
+    {"query_id": "RN08", "query": "zzzz qqqq", "category": "nonsense"},
+    {"query_id": "RN09", "query": "asdf lorem ipsum 12345", "category": "nonsense"},
+    {"query_id": "RO01", "query": "UI UX design internship with Figma", "category": "out_of_coverage", "notes": "No design postings; UI Engineering Intern is a frontend coding role."},
+    {"query_id": "RO02", "query": "digital marketing SEO intern", "category": "out_of_coverage"},
+    {"query_id": "RO03", "query": "mechanical engineering CAD internship", "category": "out_of_coverage"}
+  ]
+}

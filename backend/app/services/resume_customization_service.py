@@ -328,9 +328,11 @@ def generate_customization(
     # The existing validator always runs last, over whichever text is actually being
     # shipped (deterministic or LLM-rewritten) — a genuine final safety net, not
     # bypassed just because the LLM path claims to have already checked itself.
-    validated_summary, summary_warnings, summary_removed = validate_summary(tailored_resume.summary, unsupported)
+    # Naming the target opportunity is not a skill claim (M4.3 Experiment 5).
+    opportunity_names = (job.job_title, job.company)
+    validated_summary, summary_warnings, summary_removed = validate_summary(tailored_resume.summary, unsupported, opportunity_names)
     tailored_resume.summary = validated_summary
-    validated_letter, letter_warnings, letter_removed = validate_cover_letter(cover_letter_sentences, unsupported)
+    validated_letter, letter_warnings, letter_removed = validate_cover_letter(cover_letter_sentences, unsupported, opportunity_names)
     validation = build_validation_result(summary_warnings, summary_removed, letter_warnings, letter_removed, parser_notice)
 
     cover_letter_text = "\n\n".join(sentence.text for sentence in validated_letter)

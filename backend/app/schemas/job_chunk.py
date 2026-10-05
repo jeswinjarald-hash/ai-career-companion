@@ -31,3 +31,5 @@ class JobSearchResult(BaseModel):
     similarity_score: float
     matched_chunk_types: list[str]
     matched_text_preview: str | None = None
+    # Whether the query's subject area exists in the catalogue at all (M4.3 Experiment 6).
+    query_confidence: Literal["confident", "unsupported_area"] = "confident"

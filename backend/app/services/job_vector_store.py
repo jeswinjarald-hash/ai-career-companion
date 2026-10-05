@@ -1,4 +1,5 @@
 import json
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +12,8 @@ from app.services.embedding_service import embedding_dimension
 VECTOR_STORE_DIRECTORY = Path(__file__).resolve().parents[2] / "data" / "vector_store"
 INDEX_PATH = VECTOR_STORE_DIRECTORY / "internship_jobs.faiss"
 METADATA_PATH = VECTOR_STORE_DIRECTORY / "internship_jobs_metadata.json"
-INDEX_VERSION = "1.0"
+# 1.2: the overview chunk leads with "<title> (<employment type>). " (M4.3 Experiment 8, V3).
+INDEX_VERSION = "1.2"
 
 
 class VectorStoreError(ValueError):
@@ -55,13 +57,31 @@ def get_model_name() -> str:
 
 
 def load_vector_store() -> tuple[faiss.IndexFlatIP, list[JobChunk]]:
+    """Loads and validates the index + metadata, cached per file state (path, mtime,
+    size) and configured embedding model (M4.3 Experiment 10). Every check below still
+    runs whenever the files or the model setting change; a rebuilt index is picked up
+    on the next call. `clear_vector_store_cache()` resets the cache."""
     if not INDEX_PATH.is_file() or not METADATA_PATH.is_file():
         raise VectorStoreError(
             f"Vector store is incomplete. Build it with scripts/build_job_vector_index.py: {VECTOR_STORE_DIRECTORY}"
         )
+    index_stat, metadata_stat = INDEX_PATH.stat(), METADATA_PATH.stat()
+    index, chunks = _load_and_validate_store(
+        str(INDEX_PATH), str(METADATA_PATH), index_stat.st_mtime_ns, index_stat.st_size,
+        metadata_stat.st_mtime_ns, metadata_stat.st_size, get_model_name(),
+    )
+    return index, list(chunks)
+
+
+def clear_vector_store_cache() -> None:
+    _load_and_validate_store.cache_clear()
+
+
+@lru_cache(maxsize=2)
+def _load_and_validate_store(index_path: str, metadata_path: str, *_file_state_and_model) -> tuple[faiss.IndexFlatIP, tuple[JobChunk, ...]]:
     try:
-        index = faiss.read_index(str(INDEX_PATH))
-        metadata = json.loads(METADATA_PATH.read_text(encoding="utf-8"))
+        index = faiss.read_index(index_path)
+        metadata = json.loads(Path(metadata_path).read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, RuntimeError) as exc:
         raise VectorStoreError(f"Unable to load vector store: {exc}") from exc
     if metadata.get("index_version") != INDEX_VERSION:
@@ -73,4 +93,4 @@ def load_vector_store() -> tuple[faiss.IndexFlatIP, list[JobChunk]]:
     chunks = [JobChunk.model_validate(chunk) for chunk in metadata.get("chunks", [])]
     if metadata.get("chunk_count") != len(chunks) or index.ntotal != len(chunks):
         raise VectorStoreError("Vector store vector and metadata counts are inconsistent.")
-    return index, chunks
+    return index, tuple(chunks)

@@ -1,4 +1,5 @@
 import json
+from functools import lru_cache
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -127,11 +128,29 @@ def _validate_records(payload: Any) -> list[JobPosting]:
 
 
 def load_job_postings(dataset_path: Path | None = None) -> list[JobPosting]:
+    """Loads and fully validates the dataset, cached per (path, mtime, size).
+
+    The catalogue is immutable at runtime but was re-read and re-validated on every
+    lookup (twice per job-matching request). The cache key includes the file's
+    modification time and size, so an edited or replaced file is re-read and
+    re-validated on the next call (M4.3 Experiment 10). Callers receive a new list
+    each time; `clear_job_postings_cache()` resets the cache (tests, tooling).
+    """
     path = dataset_path or DATASET_PATH
     if not path.is_file():
         raise JobDatasetError(f"Job dataset not found: {path}")
+    stat = path.stat()
+    return list(_load_and_validate(str(path.resolve()), stat.st_mtime_ns, stat.st_size))
+
+
+@lru_cache(maxsize=4)
+def _load_and_validate(path: str, _mtime_ns: int, _size: int) -> tuple[JobPosting, ...]:
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise JobDatasetError(f"Unable to read job dataset {path}: {exc}") from exc
-    return _validate_records(payload)
+    return tuple(_validate_records(payload))
+
+
+def clear_job_postings_cache() -> None:
+    _load_and_validate.cache_clear()
