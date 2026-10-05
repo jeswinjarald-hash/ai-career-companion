@@ -1,65 +1,100 @@
 # AI Career Companion
 
-AI Career Companion is an agentic career-support platform for students. The architecture combines a candidate profile with resume parsing and structured extraction before future AI services use that context.
+An Infosys internship project: a web application that turns a student's resume into
+grounded career actions — semantic opportunity search, explainable job matching,
+skill-gap analysis, tailored resume and cover letter, interview preparation, a
+conversational assistant, and an application tracker.
 
-## Current Development Status
+The system is a **deterministic + optional-LLM hybrid**. Every feature works without
+an LLM (`LLM_PROVIDER=none`, the default). If an OpenAI-compatible model is configured, it
+only rewrites already-grounded content; its JSON output is validated against the
+candidate's evidence and falls back to the deterministic result on any failure.
 
-Status: Milestone 1 candidate-understanding foundation
+This is a local development and evaluation implementation. It is not deployed.
 
-The React + Vite + TypeScript frontend currently represents the documented candidate-understanding flow:
+**Full documentation:** [`docs/FINAL_TECHNICAL_DOCUMENTATION.md`](docs/FINAL_TECHNICAL_DOCUMENTATION.md)
 
-- manual candidate profile details
-- PDF and DOCX resume selection validation
-- resume processing states
-- structured extraction preview for skills, projects, and education
-- responsive workspace navigation
+## Status
 
-The Career Profile and Resume Analyzer pages use the FastAPI profile/resume services, and Career Recommendations uses the active structured resume for semantic retrieval and job-resume matching. The Skill Gap Analysis page (Milestone 3.1) runs a deterministic, evidence-grounded comparison of the active resume against a selected internship — see `docs/MILESTONE_3_1.md`. Later architecture modules such as resume/cover-letter customization, interview preparation, roadmaps, and the conversational career assistant remain mock-backed or not yet implemented.
+Milestones M1, M2, M3, M4.1 (tracker), M4.2 (evaluation), M4.3 (optimization) and
+M4.4 (final documentation and release audit) are complete. Not implemented: learning-
+roadmap generation and roadmap progress (the pages say so). Known limitations are listed in
+§26 of the final documentation.
 
-## Run the frontend
+## Architecture at a glance
 
-```bash
-npm install
-npm run dev
+```
+React + Vite + TypeScript  →  FastAPI  →  auth (HttpOnly session cookie) + per-user ownership
+  → resume pipeline (PDF/DOCX → text → sections → structured resume → candidate context)
+  → retrieval (all-MiniLM-L6-v2, 384-d → FAISS IndexFlatIP, 960 chunks, index v1.2)
+  → deterministic matching / skill gap / grounded customization / interview prep / assistant
+  → application tracker → SQLAlchemy + SQLite
 ```
 
-Copy `.env.example` to `.env` when local frontend overrides are needed. `VITE_API_BASE_URL` selects the FastAPI origin and `VITE_PROFILE_ID` is the temporary development profile ID. After a profile is created, its returned ID is kept in browser localStorage until authentication provides a real user-to-profile mapping.
+Knowledge base: `backend/data/internships/career_opportunities_320.json` — 320 curated
+opportunities (internships, entry-level, graduate, trainee, apprenticeship) across 15
+technology domains.
 
-## Run the backend
+## Final evaluation (offline, deterministic pipeline)
 
-The backend uses Python 3.12, FastAPI, SQLAlchemy, and SQLite for local persistence. Milestone 1 supports validated PDF/DOCX upload, text extraction, section detection, deterministic structured resume extraction, and persisted Candidate Context. No external LLM or OCR is used.
+From `backend/data/evaluation/m4/results/` (M4.2 frozen baseline → M4.3 final):
 
-From the repository root, create and activate a virtual environment, then install the backend dependencies:
+| Measure | Baseline | Final |
+|---|---:|---:|
+| Retrieval Hit@1 / MRR@10 (26 labelled queries) | 0.885 / 0.942 | 1.000 / 1.000 |
+| Off-topic queries flagged / genuine queries flagged | 0/12 / 0/26 | 11/12 / 0/26 |
+| Grounding violations / fault injections detected | 0 / 9 of 9 | 0 / 10 of 10 |
+| Conversation turns with desired behaviour | 12/16 | 15/16 |
+| Backend tests | 374 passed, 6 xfailed | 464 passed, 1 xfailed |
 
-```bash
+The evaluation set is small and synthetic; live LLM output was not evaluated.
+
+## Quick start (Windows PowerShell, from the repository root)
+
+```powershell
 python -m venv .venv
-.venv\Scripts\activate
-python -m pip install -r backend/requirements.txt
-```
-
-Copy `backend/.env.example` to `backend/.env` when local environment overrides are needed. The development frontend origin is configured as `http://localhost:5173` by default.
-
-Database configuration is controlled by `DATABASE_URL`. The default local value is `sqlite:///./data/ai_career_companion.db`, resolved from the `backend` directory. The database directory is created automatically, and the minimal candidate profile table is initialized when FastAPI starts. SQLite files remain local and are ignored by Git. A different SQLAlchemy-supported relational database can be selected by setting `DATABASE_URL` without changing the service layer.
-
-Start the API from the `backend` directory:
-
-```bash
+.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
 cd backend
-uvicorn app.main:app --reload
+..\.venv\Scripts\python.exe scripts\build_job_vector_index.py   # index is not committed
+..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload     # http://127.0.0.1:8000/docs
 ```
 
-The health endpoint is available at `http://127.0.0.1:8000/health` and returns `{"status":"ok"}`.
+In a second terminal at the repository root:
 
-The Career Profile API is available under `/api/profiles`. Use `POST /api/profiles` to create a profile, `GET /api/profiles/{profile_id}` to retrieve one, and `PATCH /api/profiles/{profile_id}` to update it. Requests and responses are documented in Swagger at `http://127.0.0.1:8000/docs`. The current development API uses the profile email as a duplicate-creation guard; authentication and multi-user profile mapping remain deferred.
+```powershell
+npm install
+npm run dev                                                      # http://localhost:5173
+```
 
-### Resume Upload, Validation, and PDF Text Extraction API
+Optional settings: copy `backend/.env.example` to `backend/.env` and `.env.example` to
+`.env`. Never commit real keys. The first index build downloads the embedding model
+once.
 
-Step 7 accepts only content-validated PDF and DOCX uploads without parsing them. Upload a file with `POST /api/profiles/{profile_id}/resumes` as multipart form field `file`; the response contains persisted metadata with status `uploaded`. Resume metadata can be retrieved with `GET /api/resumes/{resume_id}` or listed with `GET /api/profiles/{profile_id}/resumes`.
+## Verification
 
-Uploaded files are stored locally under `RESUME_STORAGE_DIR` (default `./data/resumes`, resolved from the backend directory) using generated filenames. The original filename is retained as metadata, while internal storage paths are never returned. PDF signatures and readable structure are checked with `pypdf`; DOCX ZIP structure and required XML entries are checked with the Python standard library. A 10 MiB upload limit applies, and invalid or corrupt uploads are rejected before storage or database persistence.
+```powershell
+cd backend
+..\.venv\Scripts\python.exe -m pytest -q
+..\.venv\Scripts\python.exe scripts\validate_job_dataset.py
+..\.venv\Scripts\python.exe scripts\run_m4_evaluation.py --output-dir $env:TEMP\m4_eval
+cd ..
+npx tsc -b
+npm run lint
+npm run build
+```
 
-For a validated PDF or DOCX, `POST /api/resumes/{resume_id}/extract-text` extracts text and persists a one-to-one `ResumeExtraction` record. PDFs use `pypdf`; DOCX files use `python-docx`. DOCX paragraphs and table rows are retained in document order where available, with table cells separated by `|`. Retrieve results with `GET /api/resumes/{resume_id}/extraction`. Reprocessing updates the existing extraction record. Image-only/scanned PDFs and empty DOCX files fail explicitly because OCR is not included. Structured resume analysis is not implemented. Resume files and extracted text contain personal information and remain local; do not commit them.
+## Documentation
 
-For extracted text, `POST /api/resumes/{resume_id}/detect-sections` performs deterministic, alias-based section boundary detection and `GET /api/resumes/{resume_id}/sections` retrieves the ordered result. Supported canonical sections include `summary`, `objective`, `skills`, `education`, `experience`, `internships`, `projects`, `certifications`, `achievements`, `activities`, `interests`, and `publications`. Text before the first heading is retained as `header`; unrecognized short uppercase headings are retained as `custom`. Repeated sections remain separate ordered rows, and rerunning detection replaces the previous rows. This stage does not extract structured skills, education, experience, projects, or other entities, and uses no LLM.
+| Document | Content |
+|---|---|
+| [`docs/FINAL_TECHNICAL_DOCUMENTATION.md`](docs/FINAL_TECHNICAL_DOCUMENTATION.md) | Architecture, all milestones, evaluation, optimization, security, performance, demo workflow, limitations, setup, API |
+| [`docs/MILESTONE_1.md`](docs/MILESTONE_1.md) | Profile and resume pipeline (authentication was added later, in the M1/M2 integration) |
+| [`docs/MILESTONE_2_2.md`](docs/MILESTONE_2_2.md), [`docs/MILESTONE_2_3.md`](docs/MILESTONE_2_3.md) | Semantic retrieval, matching |
+| [`docs/MILESTONE_3_1.md`](docs/MILESTONE_3_1.md) – [`docs/MILESTONE_3_4.md`](docs/MILESTONE_3_4.md) | Skill gap, customization, interview prep, assistant |
+| [`docs/CAREER_OPPORTUNITY_GENERALIZATION.md`](docs/CAREER_OPPORTUNITY_GENERALIZATION.md) | 320-record dataset generalization |
+| [`docs/MILESTONE_4.md`](docs/MILESTONE_4.md) | Application tracker; index of M4.2–M4.4 artifacts |
+| [`backend/data/evaluation/m4/README.md`](backend/data/evaluation/m4/README.md) | Evaluation framework, label policy, how to run |
+| [`docs/file-purpose-guide.md`](docs/file-purpose-guide.md) | What each file is for |
 
-The complete Milestone 1 scope, APIs, models, limitations, and verification are documented in `docs/MILESTONE_1.md`.
+Resumes, databases and `.env` files contain personal or secret data and stay local; see
+`.gitignore`.
