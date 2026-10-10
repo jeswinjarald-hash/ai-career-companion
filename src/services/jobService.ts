@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config/api'
+import { apiDetailMessage, apiFetch } from '../config/api'
 
 export type JobSearchResult = {
   job_id: string
@@ -48,14 +48,13 @@ export class JobApiError extends Error {
 const request = async <T>(path: string): Promise<T> => {
   let response: Response
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, { credentials: 'include' })
+    response = await apiFetch(path)
   } catch {
     throw new JobApiError(0, "We couldn't connect to the job search service. Please try again.")
   }
   const body = await response.json().catch(() => null)
   if (!response.ok) {
-    const detail = body && typeof body === 'object' && 'detail' in body ? String((body as { detail: unknown }).detail) : 'We could not complete that request.'
-    throw new JobApiError(response.status, detail)
+    throw new JobApiError(response.status, apiDetailMessage(body, 'We could not complete that request.', response.status))
   }
   return body as T
 }

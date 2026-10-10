@@ -14,12 +14,12 @@ from app.models import ResumeSection
 from app.services.section_detection import detect_resume_sections
 from app.services.structured_resume import _education, _projects, build_structured_data
 
-REAL_WORLD_RESUME_TEXT = """RANJITKUMAR S
+REAL_WORLD_RESUME_TEXT = """ALEX MORGAN
 Software Developer Aspirant
-ranjitkumar.28it@licet.ac.in
+alex.morgan@example.edu
 
 EDUCATION
-Loyola ICAM College of Engineering And Technology, Chennai
+Example Institute of Engineering And Technology, Springfield
 B.Tech Information Technology
 June 2024 - June 2028
 
@@ -117,10 +117,10 @@ def test_e_no_experience_heading_means_empty_experience() -> None:
 def test_f_education_is_one_complete_entry() -> None:
     entries = _education([ResumeSection(
         resume_id=1, name="education", original_heading="EDUCATION", position=0,
-        content="Loyola ICAM College of Engineering And Technology, Chennai\nB.Tech Information Technology\nJune 2024 - June 2028",
+        content="Example Institute of Engineering And Technology, Springfield\nB.Tech Information Technology\nJune 2024 - June 2028",
     )])
     assert len(entries) == 1
-    assert "Loyola ICAM College of Engineering And Technology" in entries[0]["raw_text"]
+    assert "Example Institute of Engineering And Technology" in entries[0]["raw_text"]
     assert "B.Tech Information Technology" in entries[0]["raw_text"]
     assert entries[0]["degree"] == "B.Tech"
     assert entries[0]["graduation_year"] == 2028

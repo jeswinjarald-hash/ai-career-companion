@@ -23,6 +23,7 @@ import logging
 from datetime import datetime, timezone
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -31,17 +32,19 @@ from app.models.career_state import InterviewPreparation as InterviewPreparation
 from app.schemas.customization import EvidenceRecord, GenerationMetadata, ValidationResult
 from app.schemas.interview_prep import InterviewPreparation, InterviewPreparationSummary, InterviewQuestion, RevisionItem
 from app.services.customization_evidence import build_evidence_records
-from app.services.customization_validator import check_fabrication, check_fabrication_patterns
+from app.services.customization_validator import build_evidence_corpus, check_fabrication, check_fabrication_patterns
 from app.services.interview_evidence import InterviewContext, best_effort_m2_match
 from app.services.interview_llm import LLMInterviewPrepResponse, rewrite_with_llm
 from app.services.interview_question_service import build_preparation_summary, build_revision_plan, generate_questions
 from app.services.job_dataset_service import load_job_postings
 from app.services.llm_provider import LLMProvider, get_llm_provider
 from app.services.skill_gap_service import analyze_skill_gap
+from app.services.structured_resume import effective_parser_warnings, excluded_projects_sentence
 
 logger = logging.getLogger(__name__)
 
 MIN_EVIDENCE_RECORDS = 3
+_VERSION_RETRIES = 5
 
 
 def _get_job(job_id: str):
@@ -56,10 +59,10 @@ def _as_utc(value: datetime) -> datetime:
 
 
 def _parser_warning_notice(structured_data: dict) -> str | None:
-    warnings = structured_data.get("parser_warnings") or []
+    warnings = effective_parser_warnings(structured_data)
     if not warnings:
         return None
-    return "Resume structure contains parsing warnings. Review extracted profile before generating interview preparation."
+    return "Resume structure contains parsing warnings. Review extracted profile before generating interview preparation." + excluded_projects_sentence(structured_data)
 
 
 def _apply_llm_refinement(
@@ -146,7 +149,8 @@ def generate_interview_preparation(
     # check, including the unsupported-keyword scan.
     warnings: list[str] = []
     removed: list[str] = []
-    hit = check_fabrication(preparation_summary, unsupported_terms)
+    corpus = build_evidence_corpus(evidence_records, job)
+    hit = check_fabrication(preparation_summary, unsupported_terms, (job.job_title, job.company), corpus)
     if hit:
         warnings.append(f'Removed preparation summary: "{preparation_summary}" ({hit}).')
         removed.append(preparation_summary)
@@ -156,7 +160,7 @@ def generate_interview_preparation(
         if question.category in ("technical", "role", "skill_gap"):
             hit = check_fabrication_patterns(question.question) or check_fabrication_patterns(question.preparation_guidance)
         else:
-            hit = check_fabrication(question.question, unsupported_terms) or check_fabrication(question.preparation_guidance, unsupported_terms)
+            hit = check_fabrication(question.question, unsupported_terms, (job.job_title, job.company), corpus) or check_fabrication(question.preparation_guidance, unsupported_terms, (job.job_title, job.company), corpus)
         if hit:
             warnings.append(f'Removed question: "{question.question}" ({hit}).')
             removed.append(question.question)
@@ -165,7 +169,9 @@ def generate_interview_preparation(
     questions = kept_questions
     if parser_notice:
         warnings.append(parser_notice)
-    validation = ValidationResult(passed=not removed, warnings=warnings, removed_claims=removed)
+    # A flagged (unreliable) resume structure means the evidence the questions were
+    # checked against is itself unreliable, so the check is never reported as passed.
+    validation = ValidationResult(passed=not removed and not parser_notice, warnings=warnings, removed_claims=removed)
     status = "ready" if validation.passed else "validation_warning"
 
     version = (db.scalar(select(func.max(InterviewPreparationRecord.version)).where(
@@ -186,8 +192,21 @@ def generate_interview_preparation(
         user_id=user_id, resume_id=resume_id, job_id=job.job_id, version=version, status=status,
         source_resume_updated_at=_as_utc(structured.updated_at), data=payload,
     )
-    db.add(record)
-    db.commit()
+    for attempt in range(_VERSION_RETRIES):
+        db.add(record)
+        try:
+            db.commit()
+            break
+        except IntegrityError:
+            # A concurrent request for the same resume/opportunity (e.g. a double
+            # submission) took this version number first; take the next one rather
+            # than failing with a 500.
+            db.rollback()
+            if attempt == _VERSION_RETRIES - 1:
+                raise
+            record.version = (db.scalar(select(func.max(InterviewPreparationRecord.version)).where(
+                InterviewPreparationRecord.resume_id == resume_id, InterviewPreparationRecord.job_id == job.job_id,
+            )) or 0) + 1
     db.refresh(record)
 
     logger.info(

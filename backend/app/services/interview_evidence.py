@@ -22,6 +22,7 @@ from app.schemas.skill_gap import SkillGapAnalysis
 from app.services.customization_evidence import build_evidence_records, relevance_score
 from app.services.job_matching import match_jobs_for_resume, normalize_term
 from app.services.skill_gap_service import analyze_skill_gap
+from app.services.structured_resume import is_reliable_project
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,9 @@ def ranked_projects(structured_data: dict, supported: set[str], partial: set[str
     scored = [
         (project, index, relevance_score(str(project.get("raw_text") or project.get("description") or ""), project.get("technologies", []) or [], supported, partial))
         for index, project in enumerate(projects)
+        # A parsing fragment ("using", "HTML,") must never be asked about as if it
+        # were a project; an absent title is still allowed ("your project").
+        if is_reliable_project(project)
     ]
     scored.sort(key=lambda item: (-item[2], item[1]))
     return scored

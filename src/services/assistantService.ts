@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config/api'
+import { apiDetailMessage, apiFetch } from '../config/api'
 
 export type Intent =
   | 'JOB_DISCOVERY' | 'JOB_MATCH_EXPLANATION' | 'SKILL_GAP' | 'RESUME_CUSTOMIZATION'
@@ -68,9 +68,8 @@ export class AssistantApiError extends Error {
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
   let response: Response
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await apiFetch(path, {
       ...options,
-      credentials: 'include',
       headers: { 'Content-Type': 'application/json', ...(options?.headers ?? {}) },
     })
   } catch {
@@ -78,8 +77,7 @@ const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
   }
   const body = await response.json().catch(() => null)
   if (!response.ok) {
-    const detail = body && typeof body === 'object' && 'detail' in body ? String((body as { detail: unknown }).detail) : 'We could not complete that request.'
-    throw new AssistantApiError(response.status, detail)
+    throw new AssistantApiError(response.status, apiDetailMessage(body, 'We could not complete that request.', response.status))
   }
   return body as T
 }

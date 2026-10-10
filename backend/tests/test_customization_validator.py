@@ -59,8 +59,11 @@ def test_grounded_cover_letter_sentences_all_pass() -> None:
 
 
 def test_build_validation_result_reports_parser_warning_without_removal() -> None:
+    # Nothing was removed, but the evidence itself was flagged as unreliable, so the
+    # grounding check must not be reported as passed (the UI would otherwise claim
+    # "every generated claim traces to your actual resume").
     result = build_validation_result([], [], [], [], parser_warning_notice="Resume structure contains parsing warnings. Review extracted profile before customization.")
-    assert result.passed is True
+    assert result.passed is False
     assert result.removed_claims == []
     assert len(result.warnings) == 1
 

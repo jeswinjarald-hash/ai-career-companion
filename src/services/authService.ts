@@ -32,7 +32,9 @@ const errorMessage = (status: number, body: unknown): string => {
     const detail = (body as { detail?: unknown }).detail
     if (Array.isArray(detail)) {
       const messages = detail.map((item) => typeof item === 'object' && item !== null && 'msg' in item ? String(item.msg) : '').filter(Boolean)
-      if (messages.length) return messages.join(' ')
+      // e.g. "value is not a valid email address: The part after the @-sign is a special-use..."
+      if (messages.some((message) => message.toLowerCase().includes('email'))) return 'Enter a valid email address that can receive mail.'
+      if (messages.length) return messages.map((message) => message.replace(/^Value error, /, '')).join(' ')
     }
     if (typeof detail === 'string') return detail
   }

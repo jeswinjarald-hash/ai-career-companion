@@ -9,6 +9,8 @@ dedicated `skill_gap` category is the only place a gap is explicitly surfaced as
 gap to the student, per the spec's grounding rule.
 """
 
+import re
+
 from app.schemas.interview_prep import InterviewQuestion, RevisionItem
 from app.services.interview_evidence import InterviewContext
 from app.services.job_matching import normalize_term
@@ -62,12 +64,47 @@ _TOPIC_QUESTIONS: dict[frozenset[str], dict[str, str]] = {
 }
 
 
-def _topic_templates(term: str) -> dict[str, str] | None:
+def _topic_bucket(term: str) -> frozenset[str] | None:
     normalized = normalize_term(term)
-    for bucket, templates in _TOPIC_QUESTIONS.items():
+    for bucket in _TOPIC_QUESTIONS:
         if normalized in bucket:
-            return templates
+            return bucket
     return None
+
+
+def _topic_templates(term: str) -> dict[str, str] | None:
+    bucket = _topic_bucket(term)
+    return _TOPIC_QUESTIONS[bucket] if bucket else None
+
+
+_TERM_EDGE_PUNCTUATION = " \t\"'“”‘’`,;:.!?()[]{}"
+
+
+def clean_term(term: str) -> str:
+    """Strips list/quote punctuation that leaks from extraction ("HTML,", "'CSS'")
+    so a technology is always quoted by its name alone. Inner punctuation that is
+    part of the name ("Node.js", "C++", "CI/CD") is kept."""
+    return " ".join(str(term).strip(_TERM_EDGE_PUNCTUATION).split())
+
+
+def _unique_clean_terms(values: list[str]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        cleaned = clean_term(value)
+        key = normalize_term(cleaned)
+        if cleaned and key and key not in seen:
+            seen.add(key)
+            result.append(cleaned)
+    return result
+
+
+def _join_names(names: list[str]) -> str:
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+
+
+def _quoted_names(names: list[str]) -> str:
+    return _join_names([f'"{name}"' for name in names])
 
 
 _GENERIC_TEMPLATES = {
@@ -78,60 +115,101 @@ _GENERIC_TEMPLATES = {
 
 
 def _technical_questions(context: InterviewContext) -> list[InterviewQuestion]:
-    job = context.job
-    questions: list[InterviewQuestion] = []
-    required = list(dict.fromkeys(job.required_skills))
-    preferred = list(dict.fromkeys(job.preferred_skills))
+    """General technical questions about the job's own required/preferred skills.
 
+    Skills are punctuation-normalized and de-duplicated across the required and
+    preferred lists (a skill listed in both is asked about once, as required). Skills
+    that would produce the same templated question — two databases both getting the
+    "relational vs document schema" question, or two technologies both evidenced by
+    the same project — are asked about together in one question rather than as
+    near-identical repeats.
+    """
+    job = context.job
+    required = _unique_clean_terms(job.required_skills)
+    required_keys = {normalize_term(skill) for skill in required}
+    preferred = [skill for skill in _unique_clean_terms(job.preferred_skills) if normalize_term(skill) not in required_keys]
+
+    groups: dict[tuple, dict] = {}
     for skill in required + preferred:
         normalized = normalize_term(skill)
-        is_required = skill in required
-        templates = _topic_templates(skill) or _GENERIC_TEMPLATES
+        is_required = normalized in required_keys
+        bucket = _topic_bucket(skill)
+        templates = _TOPIC_QUESTIONS[bucket] if bucket else _GENERIC_TEMPLATES
+        topic_key = bucket or normalized
         demonstrated = normalized in context.supported_terms
-        evidence_ids: list[str] = []
-
+        evidence = None
         if demonstrated:
             # A project/experience record that actually mentions this skill — safe
             # to ask "how have you used it" since real evidence backs the claim.
-            matching_evidence = [
+            evidence = next((
                 e for e in context.evidence_records
-                if e.source_type in ("project", "experience", "internship") and mentions_term(normalized, normalize_term(e.raw_text))
-            ]
-            if matching_evidence:
-                evidence_ids = [matching_evidence[0].evidence_id]
-                text = f"Explain how you used {skill} in \"{matching_evidence[0].source_name}\": what was your approach, and what would you do differently now?"
-                difficulty = "medium"
-            else:
-                text = templates["practical"].format(term=skill)
-                difficulty = "medium"
+                if e.source_type in ("project", "experience", "internship")
+                and (normalized in e.canonical_terms or mentions_term(normalized, normalize_term(e.raw_text)))
+            ), None)
+            kind = ("evidence", evidence.evidence_id) if evidence else ("practical", topic_key)
         else:
             # No direct evidence — conceptual framing only, never presupposing
             # hands-on use the student hasn't demonstrated.
-            text = templates["conceptual"].format(term=skill)
-            difficulty = "easy" if not is_required else "medium"
+            kind = ("conceptual", topic_key)
+        # The generic scenario template differs only by the term, so skills without a
+        # topic bucket share one scenario question instead of one copy per skill.
+        keys = [kind] + ([("scenario", bucket or "generic")] if is_required and demonstrated else [])
+        for key in keys:
+            group = groups.setdefault(key, {"skills": [], "required": False, "templates": templates, "evidence": evidence, "demonstrated": demonstrated})
+            group["skills"].append(skill)
+            group["required"] = group["required"] or is_required
 
-        questions.append(InterviewQuestion(
-            question=text, category="technical", difficulty=difficulty,
-            why_asked=f'"{skill}" is listed as a {"required" if is_required else "preferred"} skill for the {job.job_title} role.',
-            what_interviewer_is_testing=f"Whether you understand {skill} well enough to apply it on the job" + (", and can speak concretely about how you've already used it" if demonstrated else " conceptually, even without direct hands-on experience yet"),
-            preparation_guidance=(f'Be ready to walk through your work in "{matching_evidence[0].source_name}" in detail.' if demonstrated and evidence_ids else f"Review the fundamentals of {skill} — you don't have direct hands-on evidence of this yet, so focus on explaining concepts clearly rather than claiming production experience."),
-            topics_to_review=[skill],
-            source_requirements=[skill],
-            source_evidence_ids=evidence_ids,
-        ))
-
-        if is_required and demonstrated and len(questions) < 40:
+    questions: list[InterviewQuestion] = []
+    for (kind, _detail), group in groups.items():
+        skills: list[str] = group["skills"]
+        names = _join_names(skills)
+        templates = group["templates"]
+        requirement_label = "required" if group["required"] else "preferred"
+        listed = f'{_quoted_names(skills)} {"is" if len(skills) == 1 else "are"} listed as {"a " if len(skills) == 1 else ""}{requirement_label} skill{"" if len(skills) == 1 else "s"} for the {job.job_title} role.'
+        if kind == "scenario":
             # A second, scenario-based question for demonstrated required skills —
             # required skills get deeper coverage than preferred ones.
             questions.append(InterviewQuestion(
-                question=templates["scenario"].format(term=skill), category="technical", difficulty="hard",
-                why_asked=f'"{skill}" is a required skill — interviewers often probe required skills with a debugging/design scenario.',
+                question=templates["scenario"].format(term=names), category="technical", difficulty="hard",
+                why_asked=f'{_quoted_names(skills)} {"is a required skill" if len(skills) == 1 else "are required skills"} — interviewers often probe required skills with a debugging/design scenario.',
                 what_interviewer_is_testing="Your problem-solving process under a realistic, somewhat ambiguous scenario, not just textbook recall.",
-                preparation_guidance=f"Think through a structured troubleshooting approach for {skill} (reproduce, isolate, check logs/metrics, form a hypothesis, verify).",
-                topics_to_review=[skill], source_requirements=[skill], source_evidence_ids=[],
+                preparation_guidance=f"Think through a structured troubleshooting approach for {names} (reproduce, isolate, check logs/metrics, form a hypothesis, verify).",
+                topics_to_review=list(skills), source_requirements=list(skills), source_evidence_ids=[],
             ))
+            continue
+        evidence = group["evidence"]
+        if kind == "evidence":
+            text = f"Explain how you used {names} in \"{evidence.source_name}\": what was your approach, and what would you do differently now?"
+            guidance = f'Be ready to walk through your work in "{evidence.source_name}" in detail.'
+            difficulty = "medium"
+        elif kind == "practical":
+            text = templates["practical"].format(term=names)
+            guidance = f"Review how you have applied {names} so you can describe it concretely."
+            difficulty = "medium"
+        else:
+            text = templates["conceptual"].format(term=names)
+            guidance = f"Review the fundamentals of {names} — you don't have direct hands-on evidence of this yet, so focus on explaining concepts clearly rather than claiming production experience."
+            difficulty = "medium" if group["required"] else "easy"
+        questions.append(InterviewQuestion(
+            question=text, category="technical", difficulty=difficulty,
+            why_asked=listed,
+            what_interviewer_is_testing=f"Whether you understand {names} well enough to apply it on the job" + (", and can speak concretely about how you've already used it" if group["demonstrated"] else " conceptually, even without direct hands-on experience yet"),
+            preparation_guidance=guidance,
+            topics_to_review=list(skills),
+            source_requirements=list(skills),
+            source_evidence_ids=[evidence.evidence_id] if kind == "evidence" else [],
+        ))
+    return questions[:40]
 
-    return questions
+
+def _excerpt(text: str, limit: int = 120) -> str:
+    """Quotes resume text without cutting a word in half (a half word is not
+    traceable to the source, and reads as a parsing defect)."""
+    text = " ".join(text.split())
+    if len(text) <= limit:
+        return text
+    cut = text[:limit].rsplit(" ", 1)[0].rstrip(" ,;:-")
+    return f"{cut}…"
 
 
 def _resume_questions(context: InterviewContext) -> list[InterviewQuestion]:
@@ -140,7 +218,7 @@ def _resume_questions(context: InterviewContext) -> list[InterviewQuestion]:
     for entry in context.evidence_records:
         if entry.source_type == "education":
             questions.append(InterviewQuestion(
-                question=f"Your background includes \"{entry.raw_text[:120]}\" — what coursework or academic work is most relevant to this role, and why?",
+                question=f"Your background includes \"{_excerpt(entry.raw_text)}\" — what coursework or academic work is most relevant to this role, and why?",
                 category="resume", difficulty="easy",
                 why_asked="Interviewers use education background to understand your foundation and what you've been recently exposed to.",
                 what_interviewer_is_testing="Whether you can connect your academic background to the specific role you're applying for.",
@@ -149,7 +227,7 @@ def _resume_questions(context: InterviewContext) -> list[InterviewQuestion]:
             ))
         elif entry.source_type == "certification":
             questions.append(InterviewQuestion(
-                question=f"How has your certification (\"{entry.raw_text[:120]}\") been useful in practice, if at all?",
+                question=f"How has your certification (\"{_excerpt(entry.raw_text)}\") been useful in practice, if at all?",
                 category="resume", difficulty="easy",
                 why_asked="A listed certification invites a follow-up on whether it translated into practical understanding.",
                 what_interviewer_is_testing="Whether you can speak beyond the certificate name to what you actually learned.",
@@ -158,7 +236,7 @@ def _resume_questions(context: InterviewContext) -> list[InterviewQuestion]:
             ))
         elif entry.source_type == "achievement":
             questions.append(InterviewQuestion(
-                question=f"Tell me more about this: \"{entry.raw_text[:120]}\" — what did that involve?",
+                question=f"Tell me more about this: \"{_excerpt(entry.raw_text)}\" — what did that involve?",
                 category="resume", difficulty="easy",
                 why_asked="A listed achievement is an easy, natural opening for an interviewer to learn more about you.",
                 what_interviewer_is_testing="How clearly and specifically you can describe your own accomplishments.",
@@ -172,9 +250,9 @@ def _resume_questions(context: InterviewContext) -> list[InterviewQuestion]:
 def _project_questions(context: InterviewContext) -> list[InterviewQuestion]:
     questions: list[InterviewQuestion] = []
     for project, index, _score in context.projects_ranked[:3]:
-        title = str(project.get("title") or "your project").strip()
+        title = clean_term(str(project.get("title") or "")) or "your project"
         raw = str(project.get("description") or project.get("raw_text") or "").strip()
-        technologies = [str(t) for t in project.get("technologies", []) or []]
+        technologies = _unique_clean_terms([str(t) for t in project.get("technologies", []) or []])
         source_path = f"structured_resume.projects[{index}].raw_text"
         evidence_id = next((e.evidence_id for e in context.evidence_records if e.source_path == source_path), None)
         evidence_ids = [evidence_id] if evidence_id else []
@@ -258,8 +336,12 @@ def _skill_gap_questions(context: InterviewContext) -> list[InterviewQuestion]:
     return questions
 
 
+def _question_key(text: str) -> str:
+    return " ".join(re.sub(r"[^a-z0-9+#]+", " ", text.casefold()).split())
+
+
 def generate_questions(context: InterviewContext) -> list[InterviewQuestion]:
-    return (
+    questions = (
         _technical_questions(context)
         + _resume_questions(context)
         + _project_questions(context)
@@ -267,6 +349,16 @@ def generate_questions(context: InterviewContext) -> list[InterviewQuestion]:
         + _hr_questions(context)
         + _skill_gap_questions(context)
     )
+    # Final guard: the same question (ignoring case/punctuation) is never repeated,
+    # e.g. a responsibility duplicated in the posting or two identical resume lines.
+    unique: list[InterviewQuestion] = []
+    seen: set[str] = set()
+    for question in questions:
+        key = _question_key(question.question)
+        if key not in seen:
+            seen.add(key)
+            unique.append(question)
+    return unique
 
 
 def build_revision_plan(context: InterviewContext) -> list[RevisionItem]:

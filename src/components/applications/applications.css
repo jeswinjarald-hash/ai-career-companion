@@ -39,7 +39,7 @@
 .reminder-row strong { display: block; font-size: 14px; font-weight: 500; }
 .reminder-row small { color: var(--muted); font: 11px Arial, sans-serif; }
 .reminder-row .text-button { justify-self: start; }
-.reminder-row.overdue strong { color: #9b503b; }
+.reminder-row.overdue strong { color: var(--danger); }
 
 .application-activity { margin-top: 22px; padding: 22px 24px; }
 .activity-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 16px 0 18px; }
@@ -49,7 +49,7 @@
 .heading-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; }
 .track-state { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 10px; font: 12px Arial, sans-serif; }
 .track-state .skill-status { padding: 6px 8px; font: 700 10px Arial, sans-serif; }
-.track-error { color: #9b503b; }
+.track-error { color: var(--danger); }
 
 .tracker-link-panel { margin-bottom: 18px; padding: 16px 20px; }
 .tracker-link-panel .muted { margin: 6px 0 0; }
@@ -61,7 +61,7 @@
 .inline-select select { width: auto; }
 
 .danger-zone .muted { margin: 6px 0 12px; }
-.danger-button { background: #9b503b; }
+.danger-button { background: var(--danger); }
 .danger-button:hover { background: #7f3f2e; }
 
 @media (max-width: 1100px) {

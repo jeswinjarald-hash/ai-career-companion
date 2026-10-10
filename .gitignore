@@ -46,3 +46,6 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Office lock/temporary files (e.g. ~$Document.docx)
+~$*

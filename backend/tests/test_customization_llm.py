@@ -19,11 +19,13 @@ from app.models import CandidateProfile, Resume, StructuredResume
 from app.models.career_state import ApplicationCustomization as ApplicationCustomizationRecord
 from app.services.llm_provider import LLMUnavailableError
 from app.services.resume_customization_service import generate_customization
+from app.services.structured_resume import PARSER_VERSION
 
 # required: Python, SQL, REST APIs, Git — preferred: FastAPI, Flask, PostgreSQL, Docker, Agile
 FASTAPI_INTERN_ID = "JOB-0035"
 
 STRUCTURED_DATA = {
+    "parser_version": PARSER_VERSION,  # structured by the current parser
     "header": "Alex Morgan",
     "skills": ["Python", "FastAPI", "SQL", "Git"],
     "education": [{"degree": "B.Tech", "raw_text": "B.Tech Computer Science, Example University, 2026"}],

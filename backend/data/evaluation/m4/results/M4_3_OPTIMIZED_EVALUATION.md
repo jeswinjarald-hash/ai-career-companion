@@ -1,13 +1,13 @@
-# Milestone 4.2 Baseline Evaluation Report
+# Milestone 4.3 Optimized Evaluation Report
 
-Generated 2026-10-05T08:20:31+00:00 by `scripts/run_m4_evaluation.py` (LLM mode: null provider (deterministic pipeline only)). All values are measured; nothing below has been tuned. Historical M2.4 results remain in `data/evaluation/results/`.
+Generated 2026-10-10T05:00:46+00:00 by `scripts/run_m4_evaluation.py` (LLM mode: null provider (deterministic pipeline only)). All values are measured by this run. Compare with the frozen M4.2 baseline (`results/m4_2_baseline_results.json`); accepted and rejected M4.3 changes are recorded in `results/m4_3_experiments.json`. Historical M2.4 results remain in `data/evaluation/results/`.
 
 ## Configuration
 
 - Dataset: `backend/data/internships/career_opportunities_320.json` — 320 postings
 - Index: IndexFlatIP (inner product on L2-normalised embeddings (cosine)), 960 vectors / 960 chunks, `data/vector_store/internship_jobs.faiss`
 - Embedding model: sentence-transformers/all-MiniLM-L6-v2 (384 dims)
-- Retrieval: all chunks searched; per-job score = best chunk + 0.05 x sum(other chunks); no threshold
+- Retrieval: all chunks searched; per-job score = best chunk + 0.05 x sum(other chunks); no score threshold (results are never suppressed); each result carries a query-coverage confidence flag (M4.3 E6)
 - Cases: {"positive_queries": 26, "relevant_job_labels": 136, "acceptable_job_labels": 612, "negative_queries": 12, "candidates": 5, "candidate_job_pairs": 8, "matching_scenarios": 4, "conversations": 7, "conversation_turns": 16, "job_discovery_probes": 3}
 
 ## Positive retrieval (job-level labels)
@@ -23,7 +23,7 @@ Generated 2026-10-05T08:20:31+00:00 by `scripts/run_m4_evaluation.py` (LLM mode:
 
 - MRR@10: 1.000; top-1 domain accuracy: 1.000
 - Top-1 similarity scores of labelled queries: min 0.4877, median 0.8367, max 0.9237
-- Search latency (warm): median 13.7 ms, max 240.1 ms
+- Search latency (warm): median 17.2 ms, max 466.0 ms
 
 Weak cases (no relevant job at rank 1 or none in top 5):
 
@@ -47,6 +47,7 @@ Weak cases (no relevant job at rank 1 or none in top 5):
 
 - Every query returned results: True. Highest unrelated/nonsense score 0.5448 vs lowest genuine top-1 0.4877 (ranges overlap: True, gap -0.0571).
 - Out-of-coverage queries reach 0.651; 2 of 26 genuine queries have a best score below the best off-topic score, so no single similarity threshold separates them.
+- Query-confidence flag (results are labelled, never removed): 11/12 off-topic queries flagged (not flagged: RO01); 0/26 genuine queries flagged.
 
 ## Matching
 
@@ -124,4 +125,4 @@ Job discovery: identical results for different queries = False; expected-domain 
 - **top1_domain_accuracy**: top-ranked job's domain equals the query's expected domain.
 - **negative: above_weakest_positive_top1**: an off-topic query's top score is at least the lowest top-1 score of any genuine labelled query, i.e. no single threshold could separate them.
 
-Evaluation runtime: 2.2 s.
+Evaluation runtime: 3.2 s.

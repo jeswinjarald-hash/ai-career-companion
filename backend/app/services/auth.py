@@ -7,6 +7,7 @@ from pwdlib import PasswordHash
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.models import AuthSession, CandidateProfile, User
 
@@ -44,7 +45,20 @@ def create_session(db: Session, user: User, response: Response) -> None:
     session = AuthSession(user_id=user.id, token_hash=_token_hash(raw_token), expires_at=datetime.now(timezone.utc) + timedelta(days=SESSION_DAYS))
     db.add(session)
     db.commit()
-    response.set_cookie(SESSION_COOKIE, raw_token, httponly=True, samesite="lax", secure=False, max_age=SESSION_DAYS * 86400)
+    response.set_cookie(SESSION_COOKIE, raw_token, httponly=True, samesite="lax", secure=session_cookie_secure(), max_age=SESSION_DAYS * 86400)
+
+
+def session_cookie_secure() -> bool:
+    """Secure (HTTPS-only) session cookie everywhere except local development.
+
+    Local development runs over plain http://localhost, where a Secure cookie would
+    never be sent back. Any other APP_ENV is assumed to be served over HTTPS; set
+    SESSION_COOKIE_SECURE explicitly to override either default.
+    """
+    settings = get_settings()
+    if settings.session_cookie_secure is not None:
+        return settings.session_cookie_secure
+    return settings.app_env != "development"
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -68,7 +82,7 @@ def clear_session(request: Request, response: Response, db: Session) -> None:
         if session:
             db.delete(session)
             db.commit()
-    response.delete_cookie(SESSION_COOKIE)
+    response.delete_cookie(SESSION_COOKIE, httponly=True, samesite="lax", secure=session_cookie_secure())
 
 
 def require_current_user(request: Request, db: Session = Depends(get_db)) -> User:

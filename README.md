@@ -5,8 +5,10 @@ grounded career actions — semantic opportunity search, explainable job matchin
 skill-gap analysis, tailored resume and cover letter, interview preparation, a
 conversational assistant, and an application tracker.
 
-The system is a **deterministic + optional-LLM hybrid**. Every feature works without
-an LLM (`LLM_PROVIDER=none`, the default). If an OpenAI-compatible model is configured, it
+The system is a **deterministic + optional-LLM hybrid**. The core application workflows
+operate without an LLM (`LLM_PROVIDER=none`, the default), using deterministic logic and
+grounded fallbacks; general-purpose career questions remain limited in deterministic mode.
+If an OpenAI-compatible model is configured, it
 only rewrites already-grounded content; its JSON output is validated against the
 candidate's evidence and falls back to the deterministic result on any failure.
 
@@ -49,6 +51,10 @@ From `backend/data/evaluation/m4/results/` (M4.2 frozen baseline → M4.3 final)
 
 The evaluation set is small and synthetic; live LLM output was not evaluated.
 
+Current backend suite (after the resume-parsing audit, 2026-10-10): **547 passed, 1 xfailed**.
+Resume parsing fixes, reprocessing of results from an older parser version and the
+verification performed are described in [`docs/RESUME_PARSING_AUDIT.md`](docs/RESUME_PARSING_AUDIT.md).
+
 ## Quick start (Windows PowerShell, from the repository root)
 
 ```powershell
@@ -83,10 +89,22 @@ npm run lint
 npm run build
 ```
 
+## Production build requirements
+
+The app is not deployed; these are the settings a deployment needs. They were checked against the code but have not been exercised on a live host.
+
+- **API URL:** set `VITE_API_BASE_URL` *at build time* (`npm run build` bakes it into the bundle; the default is `http://localhost:8000`).
+- **SPA routing:** the frontend uses history routes (`/dashboard`, `/jobs/<id>`, `/applications/<id>`, …). The static host must serve `index.html` for unknown paths, or a direct visit or refresh on those URLs returns 404.
+- **Backend environment:** set `APP_ENV` to anything other than `development` (e.g. `production`) and `FRONTEND_URL` to the exact frontend origin. Outside development, CORS accepts only that origin and the session cookie is `Secure` (HTTPS only). Set `SESSION_COOKIE_SECURE=false` only for a deliberate non-HTTPS test host.
+- **Same-site cookies:** the session cookie is `SameSite=Lax`, so the frontend and API must share a registrable domain (e.g. `app.example.com` and `api.example.com`).
+- **Uploads:** the backend enforces PDF/DOCX, non-empty, ≤ 10 MiB, and content-type and signature checks. The UI mirrors these limits for faster feedback only.
+
 ## Documentation
 
 | Document | Content |
 |---|---|
+| [`docs/RESUME_PARSING_AUDIT.md`](docs/RESUME_PARSING_AUDIT.md) | Resume parsing audit: root causes, parser versioning and reprocessing, grounding changes, verification |
+| [`docs/UI_UX_POLISH_REPORT.md`](docs/UI_UX_POLISH_REPORT.md) | Final UI/UX polish: audit findings, fixes, verification results, known limitations |
 | [`docs/FINAL_TECHNICAL_DOCUMENTATION.md`](docs/FINAL_TECHNICAL_DOCUMENTATION.md) | Architecture, all milestones, evaluation, optimization, security, performance, demo workflow, limitations, setup, API |
 | [`docs/MILESTONE_1.md`](docs/MILESTONE_1.md) | Profile and resume pipeline (authentication was added later, in the M1/M2 integration) |
 | [`docs/MILESTONE_2_2.md`](docs/MILESTONE_2_2.md), [`docs/MILESTONE_2_3.md`](docs/MILESTONE_2_3.md) | Semantic retrieval, matching |

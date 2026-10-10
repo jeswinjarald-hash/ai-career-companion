@@ -66,7 +66,7 @@ function LinkedMaterials<T extends { id: number; version: number; created_at: st
         <button className="secondary-button" disabled={saving || choice === ''} onClick={() => { if (choice !== '') onLink(choice) }}>Link</button>
       </>}
       {linkedId !== null && <button className="text-button" disabled={saving} onClick={onUnlink}>Unlink</button>}
-      <button className="text-button" onClick={onOpen}>{openLabel} -&gt;</button>
+      <button className="text-button" onClick={onOpen}>{openLabel} →</button>
     </div>
   </div>
 }
@@ -163,7 +163,7 @@ export function ApplicationDetailView({ applicationId, resumeId, onBack, onOpenC
     }
   }
 
-  const back = <button className="text-button" onClick={onBack}>Back to tracker -&gt;</button>
+  const back = <button className="text-button" onClick={onBack}>Back to tracker →</button>
   if (loadState === 'loading') return <PageHeading eyebrow="APPLICATION" title="Loading application..." lede="" action={back} />
   if (loadState === 'missing') return <><PageHeading eyebrow="APPLICATION" title="Application not found." lede="It may have been deleted, or it is not part of your tracker." action={back} /></>
   if (loadState === 'error' || !application || !draft) return <><PageHeading eyebrow="APPLICATION" title="We could not load this application." lede={loadError} action={back} /><button className="secondary-button" onClick={() => window.location.reload()}>Retry</button></>
@@ -196,7 +196,7 @@ export function ApplicationDetailView({ applicationId, resumeId, onBack, onOpenC
     <form className="card form-card tracker-form" onSubmit={saveDetails}>
       <div className="card-heading"><div><p className="eyebrow">DETAILS</p><h3>Dates, interview and notes</h3></div></div>
       <div className="form-grid">
-        {isDataset ? <p className="muted full-width">Opportunity details come from the Careers listing and stay as they were when you tracked it. <button type="button" className="text-button" onClick={() => onOpenJob(application.job_id as string)}>View opportunity -&gt;</button></p> : <>
+        {isDataset ? <p className="muted full-width">Opportunity details come from the Careers listing and stay as they were when you tracked it. <button type="button" className="text-button" onClick={() => onOpenJob(application.job_id as string)}>View opportunity →</button></p> : <>
           <label>Company *<input value={draft.company} onChange={field('company')} maxLength={255} required disabled={busy} /></label>
           <label>Role / job title *<input value={draft.job_title} onChange={field('job_title')} maxLength={255} required disabled={busy} /></label>
           <label>Employment type<input value={draft.employment_type} onChange={field('employment_type')} list="detail-employment-types" maxLength={64} disabled={busy} /></label>

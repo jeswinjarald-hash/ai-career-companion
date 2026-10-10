@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     app_env: str = "development"
     debug: bool = False
     frontend_url: str = "http://localhost:5173"
+    # None = automatic: Secure session cookie whenever app_env is not "development".
+    session_cookie_secure: bool | None = None
     database_url: str | None = None
     resume_storage_dir: str = "./data/resumes"
     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"

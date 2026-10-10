@@ -12,6 +12,7 @@ from app.services.job_dataset_service import load_job_postings
 from app.services.job_search_service import search_jobs
 from app.services.education_assessment import assess_education_text
 from app.services.skill_relationships import related_terms
+from app.services.structured_resume import is_reliable_project
 
 # Credit for a requirement supported only by a related technology (never reported as matched).
 RELATED_SKILL_CREDIT = 0.5
@@ -54,6 +55,9 @@ class MatchingProfile:
     project_evidence: list[tuple[str, list[str]]] = field(default_factory=list)
     # Skills typed into the career profile with no resume evidence at all (M4.3 Exp. 7).
     self_reported_skills: list[str] = field(default_factory=list)
+    # Project evidence text -> the project's own title, so reasoning can name a
+    # project instead of quoting its whole description.
+    project_titles: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -105,7 +109,9 @@ def normalize_profile(profile: CandidateProfile, structured_data: dict) -> Match
     experience_entries = _text_values(profile.experience_level)
     experience_entries += _text_values(structured_data.get("experience", []))
     experience_entries += _text_values(structured_data.get("internships", []))
-    project_items = structured_data.get("projects", [])
+    # Parsing fragments ("Finance", "Built using ...") are never matched or quoted
+    # in recommendation reasoning as if they were projects.
+    project_items = [item for item in structured_data.get("projects", []) or [] if is_reliable_project(item)]
     project_texts = _text_values(project_items)
     project_evidence = [
         (
@@ -148,6 +154,11 @@ def normalize_profile(profile: CandidateProfile, structured_data: dict) -> Match
         qualification_text=qualification_text,
         retrieval_terms=retrieval_terms,
         project_evidence=project_evidence,
+        project_titles={
+            str(item.get("raw_text") or item.get("title") or "").strip(): str(item.get("title") or "").strip()
+            for item in project_items
+            if isinstance(item, dict) and str(item.get("title") or "").strip()
+        },
     )
 
 
@@ -207,6 +218,16 @@ def score_experience(profile: MatchingProfile, job: JobPosting) -> ComponentResu
     return ComponentResult(0.6, reasons=["Some experience evidence is present, but the requirement is not quantified."])
 
 
+def _project_label(project_text: str, profile: MatchingProfile) -> str:
+    """The project's title when known (the full description stays available in
+    `relevant_projects`), otherwise a short excerpt — reasoning names the evidence
+    rather than reproducing it."""
+    title = profile.project_titles.get(project_text)
+    if title:
+        return f'"{title}"'
+    return project_text if len(project_text) <= 80 else project_text[:77].rsplit(" ", 1)[0] + "..."
+
+
 def score_project_relevance(profile: MatchingProfile, job: JobPosting) -> tuple[ComponentResult, list[str]]:
     if not profile.project_texts:
         return ComponentResult(None), []
@@ -263,8 +284,9 @@ def _result(job: JobPosting, retrieval: JobSearchResult, profile: MatchingProfil
     strengths.extend(f"{skill} preferred skill matched" for skill in preferred.matched)
     if education.score == 1.0:
         strengths.append("Education requirement satisfied")
+    project_label = _project_label(relevant_projects[0], profile) if relevant_projects else ""
     if relevant_projects:
-        strengths.append(f"Relevant project evidence: {relevant_projects[0]}")
+        strengths.append(f"Relevant project evidence: {project_label}")
     gaps = [f"{skill} missing" for skill in required.missing]
     gaps.extend(f"{skill} preferred skill not found" for skill in preferred.missing)
     self_reported_set = set(profile.self_reported_skills)
@@ -272,7 +294,7 @@ def _result(job: JobPosting, retrieval: JobSearchResult, profile: MatchingProfil
     reasoning = (
         f"The candidate matches {len(required.matched)} of {len(job.required_skills)} required skills"
         f" and {len(preferred.matched)} of {len(job.preferred_skills)} preferred skills. "
-        + (f"Relevant project evidence includes {relevant_projects[0]}. " if relevant_projects else "No directly overlapping project evidence was found. ")
+        + (f"Relevant project evidence includes {project_label}. " if relevant_projects else "No directly overlapping project evidence was found. ")
         + (f"The main gap is {required.missing[0]}." if required.missing else "No required skill gaps were found.")
         + ("".join(f" {evidence} is related to {skill}, which earns partial (not full) credit." for skill, evidence in required.related + preferred.related))
         + (f" Self-reported in your career profile (no resume evidence yet): {', '.join(self_reported)}." if self_reported else "")

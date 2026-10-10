@@ -1,8 +1,8 @@
-import { API_BASE_URL } from '../config/api'
+import { apiDetailMessage, apiFetch } from '../config/api'
 
 export type ResumeRecord = { id: number; candidate_profile_id: number; original_filename: string; file_type: string; mime_type: string | null; file_size: number; status: string; created_at: string; updated_at: string }
 export type ResumeExtraction = { id: number; resume_id: number; status: string; page_count: number | null; character_count: number; raw_text: string | null; normalized_text: string | null; error_message: string | null; created_at: string; updated_at: string }
-export type StructuredResume = { id: number; resume_id: number; data: { skills: string[]; education: Array<Record<string, unknown>>; experience: Array<Record<string, unknown>>; internships: Array<Record<string, unknown>>; projects: Array<Record<string, unknown>>; certifications: Array<Record<string, unknown>>; achievements: Array<Record<string, unknown>>; qualifications: Array<Record<string, unknown>>; header: string; summary: string | null; parser_warnings?: string[] } }
+export type StructuredResume = { id: number; resume_id: number; data: { skills: string[]; education: Array<Record<string, unknown>>; experience: Array<Record<string, unknown>>; internships: Array<Record<string, unknown>>; projects: Array<Record<string, unknown>>; certifications: Array<Record<string, unknown>>; achievements: Array<Record<string, unknown>>; qualifications: Array<Record<string, unknown>>; header: string; summary: string | null; parser_warnings?: string[]; parser_version?: number; languages?: Array<Record<string, unknown>>; sections?: Array<{ name: string; original_heading: string | null; content: string; position: number }> } }
 export type JobMatchResult = { job_id: string; job_title: string; company: string; domain: string; location: string; work_mode: string; employment_type: string; retrieval_score: number; match_score: number; required_skills_score: number; preferred_skills_score: number; experience_score: number; education_score: number; project_relevance_score: number; qualification_score: number; matched_required_skills: string[]; missing_required_skills: string[]; matched_preferred_skills: string[]; missing_preferred_skills: string[]; relevant_projects: string[]; strengths: string[]; gaps: string[]; reasoning: string }
 export type CandidateContext = { id: number; candidate_profile_id: number; resume_id: number; context_json: Record<string, unknown> }
 
@@ -10,12 +10,9 @@ export class ResumeApiError extends Error { status: number; constructor(status: 
 
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
   let response: Response
-  try { response = await fetch(`${API_BASE_URL}${path}`, { ...options, credentials: 'include' }) } catch { throw new ResumeApiError(0, "We couldn't connect to the resume service. Please try again.") }
+  try { response = await apiFetch(path, options) } catch { throw new ResumeApiError(0, "We couldn't connect to the resume service. Please try again.") }
   const body = await response.json().catch(() => null)
-  if (!response.ok) {
-    const detail = body && typeof body === 'object' && 'detail' in body ? String((body as { detail: unknown }).detail) : 'We could not process this resume.'
-    throw new ResumeApiError(response.status, detail)
-  }
+  if (!response.ok) throw new ResumeApiError(response.status, apiDetailMessage(body, 'We could not process this resume.', response.status))
   return body as T
 }
 

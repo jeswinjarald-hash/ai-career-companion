@@ -63,7 +63,7 @@ function ApplicationCard({ application, onOpen }: { application: Application; on
       {application.follow_up_date && <><dt>Follow up</dt><dd>{formatDate(application.follow_up_date)}</dd></>}
       <dt>Updated</dt><dd>{formatDateTime(application.updated_at)}</dd>
     </dl>
-    <button className="text-button" onClick={onOpen}>View / edit -&gt;</button>
+    <button className="text-button" onClick={onOpen}>View / edit →</button>
   </article>
 }
 
@@ -157,7 +157,7 @@ export function ApplicationTrackerView({ onOpenApplication, onBrowseOpportunitie
     {overview.state === 'error' && <div className="error-notice" role="alert">{overview.error} <button className="text-button" onClick={() => void overview.reload()}>Retry</button></div>}
     {overview.state === 'ready' && overview.summary && <ApplicationSummaryStats summary={overview.summary} />}
 
-    {notice && <div className="success-notice" role="status">Added {notice.job_title} at {notice.company}. <button className="text-button" onClick={() => onOpenApplication(notice.id)}>Open it -&gt;</button></div>}
+    {notice && <div className="success-notice" role="status">Added {notice.job_title} at {notice.company}. <button className="text-button" onClick={() => onOpenApplication(notice.id)}>Open it →</button></div>}
     {showForm && <ManualApplicationForm onCreated={handleCreated} onCancel={() => setShowForm(false)} />}
 
     <div className="tracker-layout">

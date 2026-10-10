@@ -22,9 +22,10 @@ from app.services.assistant_intent import extract_discovery_request
 from app.services.retrieval_confidence import query_confidence
 from app.services.interview_evidence import best_effort_m2_match
 from app.services.interview_prep_service import generate_interview_preparation, get_interview_preparation, list_interview_preparations
-from app.services.job_matching import match_jobs_for_resume
+from app.services.job_matching import match_jobs_for_resume, normalize_term
 from app.services.resume_customization_service import generate_customization, get_customization, list_customizations
 from app.services.skill_gap_service import analyze_skill_gap, get_persisted_skill_gap
+from app.services.structured_resume import is_reliable_project
 
 
 @dataclass
@@ -249,23 +250,55 @@ def handle_job_comparison(db: Session, user_id: int, ctx: ResolvedContext, messa
     return HandlerResult("\n".join(lines), facts, actions, unsupported, "scored", context_used, a.job_id, ctx.resume.id if ctx.resume else None)
 
 
+def _most_relevant_project(project_facts: list[dict], job) -> tuple[str, list[str]] | None:
+    """Deterministic, evidence-only relevance: the project whose own technologies
+    overlap most with the selected role's required/preferred skills."""
+    if job is None or not project_facts:
+        return None
+    role_terms = {normalize_term(skill): skill for skill in list(job.required_skills) + list(job.preferred_skills)}
+    best: tuple[str, list[str]] | None = None
+    for project in project_facts:
+        overlap = [role_terms[term] for term in dict.fromkeys(normalize_term(t) for t in project["technologies"]) if term in role_terms]
+        if overlap and (best is None or len(overlap) > len(best[1])):
+            best = (project["title"], overlap)
+    return best
+
+
 def handle_profile_summary(db: Session, user_id: int, ctx: ResolvedContext, message: str) -> HandlerResult:
     data = ctx.structured.data
     skills = data.get("skills", []) or []
-    projects = [p for p in (data.get("projects", []) or []) if isinstance(p, dict)]
-    project_names = [str(p.get("title") or (p.get("raw_text", "")[:60] + "...")) for p in projects[:5]]
+    projects = [p for p in (data.get("projects", []) or []) if is_reliable_project(p)][:5]
+    project_facts = [
+        {
+            "title": str(p.get("title") or (p.get("raw_text", "")[:60] + "...")),
+            "technologies": [str(t) for t in p.get("technologies", []) or []][:8],
+        }
+        for p in projects
+    ]
 
     parts = []
     if skills:
         parts.append(f"Your resume lists {len(skills)} skills: {', '.join(skills[:10])}.")
-    if project_names:
-        parts.append(f"Your projects: {', '.join(project_names)}.")
+    if project_facts:
+        described = [f"{p['title']} ({', '.join(p['technologies'])})" if p["technologies"] else p["title"] for p in project_facts]
+        parts.append(f"Your projects: {'; '.join(described)}.")
+    relevant = _most_relevant_project(project_facts, ctx.job)
+    if relevant is not None:
+        title, overlap = relevant
+        parts.append(f'For the {ctx.job.job_title} role, "{title}" is your most relevant project: it uses {", ".join(overlap)}, which the role lists as required or preferred skills.')
     if ctx.profile is not None and ctx.profile.target_roles:
         parts.append(f"Your target roles: {', '.join(ctx.profile.target_roles)}.")
     if not parts:
         parts.append("Your resume is processed, but no skills or projects were extracted from it yet.")
 
-    facts = {"skills": skills, "projects": project_names, "target_roles": ctx.profile.target_roles if ctx.profile is not None else []}
+    facts = {
+        "skills": skills,
+        # Technologies are included so a rewritten answer can reason about project
+        # relevance from evidence instead of claiming the details are unavailable.
+        "projects": project_facts,
+        "most_relevant_project_for_selected_role": ({"title": relevant[0], "matching_role_skills": relevant[1]} if relevant else None),
+        "target_roles": ctx.profile.target_roles if ctx.profile is not None else [],
+    }
     actions = [SuggestedAction(label="View resume results", action="view_resume")]
     return HandlerResult(" ".join(parts), facts, actions, context_used=["resume", "profile"], resume_id=ctx.resume.id)
 

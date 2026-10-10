@@ -26,6 +26,8 @@ ALIASES = {
     "experience": {
         "experience", "work experience", "professional experience", "employment history", "work history",
         "relevant experience", "career history", "work ex", "professional background",
+        "employment", "industry experience", "industrial experience", "experience & internships",
+        "experience and internships", "internships & experience",
     },
     "internships": {"internship", "internships", "internship experience", "internship details"},
     "projects": {
@@ -89,11 +91,46 @@ def _canonical_heading(line: str) -> str | None:
     return None
 
 
+_HEADING_CONNECTOR_ENDINGS = {"in", "on", "of", "and", "&", "for", "to", "with", "at", "the", "a", "an", "or"}
+
+
+def _is_custom_heading(lines: list[str], index: int, content_since_heading: bool) -> bool:
+    """An unrecognized all-caps line is only a heading when it reads like one in
+    context. Résumés also set *content* in capitals — dates ("JUNE 2024 - JUNE
+    2028"), certificates ("NPTEL CERTIFIED IN JAVA" / "PROGRAMME"), languages
+    ("ENGLISH", "TAMIL") — and treating those as headings silently empties the real
+    section above them."""
+    heading = _heading_text(lines[index])
+    if any(character.isdigit() for character in heading) or not heading[:1].isalpha():
+        return False
+    if heading.split()[-1].casefold() in _HEADING_CONNECTOR_ENDINGS:
+        return False  # "NPTEL CERTIFIED IN" continues on the next line
+    previous = lines[index - 1].strip() if index > 0 else ""
+    if previous and previous.upper() == previous and any(character.isalpha() for character in previous):
+        return False  # wrapped continuation of an all-caps line directly above
+    if not content_since_heading:
+        return False  # first line under a heading is that section's content
+    following = next((line for line in lines[index + 1:] if line.strip()), None)
+    return following is not None and _canonical_heading(following) is None
+
+
 def detect_resume_sections(normalized_text: str) -> list[DetectedSection]:
     lines = normalized_text.splitlines()
     heading_indexes = []
+    first_content_index = next((index for index, line in enumerate(lines) if line.strip()), None)
+    content_since_heading = True
     for index, line in enumerate(lines):
         canonical = _canonical_heading(line)
+        if canonical == "custom" and index == first_content_index:
+            # The first line of a resume is almost always the candidate's name, often
+            # set in capitals ("ALEX SAMPLE"); only a recognized heading may claim it.
+            canonical = None
+        if canonical == "custom" and not _is_custom_heading(lines, index, content_since_heading):
+            canonical = None
+        if canonical is None:
+            content_since_heading = content_since_heading or bool(line.strip())
+            continue
+        content_since_heading = False
         if canonical:
             heading_indexes.append((index, canonical, _heading_text(line)))
 

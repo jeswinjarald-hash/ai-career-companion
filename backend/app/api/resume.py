@@ -14,7 +14,7 @@ from app.services.profile import get_owned_profile
 from app.services.pdf_extraction import PdfExtractionError, extract_pdf_text, get_extraction
 from app.services.resume import ResumeUploadError, create_resume, get_owned_resume, list_profile_resumes
 from app.services.section_detection import get_resume_sections, persist_resume_sections
-from app.services.structured_resume import get_structured_resume, structure_resume
+from app.services.structured_resume import effective_parser_warnings, get_structured_resume, is_reliable_project, structure_resume
 from app.services.job_matching import match_jobs_for_resume
 
 
@@ -144,6 +144,21 @@ def read_resume_sections(
     return ResumeSectionsResponse(resume_id=resume_id, sections=sections)
 
 
+def _display_response(result) -> StructuredResumeResponse:
+    """Serve-time view of the stored structure (nothing is written back): the
+    effective parser warnings, and per project whether downstream features use it
+    as evidence — computed by the same `is_reliable_project` rule they apply, so the
+    UI never has to re-implement it."""
+    response = StructuredResumeResponse.model_validate(result)
+    data = dict(response.data)
+    data["parser_warnings"] = effective_parser_warnings(data)
+    data["projects"] = [
+        {**project, "evidence_eligible": is_reliable_project(project)} if isinstance(project, dict) else project
+        for project in data.get("projects", []) or []
+    ]
+    return response.model_copy(update={"data": data})
+
+
 @router.post("/api/resumes/{resume_id}/structure", response_model=StructuredResumeResponse)
 def structure_resume_endpoint(
     resume_id: int,
@@ -154,7 +169,7 @@ def structure_resume_endpoint(
     if resume is None:
         raise HTTPException(status_code=404, detail="Resume not found.")
     try:
-        return structure_resume(db, resume)
+        return _display_response(structure_resume(db, resume))
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
@@ -170,7 +185,7 @@ def read_structured_resume(
     result = get_structured_resume(db, resume_id)
     if result is None:
         raise HTTPException(status_code=404, detail="Structured resume not found.")
-    return result
+    return _display_response(result)
 
 
 @router.get("/api/resumes/{resume_id}/job-matches", response_model=list[JobMatchResult])

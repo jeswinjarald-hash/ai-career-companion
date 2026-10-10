@@ -14,6 +14,7 @@ from app.models import CandidateProfile
 from app.schemas.skill_gap import EvidenceItem, MatchType
 from app.services.job_matching import normalize_term
 from app.services.skill_relationships import RELATED_TERMS, related_terms  # noqa: F401  (RELATED_TERMS re-exported)
+from app.services.structured_resume import is_reliable_project
 
 # Related-technology table and lookup are shared with Job Matching (M4.3).
 
@@ -99,7 +100,7 @@ def build_evidence_units(profile: CandidateProfile, structured_data: dict) -> li
             units.append(unit)
 
     for project in structured_data.get("projects", []) or []:
-        if not isinstance(project, dict):
+        if not is_reliable_project(project):
             continue
         title = str(project.get("title") or "Project").strip() or "Project"
         raw = str(project.get("raw_text") or project.get("description") or title)

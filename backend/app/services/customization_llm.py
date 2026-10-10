@@ -20,7 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.schemas.customization import EvidenceRecord, KeywordClassification, TailoredResume
 from app.schemas.job_posting import JobPosting
-from app.services.customization_validator import check_fabrication
+from app.services.customization_validator import EvidenceCorpus, build_evidence_corpus, check_fabrication
 from app.services.llm_provider import LLMProvider, LLMUnavailableError, NullLLMProvider
 
 logger = logging.getLogger(__name__)
@@ -149,6 +149,7 @@ def validate_llm_response(
     expected_source_paths: set[str],
     unsupported_terms: set[str],
     allowed_phrases: tuple[str, ...] = (),
+    corpus: EvidenceCorpus | None = None,
 ) -> list[str]:
     # `allowed_phrases` (the target job title and company) may be named freely: the
     # prompt requires the cover letter to open with them (M4.3 prompt review / Exp. 5).
@@ -157,7 +158,7 @@ def validate_llm_response(
     if not response.summary.strip():
         violations.append("summary must not be empty")
     else:
-        hit = check_fabrication(response.summary, unsupported_terms, allowed_phrases)
+        hit = check_fabrication(response.summary, unsupported_terms, allowed_phrases, corpus)
         if hit:
             violations.append(f"summary: {hit}")
     unknown = [i for i in response.summary_evidence_ids if i not in allowed_evidence_ids]
@@ -176,7 +177,7 @@ def validate_llm_response(
         if not bullet.rewritten_text.strip():
             violations.append(f"bullet {bullet.source_path}: rewritten_text must not be empty")
             continue
-        hit = check_fabrication(bullet.rewritten_text, unsupported_terms)
+        hit = check_fabrication(bullet.rewritten_text, unsupported_terms, allowed_phrases, corpus)
         if hit:
             violations.append(f"bullet {bullet.source_path}: {hit}")
         unknown = [i for i in bullet.evidence_ids if i not in allowed_evidence_ids]
@@ -189,7 +190,7 @@ def validate_llm_response(
         if not paragraph.text.strip():
             violations.append(f"cover_letter_paragraphs[{index}]: text must not be empty")
             continue
-        hit = check_fabrication(paragraph.text, unsupported_terms, allowed_phrases)
+        hit = check_fabrication(paragraph.text, unsupported_terms, allowed_phrases, corpus)
         if hit:
             violations.append(f"cover_letter_paragraphs[{index}]: {hit}")
         unknown = [i for i in paragraph.evidence_ids if i not in allowed_evidence_ids]
@@ -229,7 +230,8 @@ def rewrite_with_llm(
         return None, meta
 
     opportunity_names = (job.job_title, job.company)
-    response, violations = _parse_and_validate(raw, allowed_ids, expected_paths, unsupported_terms, opportunity_names)
+    corpus = build_evidence_corpus(evidence_records, job)
+    response, violations = _parse_and_validate(raw, allowed_ids, expected_paths, unsupported_terms, opportunity_names, corpus)
 
     if violations:
         meta["repair_attempted"] = True
@@ -242,7 +244,7 @@ def rewrite_with_llm(
         except LLMUnavailableError as exc:
             meta["fallback_reason"] = f"repair_call_failed: {exc}"
             return None, meta
-        response, violations = _parse_and_validate(repaired_raw, allowed_ids, expected_paths, unsupported_terms, opportunity_names)
+        response, violations = _parse_and_validate(repaired_raw, allowed_ids, expected_paths, unsupported_terms, opportunity_names, corpus)
 
     if violations:
         logger.warning("customization_llm_validation_failed_after_repair provider=%s violation_count=%s", provider.name, len(violations))
@@ -254,9 +256,10 @@ def rewrite_with_llm(
 
 def _parse_and_validate(
     raw: dict, allowed_ids: set[str], expected_paths: set[str], unsupported_terms: set[str], allowed_phrases: tuple[str, ...] = (),
+    corpus: EvidenceCorpus | None = None,
 ) -> tuple[LLMRewriteResponse | None, list[str]]:
     try:
         response = LLMRewriteResponse.model_validate(raw)
     except ValidationError as exc:
         return None, [f"response did not match the required JSON schema: {exc}"]
-    return response, validate_llm_response(response, allowed_ids, expected_paths, unsupported_terms, allowed_phrases)
+    return response, validate_llm_response(response, allowed_ids, expected_paths, unsupported_terms, allowed_phrases, corpus)

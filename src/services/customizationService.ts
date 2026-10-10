@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config/api'
+import { API_BASE_URL, apiDetailMessage, apiFetch, fetchWithTimeout, GENERATION_TIMEOUT_MS, RequestTimeoutError } from '../config/api'
 
 export type ConfidenceType = 'direct' | 'supporting' | 'learning_only'
 export type SourceType = 'skill' | 'project' | 'experience' | 'internship' | 'education' | 'certification' | 'achievement' | 'qualification' | 'profile'
@@ -104,27 +104,26 @@ export class CustomizationApiError extends Error {
   }
 }
 
-const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
+const request = async <T>(path: string, options?: RequestInit, timeoutMs?: number): Promise<T> => {
   let response: Response
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      ...options,
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json', ...(options?.headers ?? {}) },
-    })
-  } catch {
+    const init = { ...options, headers: { 'Content-Type': 'application/json', ...(options?.headers ?? {}) } }
+    response = timeoutMs ? await fetchWithTimeout(path, init, timeoutMs) : await apiFetch(path, init)
+  } catch (error: unknown) {
+    if (error instanceof RequestTimeoutError) {
+      throw new CustomizationApiError(0, "Generating application materials is taking longer than expected, so we stopped waiting. The server may still finish it — check the version list before trying again.")
+    }
     throw new CustomizationApiError(0, "We couldn't connect to the application customization service. Please try again.")
   }
   const body = await response.json().catch(() => null)
   if (!response.ok) {
-    const detail = body && typeof body === 'object' && 'detail' in body ? String((body as { detail: unknown }).detail) : 'We could not complete that request.'
-    throw new CustomizationApiError(response.status, detail)
+    throw new CustomizationApiError(response.status, apiDetailMessage(body, 'We could not complete that request.', response.status))
   }
   return body as T
 }
 
 export const generateCustomization = (resumeId: number, jobId: string) =>
-  request<ApplicationCustomization>(`/api/resumes/${resumeId}/application-customizations?job_id=${encodeURIComponent(jobId)}`, { method: 'POST' })
+  request<ApplicationCustomization>(`/api/resumes/${resumeId}/application-customizations?job_id=${encodeURIComponent(jobId)}`, { method: 'POST' }, GENERATION_TIMEOUT_MS)
 
 export const listCustomizations = (resumeId: number, jobId?: string) =>
   request<ApplicationCustomizationSummary[]>(`/api/resumes/${resumeId}/application-customizations${jobId ? `?job_id=${encodeURIComponent(jobId)}` : ''}`)
@@ -142,7 +141,7 @@ export const updateCustomization = (resumeId: number, customizationId: number, p
   request<ApplicationCustomization>(`/api/resumes/${resumeId}/application-customizations/${customizationId}`, { method: 'PATCH', body: JSON.stringify(payload) })
 
 export const regenerateCustomization = (resumeId: number, customizationId: number) =>
-  request<ApplicationCustomization>(`/api/resumes/${resumeId}/application-customizations/${customizationId}/regenerate`, { method: 'POST' })
+  request<ApplicationCustomization>(`/api/resumes/${resumeId}/application-customizations/${customizationId}/regenerate`, { method: 'POST' }, GENERATION_TIMEOUT_MS)
 
 export type ExportDocument = 'resume' | 'cover_letter'
 export type ExportFormat = 'pdf' | 'docx'
@@ -157,14 +156,13 @@ const exportUrl = (resumeId: number, customizationId: number, docType: ExportDoc
 export const downloadExport = async (resumeId: number, customizationId: number, docType: ExportDocument, format: ExportFormat): Promise<void> => {
   let response: Response
   try {
-    response = await fetch(exportUrl(resumeId, customizationId, docType, format), { credentials: 'include' })
+    response = await apiFetch(exportUrl(resumeId, customizationId, docType, format))
   } catch {
     throw new CustomizationApiError(0, "We couldn't connect to the export service. Please try again.")
   }
   if (!response.ok) {
     const body = await response.json().catch(() => null)
-    const detail = body && typeof body === 'object' && 'detail' in body ? String((body as { detail: unknown }).detail) : 'We could not generate this export.'
-    throw new CustomizationApiError(response.status, detail)
+    throw new CustomizationApiError(response.status, apiDetailMessage(body, 'We could not generate this export.', response.status))
   }
   const blob = await response.blob()
   const disposition = response.headers.get('content-disposition') ?? ''

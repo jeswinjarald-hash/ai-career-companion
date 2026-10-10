@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config/api'
+import { apiDetailMessage, apiFetch } from '../config/api'
 
 export type EvidenceItem = { source: string; source_name: string; evidence: string }
 export type MatchType = 'demonstrated' | 'partial' | 'learning_only' | 'missing'
@@ -65,14 +65,13 @@ export class SkillGapApiError extends Error {
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
   let response: Response
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, { ...options, credentials: 'include' })
+    response = await apiFetch(path, options)
   } catch {
     throw new SkillGapApiError(0, "We couldn't connect to the skill gap service. Please try again.")
   }
   const body = await response.json().catch(() => null)
   if (!response.ok) {
-    const detail = body && typeof body === 'object' && 'detail' in body ? String((body as { detail: unknown }).detail) : 'We could not complete that request.'
-    throw new SkillGapApiError(response.status, detail)
+    throw new SkillGapApiError(response.status, apiDetailMessage(body, 'We could not complete that request.', response.status))
   }
   return body as T
 }

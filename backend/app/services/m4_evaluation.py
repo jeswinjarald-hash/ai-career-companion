@@ -794,7 +794,8 @@ def dataset_fingerprint() -> dict[str, Any]:
         "similarity": "inner product on L2-normalised embeddings (cosine)",
         "embedding_model": get_settings().embedding_model_name, "embedding_dimension": int(index.d),
         "index_file": INDEX_PATH.relative_to(BACKEND_ROOT).as_posix(),
-        "retrieval": "all chunks searched; per-job score = best chunk + 0.05 x sum(other chunks); no threshold",
+        "retrieval": ("all chunks searched; per-job score = best chunk + 0.05 x sum(other chunks); no score threshold "
+                      "(results are never suppressed); each result carries a query-coverage confidence flag (M4.3 E6)"),
     }
 
 
@@ -894,12 +895,14 @@ def compare_with_baseline(baseline: dict[str, Any], current: dict[str, Any]) -> 
             if key != "runtime_seconds" and before.get(key) != value}
 
 
-def render_markdown(report: dict[str, Any]) -> str:
+def render_markdown(report: dict[str, Any], title: str = "Milestone 4 Evaluation Report") -> str:
     cfg, pos, neg = report["configuration"], report["retrieval_positive"]["summary"], report["retrieval_negative"]
     lines = [
-        "# Milestone 4.2 Baseline Evaluation Report", "",
+        f"# {title}", "",
         f"Generated {report['generated_at']} by `scripts/run_m4_evaluation.py` (LLM mode: {report['llm_mode']}). "
-        "All values are measured; nothing below has been tuned. Historical M2.4 results remain in `data/evaluation/results/`.", "",
+        "All values are measured by this run. Compare with the frozen M4.2 baseline (`results/m4_2_baseline_results.json`); "
+        "accepted and rejected M4.3 changes are recorded in `results/m4_3_experiments.json`. "
+        "Historical M2.4 results remain in `data/evaluation/results/`.", "",
         "## Configuration", "",
         f"- Dataset: `{cfg['dataset_file']}` — {cfg['dataset_size']} postings",
         f"- Index: {cfg['index_type']} ({cfg['similarity']}), {cfg['vector_count']} vectors / {cfg['chunk_count']} chunks, `{cfg['index_file']}`",
@@ -925,7 +928,11 @@ def render_markdown(report: dict[str, Any]) -> str:
               f"Highest unrelated/nonsense score {ns['unrelated_or_nonsense_top_score_max']} vs lowest genuine top-1 {ns['positive_top1_score_min']} "
               f"(ranges overlap: {ns['score_ranges_overlap']}, gap {ns['gap_between_ranges']}).",
               f"- Out-of-coverage queries reach {ns['out_of_coverage_top_score_max']}; {ns['positive_queries_below_max_offtopic_score']} of {ns['positive_query_count']} genuine queries have a best score below the best off-topic score, "
-              "so no single similarity threshold separates them.", "",
+              "so no single similarity threshold separates them.",
+              *([f"- Query-confidence flag (results are labelled, never removed): {ns['confidence']['negatives_flagged_or_suppressed']}/{ns['confidence']['negative_query_count']} "
+                 f"off-topic queries flagged (not flagged: {', '.join(ns['confidence']['negatives_not_flagged']) or 'none'}); "
+                 f"{ns['confidence']['positives_flagged_or_suppressed']}/{ns['positive_query_count']} genuine queries flagged."] if "confidence" in ns else []),
+              "",
               "## Matching", "", f"Per-job scenarios against {report['matching_scenarios']['target_job_id']} (weights {report['matching_scenarios']['weights']}):", "",
               "| Scenario | Match score | Required | Preferred | Matched required | Semantic retrieval finds target domain |", "|---|---:|---:|---:|---|---|"]
     for row in report["matching_scenarios"]["rows"]:

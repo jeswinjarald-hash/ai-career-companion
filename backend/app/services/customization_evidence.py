@@ -15,6 +15,7 @@ from app.models import CandidateProfile
 from app.schemas.customization import EvidenceRecord
 from app.services.job_matching import normalize_term
 from app.services.skill_gap_evidence import mentions_term
+from app.services.structured_resume import is_reliable_project
 
 # M1's Skills-section parser deliberately preserves every self-declared line/item
 # verbatim, including one that isn't a recognized skill/soft-skill term (see
@@ -125,8 +126,8 @@ def build_evidence_records(profile: CandidateProfile, structured_data: dict) -> 
         ))
 
     for index, project in enumerate(structured_data.get("projects", []) or []):
-        if not isinstance(project, dict):
-            continue
+        if not is_reliable_project(project):
+            continue  # a parsing fragment is never cited as project evidence
         title = str(project.get("title") or "Project").strip() or "Project"
         raw = str(project.get("raw_text") or project.get("description") or title).strip()
         if not raw:

@@ -69,8 +69,10 @@ used to:
 - track applications (status, user-entered deadlines, interview dates, notes, linked
   generated materials) and surface reminders.
 
-The system is a **deterministic + optional-LLM hybrid**. Every feature works with no LLM
-configured (`LLM_PROVIDER=none`, the default). When an OpenAI-compatible LLM is
+The system is a **deterministic + optional-LLM hybrid**. The core application workflows
+operate without an LLM (`LLM_PROVIDER=none`, the default), using deterministic logic and
+grounded fallbacks; general-purpose career questions remain limited in deterministic mode
+(limitation CV06, §26). When an OpenAI-compatible LLM is
 configured, it is used only to *rewrite* already-grounded content, its JSON output is
 schema- and evidence-validated, and any failure falls back to the deterministic result.
 
@@ -253,13 +255,25 @@ Implemented in M1 (detail: [`docs/MILESTONE_1.md`](MILESTONE_1.md)).
    required XML parts via the standard library. 10 MiB limit. Files are stored under
    `RESUME_STORAGE_DIR` (default `backend/data/resumes/`, gitignored) with generated
    names; the internal path is never returned.
-2. **Text extraction** — `POST /api/resumes/{id}/extract-text`. PDF via `pypdf`; DOCX
-   paragraphs and table rows in document order. Image-only PDFs fail explicitly (no OCR).
+2. **Text extraction** — `POST /api/resumes/{id}/extract-text`. PDF via `pypdf`; when
+   pypdf's plain output is one word per line (Google Docs / Skia exports), each page is
+   rebuilt from text-run positions in column order. DOCX: page header, body paragraphs,
+   table rows and floating text boxes, in document order. Text is normalised (bullets,
+   ligatures, invisible characters, typographic spaces). Image-only PDFs fail explicitly
+   (no OCR).
 3. **Section detection** — `POST /api/resumes/{id}/detect-sections`. Deterministic,
    alias-based headings (summary, skills, education, experience, internships, projects,
-   certifications, …).
+   certifications, languages, …). An unrecognised all-caps line becomes a custom heading
+   only when its context reads like one (no digits, not a wrapped all-caps line, not the
+   first line under another heading, followed by content).
 4. **Structured resume** — `POST /api/resumes/{id}/structure`. Deterministic extraction
-   of skills, education, experience, projects, certifications and summary into JSON.
+   of skills, education, experience, projects, certifications, languages and summary into
+   JSON, stamped with `parser_version` and `parser_warnings`. Project records that look
+   like parsing fragments stay in the stored data but are excluded from evidence by every
+   downstream service (`is_reliable_project`); the API adds a serve-time
+   `evidence_eligible` flag per project and an `outdated_parser_version` warning for
+   results produced by an older parser. The Results page can reprocess the stored file.
+   See [`RESUME_PARSING_AUDIT.md`](RESUME_PARSING_AUDIT.md).
 5. **Candidate context** — `POST /api/profiles/{profile_id}/candidate-context?resume_id=`
    combines the saved career profile with the structured resume; this is the input to all
    later services.
@@ -627,10 +641,12 @@ in the evaluation).
 ## 24. Final Evaluation Results
 
 Source: `backend/data/evaluation/m4/results/M4_3_OPTIMIZED_EVALUATION.md` and
-`m4_3_optimized_results.json` (reproduced identically in M4.4). Note: that generated
-Markdown file reuses the M4.2 report template, so its heading reads "Milestone 4.2
-Baseline Evaluation Report" and its configuration line still says "no threshold"; the
-numbers in it are the M4.3 final evaluation.
+`m4_3_optimized_results.json` (reproduced identically in M4.4). The report generator
+(`render_markdown` in `m4_evaluation.py`, called by `run_m4_evaluation.py`) titles the
+report "Milestone 4.3 Optimized Evaluation Report", and its configuration line records that
+there is no score threshold and that each result carries the query-confidence flag. The
+report was regenerated after that correction; every measured value is unchanged (only the
+timestamp and timings differ). The frozen M4.2 baseline report keeps its original title.
 
 **Retrieval (26 labelled queries)**
 
@@ -714,7 +730,9 @@ available.
    never suppressed.
 4. **No live LLM evaluation.** The automated evaluation disables live calls by design.
    LLM output quality, latency, cost and token usage were not evaluated; the LLM layer is
-   covered by fake-provider unit tests only.
+   covered by fake-provider unit tests. A manual spot check with one synthetic resume
+   (2026-10-10, see `RESUME_PARSING_AUDIT.md`) exercised the live path once; it is not an
+   evaluation.
 5. **Small evaluation set.** 26 labelled retrieval queries (rule-based labels, not human
    judgments), 12 off-topic queries, 5 synthetic candidates / 8 pairs, 16 conversation
    turns. Results describe these fixtures and are not statistically representative of
@@ -723,7 +741,9 @@ available.
    job feeds, no real application links, no deadlines in the data. Non-technology fields
    are out of coverage.
 7. **Resume parsing** is rule-based: no OCR (scanned PDFs fail explicitly), and unusual
-   layouts may extract imperfectly.
+   layouts may extract imperfectly. The position-based rebuild for word-fragmented PDFs is
+   heuristic; experience is one entry per section; results from an older parser are
+   flagged and must be reprocessed by the user (never rewritten silently).
 8. **Learning Roadmap and roadmap progress** are not implemented (the pages say so).
    Legacy tables `learning_roadmaps`, `roadmap_items`, `selected_jobs` and
    `progress_events` exist in the schema but have no active feature; they were left in
@@ -732,7 +752,8 @@ available.
 10. **No schema migrations**: `create_all` plus one ad-hoc column helper.
 11. **Single-process caches** (M4.3 E10) assume one process; multiple workers would each
     hold their own copy.
-12. **Frontend** has no automated UI tests; one pre-existing ESLint warning remains.
+12. **Frontend** has no automated UI tests (verification is manual/browser-scripted);
+    ESLint reports no warnings.
 
 ## 27. Future Enhancements
 
@@ -797,24 +818,28 @@ Key environment variables (`backend/.env.example`): `APP_ENV`, `DEBUG`, `FRONTEN
 
 ## 29. API Documentation
 
-Interactive documentation is served by FastAPI at **`/docs`** (Swagger UI) and the schema
-at **`/openapi.json`** (verified 200 in M4.4). 🔒 = requires the session cookie;
-resources owned by another user return 404.
+Interactive documentation is served by FastAPI at **`/docs`** (Swagger UI), with the API
+schema at **`/openapi.json`** (both verified to return HTTP 200 in M4.4). Groups marked
+*(session required)* need a valid session cookie: unauthenticated requests receive 401,
+and resources owned by another user return 404. `GET /health` and the read-only
+opportunity endpoints (`/api/jobs/*`) are public. In the Auth group, register and login
+are public, `GET /api/auth/me` returns 401 without a valid session, and logout clears the
+session if one exists.
 
 | Group | Method & path |
 |---|---|
 | Health | `GET /health` |
 | Auth | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout` |
-| Profile 🔒 | `POST /api/profiles`, `GET /api/profiles/{profile_id}`, `PATCH /api/profiles/{profile_id}` |
-| Resume 🔒 | `POST /api/profiles/{profile_id}/resumes`, `GET /api/profiles/{profile_id}/resumes`, `GET /api/resumes/{resume_id}`, `POST /api/resumes/{resume_id}/extract-text`, `GET /api/resumes/{resume_id}/extraction`, `POST /api/resumes/{resume_id}/detect-sections`, `GET /api/resumes/{resume_id}/sections`, `POST /api/resumes/{resume_id}/structure`, `GET /api/resumes/{resume_id}/structured` |
-| Candidate context 🔒 | `POST /api/profiles/{profile_id}/candidate-context`, `GET /api/profiles/{profile_id}/candidate-context?resume_id=` |
+| Profile (session required) | `POST /api/profiles`, `GET /api/profiles/{profile_id}`, `PATCH /api/profiles/{profile_id}` |
+| Resume (session required) | `POST /api/profiles/{profile_id}/resumes`, `GET /api/profiles/{profile_id}/resumes`, `GET /api/resumes/{resume_id}`, `POST /api/resumes/{resume_id}/extract-text`, `GET /api/resumes/{resume_id}/extraction`, `POST /api/resumes/{resume_id}/detect-sections`, `GET /api/resumes/{resume_id}/sections`, `POST /api/resumes/{resume_id}/structure`, `GET /api/resumes/{resume_id}/structured` |
+| Candidate context (session required) | `POST /api/profiles/{profile_id}/candidate-context`, `GET /api/profiles/{profile_id}/candidate-context?resume_id=` |
 | Jobs (public, read-only) | `GET /api/jobs/search?q=&top_k=` (1–20), `GET /api/jobs/{job_id}` |
-| Matching 🔒 | `GET /api/resumes/{resume_id}/job-matches` |
-| Skill gap 🔒 | `POST /api/resumes/{resume_id}/skill-gap`, `GET /api/resumes/{resume_id}/skill-gap/{job_id}` |
-| Customization 🔒 | `POST /api/resumes/{resume_id}/application-customizations`, `GET …/application-customizations`, `GET …/application-customizations/{customization_id}`, `PATCH …/{customization_id}`, `POST …/{customization_id}/regenerate`, `GET …/{customization_id}/export` |
-| Interview prep 🔒 | `POST /api/resumes/{resume_id}/interview-preparations`, `GET …/interview-preparations`, `GET …/{prep_id}`, `POST …/{prep_id}/regenerate`, `POST …/{prep_id}/mock-answer` |
-| Assistant 🔒 | `POST /api/career-assistant/conversations`, `GET /api/career-assistant/conversations`, `GET …/conversations/{conversation_id}`, `POST …/conversations/{conversation_id}/messages`, `DELETE …/conversations/{conversation_id}` |
-| Applications 🔒 | `POST /api/applications`, `GET /api/applications` (filters/sort), `GET /api/applications/summary`, `GET /api/applications/reminders?days=` (1–60), `GET /api/applications/{application_id}`, `PATCH /api/applications/{application_id}`, `DELETE /api/applications/{application_id}` |
+| Matching (session required) | `GET /api/resumes/{resume_id}/job-matches` |
+| Skill gap (session required) | `POST /api/resumes/{resume_id}/skill-gap`, `GET /api/resumes/{resume_id}/skill-gap/{job_id}` |
+| Customization (session required) | `POST /api/resumes/{resume_id}/application-customizations`, `GET …/application-customizations`, `GET …/application-customizations/{customization_id}`, `PATCH …/{customization_id}`, `POST …/{customization_id}/regenerate`, `GET …/{customization_id}/export` |
+| Interview prep (session required) | `POST /api/resumes/{resume_id}/interview-preparations`, `GET …/interview-preparations`, `GET …/{prep_id}`, `POST …/{prep_id}/regenerate`, `POST …/{prep_id}/mock-answer` |
+| Assistant (session required) | `POST /api/career-assistant/conversations`, `GET /api/career-assistant/conversations`, `GET …/conversations/{conversation_id}`, `POST …/conversations/{conversation_id}/messages`, `DELETE …/conversations/{conversation_id}` |
+| Applications (session required) | `POST /api/applications`, `GET /api/applications` (filters/sort), `GET /api/applications/summary`, `GET /api/applications/reminders?days=` (1–60), `GET /api/applications/{application_id}`, `PATCH /api/applications/{application_id}`, `DELETE /api/applications/{application_id}` |
 
 ### Database
 

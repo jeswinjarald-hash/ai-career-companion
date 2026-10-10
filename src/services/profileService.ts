@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config/api'
+import { apiFetch } from '../config/api'
 
 export type CandidateProfile = {
   id: number
@@ -47,9 +47,8 @@ const errorMessage = (status: number, body: unknown): string => {
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
   let response: Response
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await apiFetch(path, {
       ...options,
-      credentials: 'include',
       headers: { 'Content-Type': 'application/json', ...(options?.headers ?? {}) },
     })
   } catch {

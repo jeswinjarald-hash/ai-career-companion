@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-05T08:20:31+00:00",
+  "generated_at": "2026-10-10T05:00:46+00:00",
   "evaluation_version": "m4.2-1",
   "llm_mode": "null provider (deterministic pipeline only)",
   "configuration": {
@@ -12,7 +12,7 @@
     "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
     "embedding_dimension": 384,
     "index_file": "data/vector_store/internship_jobs.faiss",
-    "retrieval": "all chunks searched; per-job score = best chunk + 0.05 x sum(other chunks); no threshold"
+    "retrieval": "all chunks searched; per-job score = best chunk + 0.05 x sum(other chunks); no score threshold (results are never suppressed); each result carries a query-coverage confidence flag (M4.3 E6)"
   },
   "case_counts": {
     "positive_queries": 26,
@@ -121,7 +121,7 @@
             "ndcg": 0.8928648548355779
           }
         },
-        "latency_ms": 240.1
+        "latency_ms": 466.0
       },
       {
         "query_id": "RP02",
@@ -205,7 +205,7 @@
             "ndcg": 0.9293164617616921
           }
         },
-        "latency_ms": 14.0
+        "latency_ms": 17.1
       },
       {
         "query_id": "RP03",
@@ -289,7 +289,7 @@
             "ndcg": 0.9909331158293706
           }
         },
-        "latency_ms": 13.7
+        "latency_ms": 17.2
       },
       {
         "query_id": "RP04",
@@ -373,7 +373,7 @@
             "ndcg": 0.8922097294981223
           }
         },
-        "latency_ms": 13.4
+        "latency_ms": 16.7
       },
       {
         "query_id": "RP05",
@@ -457,7 +457,7 @@
             "ndcg": 1.0
           }
         },
-        "latency_ms": 13.7
+        "latency_ms": 17.6
       },
       {
         "query_id": "RP06",
@@ -541,7 +541,7 @@
             "ndcg": 1.0
           }
         },
-        "latency_ms": 13.4
+        "latency_ms": 16.4
       },
       {
         "query_id": "RP07",
@@ -625,7 +625,7 @@
             "ndcg": 1.0
           }
         },
-        "latency_ms": 13.0
+        "latency_ms": 18.1
       },
       {
         "query_id": "RP08",
@@ -709,7 +709,7 @@
             "ndcg": 0.9320106871872138
           }
         },
-        "latency_ms": 13.4
+        "latency_ms": 17.7
       },
       {
         "query_id": "RP09",
@@ -793,7 +793,7 @@
             "ndcg": 1.0
           }
         },
-        "latency_ms": 13.7
+        "latency_ms": 18.7
       },
       {
         "query_id": "RP10",
@@ -877,7 +877,7 @@
             "ndcg": 1.0
           }
         },
-        "latency_ms": 11.1
+        "latency_ms": 18.0
       },
       {
         "query_id": "RP11",
@@ -961,7 +961,7 @@
             "ndcg": 0.7418141202042935
           }
         },
-        "latency_ms": 12.5
+        "latency_ms": 17.6
       },
       {
         "query_id": "RP12",
@@ -1045,7 +1045,7 @@
             "ndcg": 0.8435709478958121
           }
         },
-        "latency_ms": 13.9
+        "latency_ms": 17.7
       },
       {
         "query_id": "RP13",
@@ -1129,7 +1129,7 @@
             "ndcg": 1.0
           }
         },
-        "latency_ms": 13.7
+        "latency_ms": 18.2
       },
       {
         "query_id": "RP14",
@@ -1213,7 +1213,7 @@
             "ndcg": 1.0
           }
         },
-        "latency_ms": 13.7
+        "latency_ms": 19.0
       },
       {
         "query_id": "RP15",
@@ -1297,7 +1297,7 @@
             "ndcg": 1.0
           }
         },
-        "latency_ms": 12.7
+        "latency_ms": 17.9
       },
       {
         "query_id": "RP16",
@@ -1381,7 +1381,7 @@
             "ndcg": 1.0
           }
         },
-        "latency_ms": 13.6
+        "latency_ms": 17.5
       },
       {
         "query_id": "RP17",
@@ -1465,7 +1465,7 @@
             "ndcg": 0.8546763799752427
           }
         },
-        "latency_ms": 13.7
+        "latency_ms": 15.5
       },
       {
         "query_id": "RP18",
@@ -1549,7 +1549,7 @@
             "ndcg": 0.97009706782442
           }
         },
-        "latency_ms": 13.3
+        "latency_ms": 11.6
       },
       {
         "query_id": "RP19",
@@ -1633,7 +1633,7 @@
             "ndcg": 1.0
           }
         },
-        "latency_ms": 13.9
+        "latency_ms": 11.9
       },
       {
         "query_id": "RP20",
@@ -1717,7 +1717,7 @@
             "ndcg": 1.0
           }
         },
-        "latency_ms": 14.2
+        "latency_ms": 11.8
       },
       {
         "query_id": "RP21",
@@ -1801,7 +1801,7 @@
             "ndcg": 1.0
           }
         },
-        "latency_ms": 14.0
+        "latency_ms": 13.2
       },
       {
         "query_id": "RP22",
@@ -1885,7 +1885,7 @@
             "ndcg": 0.9575861412006988
           }
         },
-        "latency_ms": 14.0
+        "latency_ms": 12.8
       },
       {
         "query_id": "RP23",
@@ -1969,7 +1969,7 @@
             "ndcg": 0.6662360103340771
           }
         },
-        "latency_ms": 13.5
+        "latency_ms": 15.8
       },
       {
         "query_id": "RP24",
@@ -2053,7 +2053,7 @@
             "ndcg": 0.9455636957344249
           }
         },
-        "latency_ms": 14.2
+        "latency_ms": 17.1
       },
       {
         "query_id": "RP25",
@@ -2137,7 +2137,7 @@
             "ndcg": 0.7913279175072486
           }
         },
-        "latency_ms": 15.5
+        "latency_ms": 16.9
       },
       {
         "query_id": "RP26",
@@ -2221,7 +2221,7 @@
             "ndcg": 0.9871983103990514
           }
         },
-        "latency_ms": 19.4
+        "latency_ms": 17.2
       }
     ],
     "summary": {
@@ -2287,8 +2287,8 @@
       ],
       "flagged_unsupported_area": [],
       "latency_ms": {
-        "median": 13.7,
-        "max": 240.1
+        "median": 17.2,
+        "max": 466.0
       }
     },
     "weak_cases": []
@@ -2316,7 +2316,7 @@
         ],
         "above_weakest_positive_top1": false,
         "query_confidence": "unsupported_area",
-        "latency_ms": 10.9
+        "latency_ms": 17.6
       },
       {
         "query_id": "RN02",
@@ -2339,7 +2339,7 @@
         ],
         "above_weakest_positive_top1": false,
         "query_confidence": "unsupported_area",
-        "latency_ms": 10.8
+        "latency_ms": 17.0
       },
       {
         "query_id": "RN03",
@@ -2362,7 +2362,7 @@
         ],
         "above_weakest_positive_top1": false,
         "query_confidence": "unsupported_area",
-        "latency_ms": 9.3
+        "latency_ms": 16.4
       },
       {
         "query_id": "RN04",
@@ -2385,7 +2385,7 @@
         ],
         "above_weakest_positive_top1": false,
         "query_confidence": "unsupported_area",
-        "latency_ms": 12.9
+        "latency_ms": 17.0
       },
       {
         "query_id": "RN05",
@@ -2408,7 +2408,7 @@
         ],
         "above_weakest_positive_top1": false,
         "query_confidence": "unsupported_area",
-        "latency_ms": 14.6
+        "latency_ms": 14.5
       },
       {
         "query_id": "RN06",
@@ -2431,7 +2431,7 @@
         ],
         "above_weakest_positive_top1": false,
         "query_confidence": "unsupported_area",
-        "latency_ms": 14.7
+        "latency_ms": 11.9
       },
       {
         "query_id": "RN07",
@@ -2454,7 +2454,7 @@
         ],
         "above_weakest_positive_top1": true,
         "query_confidence": "unsupported_area",
-        "latency_ms": 13.8
+        "latency_ms": 11.2
       },
       {
         "query_id": "RN08",
@@ -2477,7 +2477,7 @@
         ],
         "above_weakest_positive_top1": false,
         "query_confidence": "unsupported_area",
-        "latency_ms": 13.8
+        "latency_ms": 12.2
       },
       {
         "query_id": "RN09",
@@ -2500,7 +2500,7 @@
         ],
         "above_weakest_positive_top1": false,
         "query_confidence": "unsupported_area",
-        "latency_ms": 14.3
+        "latency_ms": 13.0
       },
       {
         "query_id": "RO01",
@@ -2523,7 +2523,7 @@
         ],
         "above_weakest_positive_top1": true,
         "query_confidence": "confident",
-        "latency_ms": 12.7
+        "latency_ms": 16.9
       },
       {
         "query_id": "RO02",
@@ -2546,7 +2546,7 @@
         ],
         "above_weakest_positive_top1": true,
         "query_confidence": "unsupported_area",
-        "latency_ms": 13.3
+        "latency_ms": 16.4
       },
       {
         "query_id": "RO03",
@@ -2569,7 +2569,7 @@
         ],
         "above_weakest_positive_top1": true,
         "query_confidence": "unsupported_area",
-        "latency_ms": 15.5
+        "latency_ms": 16.5
       }
     ],
     "summary": {
@@ -2648,7 +2648,7 @@
           "Python Backend"
         ],
         "semantic_target_domain_in_top5": true,
-        "latency_ms": 14.6
+        "latency_ms": 29.4
       },
       {
         "scenario_id": "B_preferred_strong",
@@ -2680,7 +2680,7 @@
           "Python Backend"
         ],
         "semantic_target_domain_in_top5": true,
-        "latency_ms": 15.5
+        "latency_ms": 13.8
       },
       {
         "scenario_id": "C_semantic_not_exact",
@@ -2705,7 +2705,7 @@
           "Database / SQL"
         ],
         "semantic_target_domain_in_top5": true,
-        "latency_ms": 11.6
+        "latency_ms": 13.2
       },
       {
         "scenario_id": "D_unsuitable",
@@ -2730,7 +2730,7 @@
           "Generative AI / NLP"
         ],
         "semantic_target_domain_in_top5": false,
-        "latency_ms": 9.9
+        "latency_ms": 12.6
       }
     ],
     "desired_properties": [
@@ -3385,5 +3385,5 @@
       "expected_domain_hit_rate": 1.0
     }
   },
-  "runtime_seconds": 2.2
+  "runtime_seconds": 3.2
 }

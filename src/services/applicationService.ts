@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config/api'
+import { apiDetailMessage, apiFetch } from '../config/api'
 
 // Mirrors backend/app/schemas/application.py — keep the two in sync.
 export type ApplicationStatus =
@@ -112,32 +112,11 @@ export class ApplicationApiError extends Error {
   }
 }
 
-// FastAPI returns a string `detail` for HTTPExceptions but a list of Pydantic error
-// objects for 422 validation failures — turn the latter into readable text instead
-// of showing raw JSON.
-const detailMessage = (body: unknown, fallback: string): string => {
-  if (!body || typeof body !== 'object' || !('detail' in body)) return fallback
-  const detail = (body as { detail: unknown }).detail
-  if (typeof detail === 'string') return detail
-  if (Array.isArray(detail)) {
-    const messages = detail.map((item) => {
-      if (!item || typeof item !== 'object') return ''
-      const { msg, loc } = item as { msg?: unknown; loc?: unknown }
-      const field = Array.isArray(loc) ? loc.filter((part) => part !== 'body' && part !== 'query' && typeof part === 'string').join('.') : ''
-      const text = typeof msg === 'string' ? msg.replace(/^Value error, /, '') : ''
-      return field && text ? `${field.replace(/_/g, ' ')}: ${text}` : text
-    }).filter(Boolean)
-    if (messages.length > 0) return messages.join(' ')
-  }
-  return fallback
-}
-
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
   let response: Response
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await apiFetch(path, {
       ...options,
-      credentials: 'include',
       headers: { 'Content-Type': 'application/json', ...(options?.headers ?? {}) },
     })
   } catch {
@@ -145,7 +124,7 @@ const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
   }
   if (response.status === 204) return undefined as T
   const body = await response.json().catch(() => null)
-  if (!response.ok) throw new ApplicationApiError(response.status, detailMessage(body, 'We could not complete that request.'))
+  if (!response.ok) throw new ApplicationApiError(response.status, apiDetailMessage(body, 'We could not complete that request.', response.status))
   return body as T
 }
 

@@ -76,6 +76,20 @@ def cors_origin_regex_for_env(app_env: str) -> str | None:
     return LOCAL_DEV_ORIGIN_REGEX if app_env == "development" else None
 
 
+@app.middleware("http")
+async def unhandled_exception_middleware(request: Request, call_next):
+    # Registered before CORSMiddleware, so it runs *inside* it: an unexpected error
+    # becomes a 500 that still carries CORS headers. Starlette's own
+    # exception_handler(Exception) runs outside CORS, so the browser blocked that
+    # 500 and the frontend could only report "We couldn't connect ..." — a server
+    # failure disguised as a network failure, with nothing logged.
+    try:
+        return await call_next(request)
+    except Exception:
+        logger.exception("unhandled_request_error method=%s path=%s", request.method, request.url.path)
+        return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_url],

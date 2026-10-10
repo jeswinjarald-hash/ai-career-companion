@@ -30,6 +30,7 @@ from app.services.m4_evaluation import (  # noqa: E402
 
 JSON_NAME = "m4_3_optimized_results.json"
 MARKDOWN_NAME = "M4_3_OPTIMIZED_EVALUATION.md"
+REPORT_TITLE = "Milestone 4.3 Optimized Evaluation Report"
 
 
 def main() -> None:
@@ -43,7 +44,7 @@ def main() -> None:
         if name in FROZEN_BASELINE_NAMES:
             raise SystemExit(f"Refusing to overwrite frozen baseline file {name}.")
     (args.output_dir / JSON_NAME).write_text(json.dumps(report, indent=2, default=str) + "\n", encoding="utf-8")
-    (args.output_dir / MARKDOWN_NAME).write_text(render_markdown(report), encoding="utf-8")
+    (args.output_dir / MARKDOWN_NAME).write_text(render_markdown(report, REPORT_TITLE), encoding="utf-8")
 
     baseline = json.loads((RESULTS_DIR / "m4_2_baseline_results.json").read_text(encoding="utf-8"))
     print(json.dumps({"results": str(args.output_dir), "current": key_metrics(report),

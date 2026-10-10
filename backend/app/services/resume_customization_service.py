@@ -24,6 +24,7 @@ import logging
 from datetime import datetime, timezone
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -49,15 +50,18 @@ from app.services.cover_letter_service import build_cover_letter
 from app.services.customization_evidence import build_evidence_records, is_category_label, join_terms, relevance_score, short_education_phrase, summarize_clause
 from app.services.customization_keywords import classify_job_keywords, partial_terms, supported_terms, unsupported_terms
 from app.services.customization_llm import LLMRewriteResponse, rewrite_with_llm
-from app.services.customization_validator import build_validation_result, validate_cover_letter, validate_summary
+from app.services.customization_validator import build_evidence_corpus, build_validation_result, check_fabrication, validate_cover_letter, validate_summary
 from app.services.job_dataset_service import load_job_postings
 from app.services.job_matching import normalize_term
 from app.services.llm_provider import LLMProvider, get_llm_provider
 from app.services.skill_gap_evidence import mentions_term
+from app.services.structured_resume import effective_parser_warnings, excluded_projects_sentence
+from app.services.structured_resume import is_reliable_project
 
 logger = logging.getLogger(__name__)
 
 MIN_EVIDENCE_RECORDS = 3
+_VERSION_RETRIES = 5
 
 
 class CustomizationError(Exception):
@@ -161,6 +165,7 @@ def _build_tailored_resume(
     scored_projects = [
         (index, project, relevance_score(str(project.get("raw_text") or project.get("description") or ""), project.get("technologies", []) or [], supported, partial))
         for index, project in enumerate(projects_raw)
+        if is_reliable_project(project)
     ]
     scored_projects.sort(key=lambda item: (-item[2], item[0]))
     projects: list[TailoredProject] = []
@@ -209,10 +214,10 @@ def _build_tailored_resume(
 
 
 def _parser_warning_notice(structured_data: dict) -> str | None:
-    warnings = structured_data.get("parser_warnings") or []
+    warnings = effective_parser_warnings(structured_data)
     if not warnings:
         return None
-    return "Resume structure contains parsing warnings. Review extracted profile before customization."
+    return "Resume structure contains parsing warnings. Review extracted profile before customization." + excluded_projects_sentence(structured_data)
 
 
 def _backfill_evidence_ids(
@@ -330,9 +335,10 @@ def generate_customization(
     # bypassed just because the LLM path claims to have already checked itself.
     # Naming the target opportunity is not a skill claim (M4.3 Experiment 5).
     opportunity_names = (job.job_title, job.company)
-    validated_summary, summary_warnings, summary_removed = validate_summary(tailored_resume.summary, unsupported, opportunity_names)
+    corpus = build_evidence_corpus(evidence_records, job)
+    validated_summary, summary_warnings, summary_removed = validate_summary(tailored_resume.summary, unsupported, opportunity_names, corpus)
     tailored_resume.summary = validated_summary
-    validated_letter, letter_warnings, letter_removed = validate_cover_letter(cover_letter_sentences, unsupported, opportunity_names)
+    validated_letter, letter_warnings, letter_removed = validate_cover_letter(cover_letter_sentences, unsupported, opportunity_names, corpus)
     validation = build_validation_result(summary_warnings, summary_removed, letter_warnings, letter_removed, parser_notice)
 
     cover_letter_text = "\n\n".join(sentence.text for sentence in validated_letter)
@@ -359,8 +365,21 @@ def generate_customization(
         user_id=user_id, resume_id=resume_id, job_id=job.job_id, version=version, status=status,
         source_resume_updated_at=_as_utc(structured.updated_at), data=payload,
     )
-    db.add(record)
-    db.commit()
+    for attempt in range(_VERSION_RETRIES):
+        db.add(record)
+        try:
+            db.commit()
+            break
+        except IntegrityError:
+            # A concurrent request for the same resume/opportunity (e.g. a double
+            # submission) took this version number first; take the next one rather
+            # than failing with a 500.
+            db.rollback()
+            if attempt == _VERSION_RETRIES - 1:
+                raise
+            record.version = (db.scalar(select(func.max(ApplicationCustomizationRecord.version)).where(
+                ApplicationCustomizationRecord.resume_id == resume_id, ApplicationCustomizationRecord.job_id == job.job_id,
+            )) or 0) + 1
     db.refresh(record)
 
     logger.info(
@@ -429,6 +448,48 @@ def list_customizations(db: Session, resume_id: int, job_id: str | None) -> list
     return summaries
 
 
+def _revalidate_after_edits(job_id: str, data: dict) -> dict:
+    """Re-runs the evidence checks over the text as edited, so the stored grounding
+    status always describes the text actually shown. Edited text is the student's own
+    and is never removed — unsupported claims in it are reported as warnings."""
+    previous = ValidationResult.model_validate(data.get("validation", {"passed": True, "warnings": [], "removed_claims": []}))
+    edit_prefix = "Edited text: "
+    warnings = [w for w in previous.warnings if not w.startswith(edit_prefix)]
+    evidence = [EvidenceRecord.model_validate(e) for e in data.get("evidence", [])]
+    classifications = [KeywordClassification.model_validate(c) for c in data.get("keyword_classification", [])]
+    try:
+        job = _get_job(job_id)
+    except LookupError:
+        job = None
+    corpus = build_evidence_corpus(evidence, job)
+    allowed = (data.get("job_title", ""), data.get("company", ""))
+    unsupported = unsupported_terms(classifications)
+    edited_texts = [("summary", str(data.get("tailored_resume", {}).get("summary") or ""))]
+    edited_texts += [("cover letter", paragraph) for paragraph in str(data.get("cover_letter_text") or "").split("\n\n")]
+    for section in ("projects", "experience", "internships"):
+        for item in data.get("tailored_resume", {}).get(section) or []:
+            if isinstance(item, dict):
+                edited_texts.append((section, str(item.get("tailored_text") or "")))
+    edited_fields = set((data.get("user_edits") or {}).get("edited_fields") or [])
+    edit_issues = []
+    for label, text in edited_texts:
+        if not text.strip():
+            continue
+        if not edited_fields:
+            break
+        hit = check_fabrication(text, unsupported, allowed, corpus)
+        if hit:
+            edit_issues.append(f'{edit_prefix}{label} "{text[:160]}" {hit}.')
+    # Same rule generation uses (build_validation_result), recomputed so a corrected
+    # edit clears an earlier edit warning.
+    generated_passed = not previous.removed_claims and not data.get("parser_warning_notice")
+    return json.loads(ValidationResult(
+        passed=generated_passed and not edit_issues,
+        warnings=warnings + edit_issues,
+        removed_claims=previous.removed_claims,
+    ).model_dump_json())
+
+
 def apply_user_edits(db: Session, resume_id: int, customization_id: int, payload: ApplicationCustomizationEditPayload) -> ApplicationCustomization | None:
     record = db.get(ApplicationCustomizationRecord, customization_id)
     if record is None or record.resume_id != resume_id:
@@ -463,6 +524,8 @@ def apply_user_edits(db: Session, resume_id: int, customization_id: int, payload
 
     user_edits["edited_fields"] = sorted(edited_fields)
     data["user_edits"] = user_edits
+    data["validation"] = _revalidate_after_edits(record.job_id, data)
+    record.status = "ready" if data["validation"]["passed"] else "validation_warning"
     record.data = data
     db.add(record)
     db.commit()

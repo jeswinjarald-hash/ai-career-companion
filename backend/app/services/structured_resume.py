@@ -6,8 +6,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Resume, ResumeSection, StructuredResume
+from app.services.pdf_extraction import is_word_fragmented
 
 logger = logging.getLogger(__name__)
+
+# Bumped whenever a parser change can alter already-persisted structured output, so a
+# resume structured by an older parser can be identified (and its results flagged)
+# instead of being silently presented as current. Version 1 was never stamped.
+PARSER_VERSION = 4
 
 SKILL_ALIASES = {
     "js": "JavaScript", "javascript": "JavaScript", "ts": "TypeScript", "typescript": "TypeScript",
@@ -71,7 +77,13 @@ def _explicit_skill_items(text: str) -> list[str]:
     """
     items: list[str] = []
     seen: set[str] = set()
+    lines: list[str] = []
     for raw_line in text.splitlines():
+        if raw_line.strip().startswith("(") and lines:
+            lines[-1] = f"{lines[-1]} {raw_line.strip()}"
+        elif raw_line.strip():
+            lines.append(raw_line.strip())
+    for raw_line in lines:
         for fragment in raw_line.split(","):
             candidate = _strip_bullet_prefix(fragment.strip()).strip()
             if not candidate or not _is_meaningful_entry(candidate):
@@ -120,8 +132,14 @@ def _line_entries(sections: list[ResumeSection], names: set[str]) -> list[dict]:
     for section in sections:
         if section.name not in names:
             continue
-        for raw_line in section.content.splitlines():
-            line = _strip_bullet_prefix(raw_line.strip()).strip()
+        blocks = _split_into_blank_line_blocks(section.content)
+        if len(blocks) > 1:
+            # Blank lines separate the items, so a single item wrapped over several
+            # lines ("NPTEL CERTIFIED IN JAVA" / "PROGRAMME") stays one entry.
+            items = [" ".join(_strip_bullet_prefix(line.strip()).strip() for line in block.splitlines() if line.strip()) for block in blocks]
+        else:
+            items = [_strip_bullet_prefix(raw_line.strip()).strip() for raw_line in section.content.splitlines()]
+        for line in items:
             if _is_meaningful_entry(line):
                 entries.append({"raw_text": line})
     return entries
@@ -198,6 +216,16 @@ def _starts_lowercase(text: str) -> bool:
     return first_letter is not None and first_letter.islower()
 
 
+_DANGLING_CONNECTORS = {"using", "with", "and", "or", "of", "in", "for", "to", "on", "by", "via", "the", "a", "an"}
+
+
+def _ends_with_connector(text: str) -> bool:
+    """"E-commerce Management — Built using" / "Html,Css,Javascript,React": a line
+    that stops on a connector word is unfinished, whatever the next line's case."""
+    words = text.strip().split()
+    return bool(words) and words[-1].casefold() in _DANGLING_CONNECTORS
+
+
 def _reflow_lines(raw_lines: list[str]) -> list[tuple[str, bool]]:
     """Rejoins PDF line-wrap fragments into logical lines before grouping.
 
@@ -221,11 +249,18 @@ def _reflow_lines(raw_lines: list[str]) -> list[tuple[str, bool]]:
             continue
         starts_new_segment = _is_bullet_or_indented(raw_line)
         stripped = raw_line.strip()
+        # A previous line ending in a comma is an unfinished list/clause whatever the
+        # case of the next line ("...using HTML, CSS," / "JavaScript, Node.js and
+        # MongoDB."), so it continues too.
         is_continuation = (
             logical_parts
             and not starts_new_segment
             and not _ends_with_terminal_punctuation(logical_parts[-1][-1])
-            and _starts_lowercase(stripped)
+            and (
+                _starts_lowercase(stripped)
+                or logical_parts[-1][-1].rstrip().endswith((",", "—", "–", "-", "&"))
+                or _ends_with_connector(logical_parts[-1][-1])
+            )
         )
         if is_continuation:
             logical_parts[-1].append(stripped)
@@ -298,6 +333,9 @@ def _looks_like_tech_annotation(tail: str) -> bool:
     phrase like "Machine Learning Project" (a recognized term buried in a longer
     noun phrase, not a list) from being misread as an annotation.
     """
+    # "Built using React" / "Developed with Flutter": the lead-in phrase carries no
+    # information about whether what follows is a technology list.
+    tail = _ANNOTATION_LEAD_IN.sub("", tail).strip()
     words = tail.split()
     if not words or len(words) > _TITLE_ANNOTATION_MAX_WORDS:
         return False
@@ -345,6 +383,68 @@ _TITLE_CONTINUATION_STARTS = {
 
 
 _PROJECT_TITLE_MAX_WORDS = 9
+_LIST_CONTINUATION_ENDINGS = (",", ";", "&", "/", "|", "+")
+_TECH_LIST_SEPARATORS = re.compile(r"[,/|&+;()\[\]]|\band\b", re.I)
+
+
+def _is_technology_only(text: str) -> bool:
+    """True when a line is nothing but recognized technology names and list
+    separators ("HTML,", "JavaScript", "Node, Express and MongoDB") — a tech list
+    fragment, never a project name, however it was capitalized."""
+    if not _skills(text):
+        return False
+    remainder = text.casefold()
+    for alias in sorted([*SKILL_ALIASES, *_ANNOTATION_ONLY_ALIASES], key=len, reverse=True):
+        remainder = re.sub(r"(?<![\w+#])" + re.escape(alias) + r"(?![\w+#])", " ", remainder)
+    remainder = _TECH_LIST_SEPARATORS.sub(" ", remainder)
+    return not any(character.isalpha() for character in remainder)
+
+
+# Prose openers that never start a project's *name* (unlike "Design ..." or
+# "Build ..." which can), whatever the title's length.
+_FRAGMENT_TITLE_STARTS = {"using", "used", "built", "developed", "designed", "created", "implemented", "and", "or", "with", "via"}
+
+
+def is_plausible_project_title(title: str) -> bool:
+    """Final sanity check on an already-segmented project's title, shared with
+    downstream consumers (e.g. interview preparation) so a parsing fragment such as
+    "using", "Built" or "HTML," is never presented as a project in its own right."""
+    stripped = title.strip()
+    if len(stripped) < 3 or not any(character.isalpha() for character in stripped):
+        return False
+    first_alpha = next(character for character in stripped if character.isalpha())
+    if first_alpha.islower() or stripped.endswith(_LIST_CONTINUATION_ENDINGS):
+        return False
+    words = stripped.split()
+    first_word = re.sub(r"[^a-zA-Z]", "", words[0]).casefold()
+    if len(words) == 1 and first_word in _TITLE_CONTINUATION_STARTS:
+        return False
+    if first_word in _FRAGMENT_TITLE_STARTS:
+        return False
+    if _ends_with_connector(stripped):
+        return False
+    return not _is_technology_only(stripped)
+
+
+def is_reliable_project(project: dict) -> bool:
+    """Whether a structured project record may be used as evidence downstream
+    (matching, skill gap, customization, interview prep, assistant).
+
+    A record whose title is a parsing fragment — or a lone word with no description
+    and no technology ("Society", "Finance", "Management" split off one title) — is
+    kept in the structured data (source evidence is never deleted) but must not be
+    presented or reasoned about as a project. A multi-word, title-only entry
+    ("Career Companion API") is a legitimate way to list a project and is kept.
+    """
+    if not isinstance(project, dict):
+        return False
+    title = str(project.get("title") or "").strip()
+    has_content = bool(str(project.get("description") or "").strip() or project.get("technologies"))
+    if not title:
+        return has_content
+    if not is_plausible_project_title(title):
+        return False
+    return has_content or len(title.split()) > 1
 
 
 def _looks_like_project_title(line: str) -> bool:
@@ -370,9 +470,13 @@ def _looks_like_project_title(line: str) -> bool:
         return False  # a lowercase-led line is virtually always a sentence continuation
     if _ends_with_terminal_punctuation(stripped):
         return False  # a completed sentence, not a title
+    if stripped.endswith(_LIST_CONTINUATION_ENDINGS):
+        return False  # an unfinished list/clause ("HTML,") continues onto the next line
     first_word = re.sub(r"[^a-zA-Z]", "", words[0]).casefold()
     if first_word in _TITLE_CONTINUATION_STARTS:
         return False
+    if _is_technology_only(stripped):
+        return False  # a bare technology name/list is a tech-stack fragment, not a project
     return True
 
 
@@ -388,6 +492,11 @@ def _split_into_blank_line_blocks(content: str) -> list[str]:
     blocks = re.split(r"\n[ \t]*\n", content)
     return [block for block in blocks if block.strip()]
 
+
+# Short forms that are unambiguous only inside an explicit tech annotation ("Built
+# using Node, Express and MongoDB"); in free prose "node" or "mongo" may mean
+# something else, so they are deliberately not part of SKILL_ALIASES.
+_ANNOTATION_ONLY_ALIASES = {"node": "Node.js", "mongo": "MongoDB", "express.js": "Express", "expressjs": "Express"}
 
 _ANNOTATION_LEAD_IN = re.compile(r"(?i)^(?:built|developed|created|designed|implemented)?\s*(?:using|with)\s+")
 
@@ -411,11 +520,11 @@ def _annotation_terms(annotation: str) -> list[str]:
     terms: list[str] = []
     seen: set[str] = set()
     for segment in segments:
-        cleaned = _ANNOTATION_LEAD_IN.sub("", segment).strip()
+        cleaned = _ANNOTATION_LEAD_IN.sub("", segment).strip(" \t.,;:")
         if not cleaned or not _is_meaningful_entry(cleaned):
             continue
         recognized = _skills(cleaned)
-        value = recognized[0] if recognized else cleaned
+        value = recognized[0] if recognized else _ANNOTATION_ONLY_ALIASES.get(cleaned.casefold(), cleaned)
         key = value.casefold()
         if key not in seen:
             seen.add(key)
@@ -426,7 +535,20 @@ def _annotation_terms(annotation: str) -> list[str]:
 def _new_project(line: str) -> dict:
     title, annotation = _split_title_and_annotation(line)
     technologies = _annotation_terms(annotation) if annotation else []
+    # A dangling delimiter ("Society Finance Management —" with its tech annotation
+    # wrapped onto the next line) is layout residue, not part of the name.
+    title = title.strip().rstrip(" -–—|:,;").strip() or title.strip()
     return {"title": title, "description": "", "technologies": technologies, "raw_text": title}
+
+
+def _add_technologies(project: dict, terms: list[str]) -> None:
+    # Merge, never replace: a later tech-stack line must not erase technologies
+    # already taken from the title's inline annotation.
+    known = {term.casefold() for term in project["technologies"]}
+    for term in terms:
+        if term.casefold() not in known:
+            known.add(term.casefold())
+            project["technologies"].append(term)
 
 
 def _group_project_block(lines: list[tuple[str, bool]]) -> list[dict]:
@@ -463,7 +585,7 @@ def _group_project_block(lines: list[tuple[str, bool]]) -> list[dict]:
         # An explicit label ("Technologies:", "Tech Stack:", ...) is unambiguous even
         # on an indented/bulleted line — handle it before anything else.
         if is_labeled_tech_line:
-            current["technologies"] = _technology_terms(line) or current["technologies"]
+            _add_technologies(current, _technology_terms(line) or [])
             continue
         if indented:
             description_lines.append(_strip_bullet_prefix(line))
@@ -489,7 +611,11 @@ def _group_project_block(lines: list[tuple[str, bool]]) -> list[dict]:
         # tech-stack line, and must stay part of the description; that case is
         # already excluded here because it's indented.
         if technologies is not None:
-            current["technologies"] = technologies
+            _add_technologies(current, technologies)
+            continue
+        if _is_technology_only(line):
+            # A lone tech fragment ("JavaScript", "HTML,") left by layout wrapping.
+            _add_technologies(current, _skills(line))
             continue
         if _looks_like_project_title(line):
             finalize()
@@ -531,12 +657,38 @@ def _merge_content_less_fragments(projects: list[dict]) -> list[dict]:
     return merged
 
 
+def _block_starts_new_project(block: str) -> bool:
+    """Whether a blank-line-separated block opens a new project.
+
+    A blank line is a strong boundary signal but not an infallible one: DOCX resumes
+    authored with an empty paragraph after every visual line, and PDF page breaks
+    (pages are joined with a blank line), both insert blank lines *inside* a single
+    project. Treating every block's first line as a title unconditionally is what
+    turned fragments like "Built", "using Node, Express", "and MongoDB" or "HTML,"
+    into separate "projects". A block opens a new project only when its first line
+    reads as a title; otherwise it continues the previous block.
+    """
+    first_line = next((line for line in block.splitlines() if line.strip()), "")
+    if not first_line or _is_bullet_or_indented(first_line):
+        return False
+    if _TECH_LABEL_PATTERN.match(first_line.strip()):
+        return False
+    title, _annotation = _split_title_and_annotation(first_line.strip())
+    return _looks_like_project_title(title)
+
+
 def _projects(sections: list[ResumeSection]) -> list[dict]:
     projects = []
     for section in sections:
         if section.name != "projects":
             continue
+        blocks: list[str] = []
         for block in _split_into_blank_line_blocks(section.content):
+            if blocks and not _block_starts_new_project(block):
+                blocks[-1] = f"{blocks[-1]}\n{block}"
+            else:
+                blocks.append(block)
+        for block in blocks:
             projects.extend(_group_project_block(_reflow_lines(block.splitlines())))
     return projects
 
@@ -617,6 +769,12 @@ def _parser_warnings(data: dict) -> list[str]:
     """
     warnings: list[str] = []
 
+    section_text = "\n".join(str(section.get("content", "")) for section in data.get("sections", []))
+    if is_word_fragmented(section_text):
+        # The text itself was extracted one word per line (e.g. by an older
+        # extractor), so every structure built from it is unreliable.
+        warnings.append("word_fragmented_text: the extracted resume text has one word per line; re-run text extraction.")
+
     projects = data.get("projects", [])
     if len(projects) > _PROJECT_COUNT_WARNING_THRESHOLD:
         warnings.append(f"suspicious_project_count: {len(projects)} projects found on one resume; output may be fragmented.")
@@ -626,6 +784,9 @@ def _parser_warnings(data: dict) -> list[str]:
     stopword_titles = [p["title"] for p in projects if p["title"].strip().casefold() in _COMMON_STOPWORDS]
     if stopword_titles:
         warnings.append(f"suspicious_stopword_project_titles: {stopword_titles}")
+    fragment_titles = [p["title"] for p in projects if not is_reliable_project(p) and p["title"] not in stopword_titles]
+    if fragment_titles:
+        warnings.append(f"fragmented_project_titles: {fragment_titles}")
 
     skills = data.get("skills", [])
     if len(skills) > _SKILLS_COUNT_WARNING_THRESHOLD:
@@ -646,6 +807,32 @@ def _parser_warnings(data: dict) -> list[str]:
             warnings.append(f"truncated_education_entry: {raw_text!r}")
 
     return warnings
+
+
+OUTDATED_PARSER_WARNING = (
+    "outdated_parser_version: this resume was structured by an earlier parser version; "
+    "reprocess it (Resume Analyzer → Reprocess this resume) to re-extract the stored file with the current parser."
+)
+
+
+def effective_parser_warnings(data: dict) -> list[str]:
+    """The persisted parser warnings, plus one for results structured before parser
+    versioning (whose project segmentation may contain the fragment defect fixed in
+    version 2). Read-only: stored data is never rewritten here."""
+    warnings = [str(warning) for warning in data.get("parser_warnings") or []]
+    if int(data.get("parser_version") or 1) < PARSER_VERSION:
+        warnings.append(OUTDATED_PARSER_WARNING)
+    return warnings
+
+
+def excluded_projects_sentence(data: dict) -> str:
+    """Names how many stored project records downstream features skipped as
+    unreliable, so a generated result never silently omits them."""
+    count = sum(1 for project in data.get("projects", []) or [] if not is_reliable_project(project))
+    if not count:
+        return ""
+    noun = "entry" if count == 1 else "entries"
+    return f" {count} extracted project {noun} looked like parsing fragments and {'was' if count == 1 else 'were'} not used as evidence; reprocess the resume to re-extract it."
 
 
 def structure_resume(db: Session, resume: Resume) -> StructuredResume:
@@ -670,6 +857,7 @@ def structure_resume(db: Session, resume: Resume) -> StructuredResume:
     # "processed with warnings" notice instead of silently feeding pathological
     # structure downstream to M2/M3 as if it were clean.
     data["parser_warnings"] = warnings
+    data["parser_version"] = PARSER_VERSION
 
     result.data = data
     resume.status = "structured"

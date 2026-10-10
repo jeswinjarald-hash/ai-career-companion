@@ -6,5 +6,11 @@
 .form-grid input:disabled,
 .form-grid textarea:disabled {
   opacity: 0.65;
-  cursor: wait;
+  cursor: not-allowed;
+}
+
+.form-grid .field-hint {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font: 12px/1.4 Arial, sans-serif;
 }

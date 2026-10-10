@@ -28,7 +28,7 @@ function ReminderRow({ reminder, onOpen }: { reminder: ApplicationReminder; onOp
       <strong>{reminder.job_title} · {reminder.company}</strong>
       <small>{when}</small>
     </div>
-    {onOpen && <button className="text-button" onClick={() => onOpen(reminder.application_id)}>Open -&gt;</button>}
+    {onOpen && <button className="text-button" onClick={() => onOpen(reminder.application_id)}>Open →</button>}
   </li>
 }
 
@@ -41,7 +41,7 @@ export function ApplicationReminderList({ reminders, onOpen, emptyText = 'No upc
 export function ApplicationActivity({ onOpenTracker, onOpenApplication }: { onOpenTracker: () => void; onOpenApplication: (applicationId: number) => void }) {
   const { summary, reminders, state, error, reload } = useApplicationOverview()
   return <section className="card comparison-card application-activity">
-    <div className="card-heading"><div><p className="eyebrow">APPLICATION ACTIVITY</p><h3>From your application tracker</h3></div><button className="text-button" onClick={onOpenTracker}>Open tracker -&gt;</button></div>
+    <div className="card-heading"><div><p className="eyebrow">APPLICATION ACTIVITY</p><h3>From your application tracker</h3></div><button className="text-button" onClick={onOpenTracker}>Open tracker →</button></div>
     {state === 'loading' && <p className="muted" role="status">Loading application activity...</p>}
     {state === 'error' && <div className="error-notice" role="alert">{error} <button className="text-button" onClick={() => void reload()}>Retry</button></div>}
     {state === 'ready' && summary && reminders && <>
@@ -92,7 +92,7 @@ export function TrackJobButton({ jobId, onOpenApplication }: { jobId: string; on
   if (state.kind === 'checking') return <span className="muted track-state" role="status">Checking tracker...</span>
   if (state.kind === 'tracked') return <span className="track-state" role="status">
     <span className="skill-status strong">{state.justAdded ? 'Added to tracker' : 'Already tracked'} · {STATUS_LABEL[state.application.status]}</span>
-    <button className="text-button" onClick={() => onOpenApplication(state.application.id)}>View in tracker -&gt;</button>
+    <button className="text-button" onClick={() => onOpenApplication(state.application.id)}>View in tracker →</button>
   </span>
   return <span className="track-state">
     <button className="primary-button" onClick={() => void track()} disabled={state.kind === 'saving'}>{state.kind === 'saving' ? 'Adding...' : 'Add to Tracker'}</button>
@@ -149,7 +149,7 @@ export function TrackerLinkPanel({ kind, jobId, artifactId, onOpenApplication }:
         : <p className="muted">This opportunity is not in your application tracker yet.</p>)}
     <div className="detail-actions">
       {state !== 'loading' && !linked && <button className="secondary-button" disabled={state === 'saving'} onClick={() => void link()}>{state === 'saving' ? 'Linking...' : application ? 'Link this version' : 'Add to Tracker and link'}</button>}
-      {application && <button className="text-button" onClick={() => onOpenApplication(application.id)}>Open application -&gt;</button>}
+      {application && <button className="text-button" onClick={() => onOpenApplication(application.id)}>Open application →</button>}
     </div>
   </section>
 }

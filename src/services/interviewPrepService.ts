@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config/api'
+import { apiDetailMessage, apiFetch, fetchWithTimeout, GENERATION_TIMEOUT_MS, RequestTimeoutError } from '../config/api'
 
 export type QuestionCategory = 'technical' | 'resume' | 'project' | 'role' | 'hr' | 'skill_gap'
 export type Difficulty = 'easy' | 'medium' | 'hard'
@@ -94,27 +94,26 @@ export class InterviewPrepApiError extends Error {
   }
 }
 
-const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
+const request = async <T>(path: string, options?: RequestInit, timeoutMs?: number): Promise<T> => {
   let response: Response
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      ...options,
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json', ...(options?.headers ?? {}) },
-    })
-  } catch {
+    const init = { ...options, headers: { 'Content-Type': 'application/json', ...(options?.headers ?? {}) } }
+    response = timeoutMs ? await fetchWithTimeout(path, init, timeoutMs) : await apiFetch(path, init)
+  } catch (error: unknown) {
+    if (error instanceof RequestTimeoutError) {
+      throw new InterviewPrepApiError(0, "Generating interview preparation is taking longer than expected, so we stopped waiting. The server may still finish it — check the version list before trying again.")
+    }
     throw new InterviewPrepApiError(0, "We couldn't connect to the interview preparation service. Please try again.")
   }
   const body = await response.json().catch(() => null)
   if (!response.ok) {
-    const detail = body && typeof body === 'object' && 'detail' in body ? String((body as { detail: unknown }).detail) : 'We could not complete that request.'
-    throw new InterviewPrepApiError(response.status, detail)
+    throw new InterviewPrepApiError(response.status, apiDetailMessage(body, 'We could not complete that request.', response.status))
   }
   return body as T
 }
 
 export const generateInterviewPreparation = (resumeId: number, jobId: string) =>
-  request<InterviewPreparation>(`/api/resumes/${resumeId}/interview-preparations?job_id=${encodeURIComponent(jobId)}`, { method: 'POST' })
+  request<InterviewPreparation>(`/api/resumes/${resumeId}/interview-preparations?job_id=${encodeURIComponent(jobId)}`, { method: 'POST' }, GENERATION_TIMEOUT_MS)
 
 export const listInterviewPreparations = (resumeId: number, jobId?: string) =>
   request<InterviewPreparationSummary[]>(`/api/resumes/${resumeId}/interview-preparations${jobId ? `?job_id=${encodeURIComponent(jobId)}` : ''}`)
@@ -129,7 +128,7 @@ export const getInterviewPreparation = async (resumeId: number, prepId: number):
 }
 
 export const regenerateInterviewPreparation = (resumeId: number, prepId: number) =>
-  request<InterviewPreparation>(`/api/resumes/${resumeId}/interview-preparations/${prepId}/regenerate`, { method: 'POST' })
+  request<InterviewPreparation>(`/api/resumes/${resumeId}/interview-preparations/${prepId}/regenerate`, { method: 'POST' }, GENERATION_TIMEOUT_MS)
 
 export const submitMockAnswer = (resumeId: number, prepId: number, questionIndex: number, answer: string) =>
   request<MockAnswerEvaluation>(`/api/resumes/${resumeId}/interview-preparations/${prepId}/mock-answer`, {

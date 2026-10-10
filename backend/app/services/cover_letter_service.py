@@ -17,6 +17,7 @@ from app.schemas.job_posting import JobPosting
 from app.services.customization_evidence import join_terms, relevance_score, short_education_phrase, summarize_clause
 from app.services.customization_keywords import partial_terms, supported_terms
 from app.services.job_matching import normalize_term
+from app.services.structured_resume import is_reliable_project
 
 
 def _top_supported_skill_names(structured_data: dict, supported: set[str], limit: int) -> list[tuple[str, str]]:
@@ -32,6 +33,7 @@ def _ranked_projects(structured_data: dict, supported: set[str], partial: set[st
     scored = [
         (index, project, relevance_score(str(project.get("raw_text") or project.get("description") or ""), project.get("technologies", []) or [], supported, partial))
         for index, project in enumerate(projects)
+        if is_reliable_project(project)
     ]
     scored.sort(key=lambda item: (-item[2], item[0]))
     return [(project, index) for index, project, _score in scored]

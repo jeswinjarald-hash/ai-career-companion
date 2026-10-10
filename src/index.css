@@ -1,6 +1,8 @@
-:root { font-family: Georgia, 'Times New Roman', serif; color: #17231f; background: #f3f5f0; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+:root { font-family: Georgia, 'Times New Roman', serif; line-height: 1.5; color: #17231f; background: #f3f5f0; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
-button, input { font: inherit; }
+button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
-button:focus-visible, input:focus-visible { outline: 3px solid #d39a47; outline-offset: 3px; }
+button:focus-visible, input:focus-visible { outline: 3px solid #c4872f; outline-offset: 3px; }
+body { background: #f3f5f0; }
+img, svg { max-width: 100%; }
