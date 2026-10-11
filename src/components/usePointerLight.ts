@@ -38,11 +38,20 @@ export function usePointerLight(rootRef: RefObject<HTMLDivElement | null>, prima
     let litCard: HTMLElement | null = null
     let unsubscribeScroll: () => void = () => undefined
 
+    // React rewrites a card's whole class attribute when its className prop changes (e.g. the
+    // dashboard banner going from loading to "success"), which would drop the imperatively
+    // added `is-lit` under a resting pointer. While a card is lit, a MutationObserver on that
+    // one element's class attribute puts it back (not polling; disconnected on change).
+    const keepLit = typeof MutationObserver === 'function'
+      ? new MutationObserver(() => { if (litCard && !litCard.classList.contains('is-lit')) litCard.classList.add('is-lit') })
+      : null
     const light = (card: HTMLElement | null) => {
       if (card === litCard) return
+      keepLit?.disconnect()
       litCard?.classList.remove('is-lit')
       litCard = card
       card?.classList.add('is-lit')
+      if (card) keepLit?.observe(card, { attributes: true, attributeFilter: ['class'] })
     }
 
     const render = () => {

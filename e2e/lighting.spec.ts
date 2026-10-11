@@ -2,7 +2,7 @@ import { mkdirSync } from 'node:fs'
 import path from 'node:path'
 import { devices, type Page } from '@playwright/test'
 import { expect, newAccount, registerViaApi, settleAnimations, test } from './support/fixtures'
-import { processResumeViaApi } from './support/resumes'
+import { holdRequests, processResumeViaApi } from './support/resumes'
 
 // Pointer lighting (src/components/usePointerLight.ts): behaviour, efficiency and
 // non-interference. Screenshots of resting and lit states go to e2e/.tmp/screens.
@@ -197,4 +197,27 @@ test.describe('touch-only device', () => {
     await settleAnimations(page)
     await page.screenshot({ path: path.join(SCREENS, 'lighting-touch-resume.png'), fullPage: true })
   })
+})
+
+// Regression: React re-renders a card's className when its data changes (the dashboard
+// banner goes from loading to "success"), which replaced the whole class attribute and
+// dropped the imperatively added `is-lit` while the pointer rested on the card. The real
+// resume-list request is held (then continued to the backend), so the banner is hovered in
+// its loading state and then updated underneath a still pointer.
+test('a card keeps its light when React updates its classes under a resting pointer', async ({ page }) => {
+  test.setTimeout(120_000)
+  const profileId = await registerViaApi(page, newAccount('lit-rerender'))
+  await processResumeViaApi(page, profileId, 'backend')
+  const held = await holdRequests(page, '**/api/profiles/*/resumes')
+  await page.goto('/dashboard')
+  const banner = page.locator('.state-banner').first()
+  await expect(banner).toBeVisible()
+  await expect.poll(held.count).toBeGreaterThan(0)
+  await expect(banner).not.toHaveClass(/\bsuccess\b/)                     // still loading
+  const box = (await banner.boundingBox())!
+  await page.mouse.move(box.x + 160, box.y + box.height / 2)
+  await expect(banner).toHaveClass(/\bis-lit\b/)
+  await held.release()
+  await expect(banner).toHaveClass(/\bsuccess\b/, { timeout: 60_000 })   // React replaced the classes
+  await expect(banner, 'the light survives the re-render').toHaveClass(/\bis-lit\b/)
 })
