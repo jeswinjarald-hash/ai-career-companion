@@ -49,3 +49,6 @@ Thumbs.db
 
 # Office lock/temporary files (e.g. ~$Document.docx)
 ~$*
+
+# Playwright suite: isolated test database, generated fixtures, reports and traces
+e2e/.tmp/

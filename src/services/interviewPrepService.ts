@@ -130,8 +130,11 @@ export const getInterviewPreparation = async (resumeId: number, prepId: number):
 export const regenerateInterviewPreparation = (resumeId: number, prepId: number) =>
   request<InterviewPreparation>(`/api/resumes/${resumeId}/interview-preparations/${prepId}/regenerate`, { method: 'POST' }, GENERATION_TIMEOUT_MS)
 
+// Request body, named so src/api/contract.check.ts can verify it against the backend.
+export type MockAnswerPayload = { question_index: number; answer: string }
+
 export const submitMockAnswer = (resumeId: number, prepId: number, questionIndex: number, answer: string) =>
   request<MockAnswerEvaluation>(`/api/resumes/${resumeId}/interview-preparations/${prepId}/mock-answer`, {
     method: 'POST',
-    body: JSON.stringify({ question_index: questionIndex, answer }),
+    body: JSON.stringify({ question_index: questionIndex, answer } satisfies MockAnswerPayload),
   })

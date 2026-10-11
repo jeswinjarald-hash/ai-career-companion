@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ChangeEvent, DragEvent, FormEvent, InputHTMLAttributes } from 'react'
+import type { ChangeEvent, DragEvent, InputHTMLAttributes } from 'react'
 import './App.css'
 import './profile.css'
 import { AuthApiError, getCurrentSession, login, logout, registerAccount, type AuthSession, type AuthUser } from './services/authService'
 import { SESSION_EXPIRED_EVENT } from './config/api'
 import { updateProfile, type CandidateProfile, type CandidateProfilePayload } from './services/profileService'
-import { createCandidateContext, detectResumeSections, extractResumeText, getJobMatches, getResumeExtraction, getStructuredResume, listProfileResumes, structureResume, uploadResume, type JobMatchResult, type ResumeRecord, type StructuredResume } from './services/resumeService'
-import { getJobDetails, searchJobs, type JobPosting, type JobSearchResult } from './services/jobService'
+import { createCandidateContext, detectResumeSections, extractResumeText, getResumeExtraction, getStructuredResume, listProfileResumes, structureResume, uploadResume, type ResumeRecord, type StructuredResume } from './services/resumeService'
+import { getJobDetails } from './services/jobService'
 import { analyzeSkillGap, type GapItem, type SkillGapAnalysis } from './services/skillGapService'
 import {
   downloadExport, generateCustomization, getCustomization, listCustomizations, regenerateCustomization, updateCustomization,
@@ -25,11 +25,25 @@ import {
 import { EmptyState, LongTaskStatus, PageHeading, Stat } from './components/common'
 import { ApplicationTrackerView } from './components/applications/ApplicationTrackerView'
 import { ApplicationDetailView } from './components/applications/ApplicationDetailView'
-import { ApplicationActivity, TrackJobButton, TrackerLinkPanel } from './components/applications/ApplicationWidgets'
+import { TrackerLinkPanel } from './components/applications/ApplicationWidgets'
 import { formatDateTime } from './components/applications/applicationFormat'
+import { profileCompletion } from './lib/profileCompletion'
+import { errorText } from './lib/errorText'
+import { CareersView } from './views/CareersView'
+import { JobDetailsView } from './views/JobDetailsView'
+import { RoadmapView } from './views/RoadmapView'
+import { DashboardView } from './views/DashboardView'
+import { NavDrawer, NavList } from './components/AppNav'
+import { Icon } from './components/icons'
+import { lifecycleForUnstructured, readinessRows, resumeCoverage, type ResumeLifecycle } from './lib/insights'
+import { gapSkillsFromAnalysis, graphSkills } from './lib/skillGraphData'
+import { sceneModeForView } from './lib/skillGraphScene'
+import { publishScene, publishSkills } from './components/backgroundRuntime'
+import { MeterChart, ScoreRing } from './components/charts'
 import './components/applications/applications.css'
+import './theme.css'
+import { AUTH_PATHS, pathForView, routeFromLocation, viewFromLocation, viewLabel, type View } from './routing'
 
-type ResumeLifecycle = 'no_resume' | 'uploading' | 'processing' | 'processed' | 'failed'
 // The real backend calls made while processing a resume, in order. The UI only marks
 // a step done after that request has returned successfully.
 type ResumeStage = 'upload' | 'extract' | 'sections' | 'structure' | 'context'
@@ -40,18 +54,6 @@ const RESUME_STAGES: { id: ResumeStage; label: string }[] = [
 // Mirrors backend/app/services/resume_validation.py (SUPPORTED_EXTENSIONS, MAX_RESUME_SIZE);
 // the backend still validates every upload — this only gives faster, clearer feedback.
 const MAX_RESUME_BYTES = 10 * 1024 * 1024
-const AUTH_PATHS = ['/', '/login', '/signup', '/onboarding']
-
-type View = 'dashboard' | 'profile' | 'resume' | 'resume-results' | 'careers' | 'job-details' | 'skills' | 'customize' | 'interview-prep' | 'roadmap' | 'assistant' | 'progress' | 'settings' | 'applications' | 'application-details'
-const nav = [{ id: 'dashboard' as View, label: 'Dashboard', note: 'Your next best action' }, { id: 'profile' as View, label: 'Career Profile', note: 'Your structured context' }, { id: 'resume' as View, label: 'Resume Analyzer', note: 'Upload and feedback' }, { id: 'careers' as View, label: 'Career Recommendations', note: 'Paths that fit you' }, { id: 'applications' as View, label: 'Application Tracker', note: 'Statuses and deadlines' }, { id: 'skills' as View, label: 'Skill Gap Analysis', note: 'Compare your skills' }, { id: 'roadmap' as View, label: 'Learning Roadmap', note: 'Your learning path' }, { id: 'assistant' as View, label: 'AI Career Assistant', note: 'Contextual guidance' }, { id: 'progress' as View, label: 'Progress Tracker', note: 'Your development' }]
-// Job-scoped screens (skill gap, customization, interview prep) carry the selected
-// opportunity in the URL (?job=...) so a refresh or a shared link reopens the same
-// persisted analysis instead of losing the selection held only in memory.
-const JOB_SCOPED_VIEWS: View[] = ['skills', 'customize', 'interview-prep']
-const jobIdFromLocation = (): string | null => window.location.pathname.startsWith('/jobs/') ? decodeURIComponent(window.location.pathname.slice('/jobs/'.length)) || null : new URLSearchParams(window.location.search).get('job')
-const viewFromPath = (): View => { const path = window.location.pathname; if (path.startsWith('/jobs/')) return 'job-details'; if (path.startsWith('/applications/')) return 'application-details'; if (path === '/resume/results') return 'resume-results'; if (path === '/customize') return 'customize'; if (path === '/interview-prep') return 'interview-prep'; const match = nav.find((item) => `/${item.id}` === path); return match?.id ?? (path === '/settings' ? 'settings' : 'dashboard') }
-const applicationIdFromPath = (): number | null => { const match = /^\/applications\/(\d+)$/.exec(window.location.pathname); return match ? Number(match[1]) : null }
-const greetingForTime = () => { const hour = new Date().getHours(); return hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening' }
 const ACTION_VIEW: Partial<Record<ActionType, View>> = {
   upload_resume: 'resume', process_resume: 'resume', view_resume: 'resume-results',
   view_recommendations: 'careers', compare_jobs: 'careers', analyze_skill_gap: 'skills',
@@ -59,8 +61,6 @@ const ACTION_VIEW: Partial<Record<ActionType, View>> = {
 }
 
 type AuthStatus = 'checking' | 'unreachable' | 'authenticated' | 'unauthenticated'
-const viewLabel = (view: View) => nav.find((item) => item.id === view)?.label ?? (view === 'job-details' ? 'Job Details' : view === 'resume-results' ? 'Resume Results' : view === 'customize' ? 'Customize Application' : view === 'interview-prep' ? 'Interview Preparation' : view === 'application-details' ? 'Application' : 'Settings')
-const errorText = (error: unknown, fallback: string) => error instanceof Error && error.message ? error.message : fallback
 
 function BrandMark({ className }: { className: string }) { return <div className={className}><span aria-hidden="true">AC</span><div><strong>AI Career</strong><small>Companion</small></div></div> }
 
@@ -72,9 +72,9 @@ function App() {
   const [authNotice, setAuthNotice] = useState('')
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null)
   const [activeProfile, setActiveProfile] = useState<CandidateProfile | null>(null)
-  const [view, setView] = useState<View>(viewFromPath)
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(jobIdFromLocation)
-  const [selectedApplicationId, setSelectedApplicationId] = useState<number | null>(applicationIdFromPath)
+  const [view, setView] = useState<View>(viewFromLocation)
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(() => routeFromLocation().jobId)
+  const [selectedApplicationId, setSelectedApplicationId] = useState<number | null>(() => routeFromLocation().applicationId)
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [resumeLifecycle, setResumeLifecycle] = useState<ResumeLifecycle>('no_resume')
   const [resumeStage, setResumeStage] = useState<ResumeStage | null>(null)
@@ -83,6 +83,10 @@ function App() {
   const [structuredResume, setStructuredResume] = useState<StructuredResume | null>(null)
   const [notice, setNotice] = useState('')
   const [fileNotice, setFileNotice] = useState('')
+  const [restoreError, setRestoreError] = useState('')
+  const [restoreKey, setRestoreKey] = useState(0)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
   const restoreAttempted = useRef(false)
   const resumeBusy = useRef(false)
   const viewChanged = useRef(false)
@@ -105,7 +109,7 @@ function App() {
     })
   }
   useEffect(() => { void checkSession() }, [])
-  useEffect(() => { const onPopState = () => { setView(viewFromPath()); setSelectedApplicationId(applicationIdFromPath()); const jobId = jobIdFromLocation(); if (jobId) setSelectedJobId(jobId); setAuthRoute(window.location.pathname) }; window.addEventListener('popstate', onPopState); return () => window.removeEventListener('popstate', onPopState) }, [])
+  useEffect(() => { const onPopState = () => { const route = routeFromLocation(); setView(route.view); setSelectedApplicationId(route.applicationId); if (route.jobId) setSelectedJobId(route.jobId); setAuthRoute(window.location.pathname) }; window.addEventListener('popstate', onPopState); return () => window.removeEventListener('popstate', onPopState) }, [])
   // Restores the active resume purely from the backend (most recently uploaded resume for this profile).
   // Browser storage plays no role here, so ownership can never be spoofed by editing localStorage.
   useEffect(() => {
@@ -123,18 +127,37 @@ function App() {
         setResumeLifecycle('processed')
         return
       }
-      if (latest.status === 'extraction_failed') {
+      // No structured result: either the last attempt failed, or processing never finished
+      // (the stored file can then simply be analysed now — it is not a failure).
+      const lifecycle = lifecycleForUnstructured(latest)
+      if (lifecycle === 'failed') {
         const extraction = await getResumeExtraction(latest.id).catch(() => null)
         setNotice(extraction?.error_message || 'Resume text extraction failed. Please upload a different file.')
-      } else {
-        setNotice('Processing did not finish for your last uploaded resume. Please upload it again.')
       }
-      setResumeLifecycle('failed')
+      setResumeLifecycle(lifecycle)
     }).catch((error: unknown) => {
-      setResumeLifecycle('failed')
-      setNotice(errorText(error, 'We could not restore your saved resume.'))
+      // Loading the status failed — not the analysis. Shown as a retryable load error.
+      setRestoreError(errorText(error, 'We could not load your saved resume.'))
     }).finally(() => setResumeRestoring(false))
-  }, [authStatus, activeProfile])
+  }, [authStatus, activeProfile, restoreKey])
+  const retryRestore = () => { restoreAttempted.current = false; setRestoreError(''); setResumeRestoring(true); setRestoreKey((key) => key + 1) }
+
+  // Real skills for the decorative skill graph: the analysed active resume's extracted skills
+  // and the user's own profile skills — already in memory, no extra request. Cleared when
+  // signed out, while a replacement resume is being processed, or when nothing is analysed.
+  useEffect(() => {
+    const signedIn = authStatus === 'authenticated'
+    publishSkills(graphSkills({
+      resumeSkills: signedIn && resumeLifecycle === 'processed' ? structuredResume?.data.skills : null,
+      profileSkills: signedIn ? activeProfile?.skills : null,
+    }))
+  }, [authStatus, resumeLifecycle, structuredResume, activeProfile])
+  // Route scene for the skill graph: the current screen's visual mode, and whether a resume
+  // upload/analysis request is really in flight. Signed-out screens use the neutral default.
+  useEffect(() => {
+    const signedIn = authStatus === 'authenticated'
+    publishScene({ mode: sceneModeForView(signedIn ? view : null), resumeProcessing: signedIn && (resumeLifecycle === 'uploading' || resumeLifecycle === 'processing') })
+  }, [authStatus, view, resumeLifecycle])
 
   const label = authStatus === 'authenticated' ? viewLabel(view) : authStatus === 'checking' ? 'Loading' : authStatus === 'unreachable' ? 'Connection problem' : authRoute === '/signup' ? 'Create account' : 'Sign in'
   useEffect(() => { document.title = `${label} · AI Career Companion` }, [label])
@@ -147,7 +170,7 @@ function App() {
     if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }) }
   }, [view])
 
-  const go = (next: View, jobId: string | null = selectedJobId) => { setView(next); setNotice(''); const query = JOB_SCOPED_VIEWS.includes(next) && jobId ? `?job=${encodeURIComponent(jobId)}` : ''; window.history.pushState({}, '', `/${next === 'dashboard' ? 'dashboard' : next === 'job-details' ? `jobs/${jobId ?? ''}` : next === 'application-details' ? `applications/${selectedApplicationId ?? ''}` : next === 'resume-results' ? 'resume/results' : next}${query}`) }
+  const go = (next: View, jobId: string | null = selectedJobId) => { setView(next); setNotice(''); window.history.pushState({}, '', pathForView(next, jobId, selectedApplicationId)) }
   // Sets the URL directly with the just-selected job id rather than going through
   // go('job-details'), which would otherwise read selectedJobId from this render's
   // closure before the setSelectedJobId update above has been applied.
@@ -196,8 +219,10 @@ function App() {
       // must not be shown as if they belonged to it.
       setResumeRecord(uploaded)
       setStructuredResume(null)
-      await processStoredResume(uploaded.id)
+      // The accepted file is now the stored resume: un-stage it, so a failure below offers
+      // "Retry analysis" on the stored copy instead of asking for the upload again.
       setResumeFile(null)
+      await processStoredResume(uploaded.id)
       go('resume-results')
     } catch (error: unknown) {
       // A rejected upload (e.g. invalid file) leaves the previously active resume in
@@ -232,14 +257,20 @@ function App() {
     setResumeRestoring(true)
     setSelectedJobId(null)
     setSelectedApplicationId(null)
-    setNotice(''); setFileNotice('')
+    setNotice(''); setFileNotice(''); setRestoreError('')
     restoreAttempted.current = false
   }
   const navigateAuth = (path: string) => { window.history.pushState({}, '', path); setAuthRoute(path) }
   const handleAuthenticated = (session: AuthSession) => {
     // A deep link opened while signed out (e.g. /jobs/JOB-0001) is kept; the sign-in
-    // and sign-up pages themselves continue to the dashboard.
-    if (AUTH_PATHS.includes(window.location.pathname)) { window.history.replaceState({}, '', '/dashboard'); setView('dashboard') } else setView(viewFromPath())
+    // and sign-up pages themselves continue to the dashboard. The job/application
+    // selection is re-read from the URL too: after a session expiry resetWorkspace()
+    // cleared it, and the view alone would reopen with nothing selected. The backend
+    // still checks ownership when the selected resource is loaded.
+    if (AUTH_PATHS.includes(window.location.pathname)) { window.history.replaceState({}, '', '/dashboard'); setView('dashboard') } else {
+      const route = routeFromLocation()
+      setView(route.view); setSelectedJobId(route.jobId); setSelectedApplicationId(route.applicationId)
+    }
     setAuthNotice('')
     setCurrentUser(session.user); setActiveProfile(session.profile); setAuthStatus('authenticated')
   }
@@ -264,39 +295,31 @@ function App() {
     return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired)
   }, [])
   const activeResumeId = resumeLifecycle === 'processed' ? resumeRecord?.id ?? null : null
-  const content = view === 'profile' ? <ProfileView profile={activeProfile} onProfileSaved={setActiveProfile} /> : view === 'resume' ? <RealResumeView file={resumeFile} lifecycle={resumeLifecycle} stage={resumeStage} restoring={resumeRestoring} notice={notice} fileNotice={fileNotice} resumeRecord={resumeRecord} onFileSelected={chooseFile} onClearFile={() => { setResumeFile(null); setFileNotice('') }} onAnalyze={analyze} onReprocess={reprocessResume} onViewResults={() => go('resume-results')} /> : view === 'resume-results' ? <RealResumeResults structuredResume={structuredResume} lifecycle={resumeLifecycle} resumeRecord={resumeRecord} onNavigate={go} onReprocess={reprocessResume} /> : view === 'careers' ? <CareersView resumeId={activeResumeId} onOpenJob={openJobDetails} onUploadResume={() => go('resume')} /> : view === 'job-details' ? <JobDetailsView jobId={selectedJobId} resumeId={activeResumeId} onBack={() => go('careers')} onAnalyzeSkillGap={() => go('skills')} onCustomizeApplication={() => go('customize')} onInterviewPrep={() => go('interview-prep')} onOpenApplication={openApplication} /> : view === 'skills' ? <SkillsView resumeId={activeResumeId} jobId={selectedJobId} onRoadmap={() => go('roadmap')} onSearchJobs={() => go('careers')} onUploadResume={() => go('resume')} onCustomizeApplication={() => go('customize')} onInterviewPrep={() => go('interview-prep')} /> : view === 'customize' ? <CustomizeView resumeId={activeResumeId} jobId={selectedJobId} structuredResume={structuredResume} onSearchJobs={() => go('careers')} onUploadResume={() => go('resume')} onInterviewPrep={() => go('interview-prep')} onOpenApplication={openApplication} /> : view === 'interview-prep' ? <InterviewPrepView resumeId={activeResumeId} jobId={selectedJobId} structuredResume={structuredResume} onSearchJobs={() => go('careers')} onUploadResume={() => go('resume')} onOpenApplication={openApplication} /> : view === 'applications' ? <ApplicationTrackerView onOpenApplication={openApplication} onBrowseOpportunities={() => go('careers')} /> : view === 'application-details' ? <ApplicationDetailView applicationId={selectedApplicationId} resumeId={activeResumeId} onBack={() => go('applications')} onOpenCustomization={(jobId) => openJobWorkspace(jobId, 'customize')} onOpenInterviewPrep={(jobId) => openJobWorkspace(jobId, 'interview-prep')} onOpenJob={openJobDetails} /> : view === 'roadmap' ? <RoadmapView resumeId={activeResumeId} /> : view === 'assistant' ? <AssistantView resumeId={activeResumeId} jobId={selectedJobId} onAction={handleAssistantAction} /> : view === 'progress' ? <ProgressView profile={activeProfile} resumeLifecycle={resumeLifecycle} structuredResume={structuredResume} /> : view === 'settings' ? <SettingsView /> : <DashboardView currentUser={currentUser} profile={activeProfile} resumeLifecycle={resumeLifecycle} resumeRestoring={resumeRestoring} resumeRecord={resumeRecord} structuredResume={structuredResume} notice={notice} onNavigate={go} onOpenApplication={openApplication} />
+  const content = view === 'profile' ? <ProfileView profile={activeProfile} onProfileSaved={setActiveProfile} /> : view === 'resume' ? <RealResumeView file={resumeFile} lifecycle={resumeLifecycle} stage={resumeStage} restoring={resumeRestoring} notice={notice} fileNotice={fileNotice} resumeRecord={resumeRecord} onFileSelected={chooseFile} onClearFile={() => { setResumeFile(null); setFileNotice('') }} onAnalyze={analyze} onReprocess={reprocessResume} onViewResults={() => go('resume-results')} /> : view === 'resume-results' ? <RealResumeResults structuredResume={structuredResume} lifecycle={resumeLifecycle} resumeRecord={resumeRecord} onNavigate={go} onReprocess={reprocessResume} /> : view === 'careers' ? <CareersView resumeId={activeResumeId} onOpenJob={openJobDetails} onUploadResume={() => go('resume')} /> : view === 'job-details' ? <JobDetailsView jobId={selectedJobId} resumeId={activeResumeId} onBack={() => go('careers')} onAnalyzeSkillGap={() => go('skills')} onCustomizeApplication={() => go('customize')} onInterviewPrep={() => go('interview-prep')} onOpenApplication={openApplication} /> : view === 'skills' ? <SkillsView resumeId={activeResumeId} jobId={selectedJobId} onRoadmap={() => go('roadmap')} onSearchJobs={() => go('careers')} onUploadResume={() => go('resume')} onCustomizeApplication={() => go('customize')} onInterviewPrep={() => go('interview-prep')} /> : view === 'customize' ? <CustomizeView resumeId={activeResumeId} jobId={selectedJobId} structuredResume={structuredResume} onSearchJobs={() => go('careers')} onUploadResume={() => go('resume')} onInterviewPrep={() => go('interview-prep')} onOpenApplication={openApplication} /> : view === 'interview-prep' ? <InterviewPrepView resumeId={activeResumeId} jobId={selectedJobId} structuredResume={structuredResume} onSearchJobs={() => go('careers')} onUploadResume={() => go('resume')} onOpenApplication={openApplication} /> : view === 'applications' ? <ApplicationTrackerView onOpenApplication={openApplication} onBrowseOpportunities={() => go('careers')} /> : view === 'application-details' ? <ApplicationDetailView applicationId={selectedApplicationId} resumeId={activeResumeId} onBack={() => go('applications')} onOpenCustomization={(jobId) => openJobWorkspace(jobId, 'customize')} onOpenInterviewPrep={(jobId) => openJobWorkspace(jobId, 'interview-prep')} onOpenJob={openJobDetails} /> : view === 'roadmap' ? <RoadmapView resumeId={activeResumeId} /> : view === 'assistant' ? <AssistantView resumeId={activeResumeId} jobId={selectedJobId} onAction={handleAssistantAction} /> : view === 'progress' ? <ProgressView profile={activeProfile} resumeLifecycle={resumeLifecycle} structuredResume={structuredResume} /> : view === 'settings' ? <SettingsView /> : <DashboardView currentUser={currentUser} profile={activeProfile} resumeLifecycle={resumeLifecycle} resumeRestoring={resumeRestoring} resumeRecord={resumeRecord} structuredResume={structuredResume} processingLabel={RESUME_STAGES.find((item) => item.id === resumeStage)?.label ?? null} notice={notice} loadError={restoreError} onRetryLoad={retryRestore} onNavigate={go} onOpenApplication={openApplication} onOpenJob={openJobDetails} onReprocess={() => void reprocessResume()} />
   if (authStatus === 'checking') return <main className="auth-page single"><section className="auth-panel"><BrandMark className="auth-brand" /><p className="muted" role="status">Loading your workspace...</p></section></main>
   if (authStatus === 'unreachable') return <main className="auth-page single"><section className="auth-panel"><BrandMark className="auth-brand" /><div className="auth-copy"><p className="eyebrow">CONNECTION PROBLEM</p><h1>We can't reach the server.</h1><p>The AI Career Companion API is not responding. Check that the backend is running and that you are online, then try again.</p></div><div className="error-notice auth-status-notice" role="alert">Could not connect to the API.</div><button className="primary-button auth-submit" onClick={() => void checkSession()}>Try again</button></section></main>
   if (authStatus === 'unauthenticated') { if (authRoute === '/signup') return <SignupView onAuthenticated={handleAuthenticated} onSwitch={() => navigateAuth('/')} />; if (authRoute === '/onboarding') return <OnboardingView onSignup={() => navigateAuth('/signup')} />; return <LoginView notice={authNotice} onAuthenticated={handleAuthenticated} onSwitch={() => navigateAuth('/signup')} /> }
-  const navButton = (item: { id: View; label: string; note: string }) => <button className={`nav-item ${view === item.id ? 'active' : ''}`} key={item.id} aria-current={view === item.id ? 'page' : undefined} onClick={() => go(item.id)}><span className="nav-dot" aria-hidden="true" /><span><strong>{item.label}</strong><small>{item.note}</small></span></button>
+  const navigate = (next: View) => { setMenuOpen(false); go(next) }
   return <div className="app-shell">
     <a className="skip-link" href="#main-content">Skip to main content</a>
-    <aside className="sidebar">
+    <aside className="sidebar" aria-label="Sidebar">
       <BrandMark className="brand-mark" />
-      <div className="workspace-label">STUDENT WORKSPACE</div>
-      <nav aria-label="Primary navigation">{nav.map(navButton)}</nav>
-      <div className="sidebar-divider" />
-      <nav aria-label="Workspace settings">{navButton({ id: 'settings', label: 'Settings', note: 'Workspace preferences' })}</nav>
+      <NavList view={view} onNavigate={navigate} label="Primary navigation" />
     </aside>
     <div className="main-content">
       <header className="topbar">
+        <button ref={menuButtonRef} className="menu-button" aria-label="Open navigation menu" aria-expanded={menuOpen} aria-haspopup="dialog" onClick={() => setMenuOpen(true)}><Icon name="menu" /></button>
         <div className="breadcrumbs"><span>Workspace</span><span aria-hidden="true">/</span><strong>{label}</strong></div>
         <div className="account"><div className="avatar" aria-hidden="true">{initials(currentUser?.full_name ?? '')}</div><div className="account-text"><strong>{currentUser?.full_name}</strong><small>{currentUser?.email}</small></div><button className="text-button" onClick={() => void handleLogout()}>Sign out</button></div>
       </header>
-      <MobileNav view={view} onNavigate={go} />
-      <main className="page-wrap" id="main-content">{content}</main>
+      <NavDrawer open={menuOpen} onClose={() => setMenuOpen(false)} returnFocusTo={menuButtonRef}>
+        <NavList view={view} onNavigate={navigate} label="Mobile navigation" />
+      </NavDrawer>
+      <main className="page-wrap" id="main-content"><div key={view} className="page-enter">{content}</div></main>
     </div>
   </div>
 }
 
-// Small screens: every destination (including Settings) stays reachable in a
-// horizontally scrollable strip; the active item is kept in view.
-function MobileNav({ view, onNavigate }: { view: View; onNavigate: (view: View) => void }) {
-  const listRef = useRef<HTMLDivElement>(null)
-  useEffect(() => { listRef.current?.querySelector<HTMLElement>('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'center' }) }, [view])
-  const items = [...nav, { id: 'settings' as View, label: 'Settings', note: '' }]
-  return <nav className="mobile-nav" aria-label="Mobile navigation"><div ref={listRef}>{items.map((item) => <button className={view === item.id ? 'active' : ''} aria-current={view === item.id ? 'page' : undefined} key={item.id} onClick={() => onNavigate(item.id)}>{item.label}</button>)}</div></nav>
-}
 
 type FieldError = { field: string; message: string } | null
 // Associates a validation message with its input (aria-invalid + aria-describedby) so
@@ -379,189 +402,6 @@ function SignupView({ onAuthenticated, onSwitch }: { onAuthenticated: (session: 
     <AuthAside eyebrow="YOUR FIRST STEPS" title="Build a profile that can grow with you." steps={[['Tell us about your direction', 'Interests and experience'], ['Add your resume', 'Skills and projects extracted']]} /></main>
 }
 function OnboardingView({ onSignup }: { onSignup: () => void }) { return <main className="auth-page"><section className="auth-panel"><BrandMark className="auth-brand" /><div className="auth-copy"><p className="eyebrow">CREATE YOUR ACCOUNT</p><h1>Let's get your workspace set up.</h1><p>Create an account to build your career profile and upload your resume.</p></div><button className="primary-button auth-submit" onClick={onSignup}>Go to sign up</button></section><AuthAside eyebrow="A CLEAR START" title="Your profile becomes the context behind every next step." steps={[['Profile', 'Personal and career details'], ['Guidance', 'Recommendations shaped around you']]} /></main> }
-function DashboardView({ currentUser, profile, resumeLifecycle, resumeRestoring, resumeRecord, structuredResume, notice, onNavigate, onOpenApplication }: {
-  currentUser: AuthUser | null
-  profile: CandidateProfile | null
-  resumeLifecycle: ResumeLifecycle
-  resumeRestoring: boolean
-  resumeRecord: ResumeRecord | null
-  structuredResume: StructuredResume | null
-  notice: string
-  onNavigate: (view: View) => void
-  onOpenApplication: (applicationId: number) => void
-}) {
-  const applicationActivity = <ApplicationActivity onOpenTracker={() => onNavigate('applications')} onOpenApplication={onOpenApplication} />
-  const displayName = (currentUser?.full_name ?? '').trim().split(/\s+/)[0] || 'there'
-  const heading = `Good ${greetingForTime()}, ${displayName}.`
-  const data = structuredResume?.data
-
-  if (resumeRestoring) return <PageHeading eyebrow="DASHBOARD" title={heading} lede="Loading your workspace..." />
-
-  if (resumeLifecycle === 'no_resume') return <><PageHeading eyebrow="DASHBOARD" title={heading} lede="Upload your resume to build your career profile." action={<button className="primary-button" onClick={() => onNavigate('resume')}>Upload resume →</button>} /><EmptyState title="Start with your resume" message="Nothing has been analyzed yet, so there are no extracted skills or opportunity matches to show. Upload a PDF or DOCX resume to begin." />{applicationActivity}</>
-
-  if (resumeLifecycle === 'uploading' || resumeLifecycle === 'processing') return <><PageHeading eyebrow="DASHBOARD" title={heading} lede="Your resume is being processed." action={<button className="secondary-button" onClick={() => onNavigate('resume')}>View progress</button>} /><div className="architecture-note" role="status"><span className="spinner" aria-hidden="true" /> {resumeLifecycle === 'uploading' ? 'Uploading' : 'Processing'} {resumeRecord?.original_filename ?? 'your resume'}... Results will appear here when it finishes.</div>{applicationActivity}</>
-
-  if (resumeLifecycle === 'failed') return <><PageHeading eyebrow="DASHBOARD" title={heading} lede="We could not finish processing your resume." action={<button className="primary-button" onClick={() => onNavigate('resume')}>Retry or upload again →</button>} /><div className="error-notice" role="alert">{notice || 'Resume processing failed.'}</div>{applicationActivity}</>
-
-  return <>
-    <PageHeading eyebrow="DASHBOARD" title={heading} lede="Your career profile, built from your latest processed resume." action={<button className="primary-button" onClick={() => onNavigate('resume-results')}>View resume results →</button>} />
-    <section className="dashboard-stats">
-      <Stat label="Resume status" value="Processed" detail={resumeRecord ? `${resumeRecord.original_filename} · ${formatDateTime(resumeRecord.created_at)}` : ''} />
-      <Stat label="Skills extracted" value={String(data?.skills.length ?? 0)} detail="From your latest resume" />
-      <Stat label="Education entries" value={String(data?.education.length ?? 0)} detail="From your latest resume" />
-      <Stat label="Projects" value={String(data?.projects.length ?? 0)} detail="From your latest resume" />
-    </section>
-    {applicationActivity}
-    <section className="card next-steps" aria-labelledby="next-steps-title">
-      <div className="card-heading"><div><p className="eyebrow">NEXT STEPS</p><h3 id="next-steps-title">Use your processed resume</h3></div></div>
-      <div className="next-step-grid">
-        <button onClick={() => onNavigate('careers')}><strong>Find matching opportunities</strong><small>Ranked against your resume</small></button>
-        <button onClick={() => onNavigate('skills')}><strong>Analyze skill gaps</strong><small>For an opportunity you select</small></button>
-        <button onClick={() => onNavigate('assistant')}><strong>Ask the career assistant</strong><small>Grounded in your resume and matches</small></button>
-      </div>
-    </section>
-    <div className="dashboard-columns">
-      <section>
-        <div className="section-heading"><div><p className="eyebrow">EXTRACTED SKILLS</p><h2>From your latest resume</h2></div><button className="text-button" onClick={() => onNavigate('resume-results')}>View all →</button></div>
-        {data && data.skills.length > 0 ? <div className="chip-list">{data.skills.map((skill) => <span className="skill-chip" key={skill}>{skill}</span>)}</div> : <p className="muted">No skills extracted yet.</p>}
-      </section>
-      <aside className="card dashboard-side">
-        <p className="eyebrow">PROFILE</p>
-        <h3>{profile?.full_name ?? currentUser?.full_name ?? ''}</h3>
-        <p className="muted">{profile?.target_roles && profile.target_roles.length > 0 ? profile.target_roles.join(', ') : 'No target roles saved yet.'}</p>
-        <button className="text-button" onClick={() => onNavigate('profile')}>Edit profile →</button>
-      </aside>
-    </div>
-    <section className="dashboard-columns lower">
-      <div className="card activity-card">
-        <div className="card-heading"><div><p className="eyebrow">EDUCATION</p></div></div>
-        {data && data.education.length > 0 ? <ul className="result-items">{data.education.map((item, index) => <li key={index}>{String(item.raw_text ?? '')}</li>)}</ul> : <p className="muted">No education extracted yet.</p>}
-      </div>
-      <div className="card roadmap-summary">
-        <p className="eyebrow">EXPERIENCE</p>
-        {data && [...data.experience, ...data.internships].length > 0 ? <ul className="result-items">{[...data.experience, ...data.internships].map((item, index) => <li key={index}>{String(item.raw_text ?? '')}</li>)}</ul> : <p className="muted">No experience extracted yet.</p>}
-      </div>
-    </section>
-  </>
-}
-function CareersView({ resumeId, onOpenJob, onUploadResume }: { resumeId: number | null; onOpenJob: (jobId: string) => void; onUploadResume: () => void }) {
-  const [matches, setMatches] = useState<JobMatchResult[] | null>(null)
-  const [matchError, setMatchError] = useState('')
-  const [query, setQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<JobSearchResult[] | null>(null)
-  const [searchStatus, setSearchStatus] = useState<'idle' | 'loading' | 'error'>('idle')
-  const [searchError, setSearchError] = useState('')
-
-  const [matchReload, setMatchReload] = useState(0)
-
-  // Matches always belong to the current resume: clear the previous result first so a
-  // different resume's ranking is never shown while the new one loads (or fails).
-  useEffect(() => {
-    let cancelled = false
-    setMatches(null); setMatchError('')
-    if (resumeId === null) return
-    void getJobMatches(resumeId).then((result) => { if (!cancelled) setMatches(result) }).catch((reason: unknown) => { if (!cancelled) setMatchError(errorText(reason, 'We could not load recommendations.')) })
-    return () => { cancelled = true }
-  }, [resumeId, matchReload])
-
-  const runSearch = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!query.trim() || searchStatus === 'loading') return
-    setSearchStatus('loading'); setSearchError(''); setSearchResults(null)
-    try {
-      const results = await searchJobs(query.trim(), 10)
-      setSearchResults(results)
-      setSearchStatus('idle')
-    } catch (error: unknown) {
-      setSearchStatus('error')
-      setSearchError(error instanceof Error ? error.message : 'We could not search opportunities. Please try again.')
-    }
-  }
-
-  return <>
-    <PageHeading eyebrow="CAREER RECOMMENDATIONS" title="Paths that fit your profile." lede="Search internships, entry-level jobs, graduate programs, and trainee/apprenticeship roles, or review recommendations ranked from your latest resume." />
-    <section className="card comparison-card">
-      <div className="card-heading"><div><p className="eyebrow">SEMANTIC OPPORTUNITY SEARCH</p><h3>Search opportunities</h3></div></div>
-      <form className="assistant-input" onSubmit={(event) => void runSearch(event)}>
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder='e.g. "Python machine learning internship" or "graduate data analyst"' aria-label="Search opportunities" />
-        <button className="primary-button" disabled={searchStatus === 'loading'}>{searchStatus === 'loading' ? 'Searching...' : 'Search'}</button>
-      </form>
-      {searchStatus === 'error' && <div className="error-notice" role="alert">{searchError}</div>}
-      {searchStatus !== 'error' && searchResults !== null && searchResults.length === 0 && <p className="muted">No opportunities matched that search.</p>}
-      {searchResults !== null && searchResults.some((result) => result.query_confidence === 'unsupported_area') && <div className="architecture-note" role="status">Few of your search terms appear in the opportunities available here, so these closest results may not match what you are looking for.</div>}
-      {searchResults !== null && searchResults.length > 0 && <section className="career-list">
-        {searchResults.map((result) => <article className="card career-card" key={result.job_id}>
-          <div className="career-card-top"><span className="role-mark">{result.job_title.slice(0, 1)}</span><span className="match-badge" title="Semantic similarity between your search and this opportunity (higher is closer). Not a match percentage.">Relevance {result.similarity_score.toFixed(2)}</span></div>
-          <h3>{result.job_title}</h3>
-          <div className="tag-row"><span className="opportunity-type-chip">{result.employment_type}</span></div>
-          <p>{result.company} · {result.domain} · {result.location} · {result.work_mode}</p>
-          <div className="tag-row">{result.required_skills.slice(0, 4).map((skill) => <span key={skill}>{skill}</span>)}</div>
-          <button className="text-button" onClick={() => onOpenJob(result.job_id)}>View details →</button>
-        </article>)}
-      </section>}
-    </section>
-    <section className="card comparison-card">
-      <div className="card-heading"><div><p className="eyebrow">RECOMMENDED FOR YOUR RESUME</p><h3>Ranked from your latest processed resume</h3></div></div>
-      {resumeId !== null && matches !== null && matches.length > 0 && <p className="muted card-intro">Retrieved with Sentence Transformers + FAISS, then scored on skills, experience, education, projects and qualifications. The reasoning shown is generated from that scoring.</p>}
-      {matchError ? <div className="error-notice" role="alert">{matchError} <button className="text-button" onClick={() => setMatchReload((value) => value + 1)}>Retry</button></div>
-        : resumeId === null ? <EmptyState message="Process a resume to see opportunities ranked for you." action={<button className="secondary-button" onClick={onUploadResume}>Go to Resume Analyzer</button>} />
-        : matches === null ? <p className="muted" role="status">Ranking opportunities against your resume...</p>
-        : matches.length === 0 ? <EmptyState message="No opportunities in the current catalogue matched your resume. Try a semantic search above." />
-        : <section className="career-list">{matches.map((match) => <article className="card career-card" key={match.job_id}><div className="career-card-top"><span className="role-mark">{match.job_title.slice(0, 1)}</span><span className="match-badge" title="Weighted score from required and preferred skills, experience, education, projects and qualifications.">{Math.round(match.match_score)}% match</span></div><h3>{match.job_title}</h3><div className="tag-row"><span className="opportunity-type-chip">{match.employment_type}</span></div><p>{match.company} · {match.domain}</p><div className="tag-row">{match.matched_required_skills.slice(0, 3).map((skill) => <span key={skill}>{skill}</span>)}</div><p className="muted">{match.reasoning}</p><p className="result-bullet">Missing required skills: {match.missing_required_skills.join(', ') || 'none'}</p><button className="text-button" onClick={() => onOpenJob(match.job_id)}>View details →</button></article>)}</section>}
-    </section>
-  </>
-}
-function JobDetailsView({ jobId, resumeId, onBack, onAnalyzeSkillGap, onCustomizeApplication, onInterviewPrep, onOpenApplication }: { jobId: string | null; resumeId: number | null; onBack: () => void; onAnalyzeSkillGap: () => void; onCustomizeApplication: () => void; onInterviewPrep: () => void; onOpenApplication: (applicationId: number) => void }) {
-  const [job, setJob] = useState<JobPosting | null>(null)
-  const [jobError, setJobError] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [matches, setMatches] = useState<JobMatchResult[] | null>(null)
-  const [matchStatus, setMatchStatus] = useState<'idle' | 'loading' | 'error'>('idle')
-  const [matchError, setMatchError] = useState('')
-
-  useEffect(() => {
-    setLoading(true); setJobError(''); setJob(null); setMatches(null)
-    if (!jobId) { setLoading(false); setJobError('No job was selected.'); return }
-    void getJobDetails(jobId).then((result) => { setJob(result); setLoading(false) }).catch((error: unknown) => { setJobError(error instanceof Error ? error.message : 'We could not load this job.'); setLoading(false) })
-  }, [jobId])
-
-  const loadMatch = async () => {
-    if (!jobId || resumeId === null || matchStatus === 'loading') return
-    setMatchStatus('loading'); setMatchError('')
-    try {
-      const results = await getJobMatches(resumeId, 20)
-      setMatches(results.filter((result) => result.job_id === jobId))
-      setMatchStatus('idle')
-    } catch (error: unknown) {
-      setMatchStatus('error')
-      setMatchError(error instanceof Error ? error.message : 'We could not load your match result.')
-    }
-  }
-
-  if (loading) return <PageHeading eyebrow="JOB DETAILS" title="Loading opportunity..." lede="" />
-  if (jobError || !job) return <><PageHeading eyebrow="JOB DETAILS" title="Opportunity not available." lede={jobError || 'This opportunity could not be loaded.'} action={<button className="text-button" onClick={onBack}>Back to search →</button>} /></>
-
-  const matchResult = matches?.[0] ?? null
-
-  return <>
-    <PageHeading eyebrow="JOB DETAILS" title={job.job_title} lede={<><span className="opportunity-type-chip inline">{job.employment_type}</span> {job.company} · {job.domain}</>} action={<div className="heading-actions"><TrackJobButton jobId={job.job_id} onOpenApplication={onOpenApplication} /><button className="text-button" onClick={onBack}>Back to search →</button></div>} />
-    <section className="results-grid resume-result-grid">
-      <article className="card result-card"><p className="eyebrow">OVERVIEW</p><dl className="fact-list"><dt>Location</dt><dd>{job.location}</dd><dt>Work mode</dt><dd>{job.work_mode}</dd><dt>Employment type</dt><dd>{job.employment_type}</dd><dt>Posted</dt><dd>{job.posted_date}</dd></dl></article>
-      <article className="card result-card"><p className="eyebrow">DESCRIPTION</p><p className="body-text">{job.job_description}</p></article>
-      <article className="card result-card"><p className="eyebrow">RESPONSIBILITIES</p><ul className="result-items">{job.responsibilities.map((item, index) => <li key={index}>{item}</li>)}</ul></article>
-      <article className="card result-card"><p className="eyebrow">REQUIRED SKILLS</p><div className="chip-list">{job.required_skills.map((skill) => <span className="skill-chip" key={skill}>{skill}</span>)}</div>{job.preferred_skills.length > 0 && <><p className="muted result-gap-label">Preferred</p><div className="chip-list">{job.preferred_skills.map((skill) => <span key={skill}>{skill}</span>)}</div></>}</article>
-      <article className="card result-card"><p className="eyebrow">QUALIFICATIONS</p><ul className="result-items">{job.qualifications.map((item, index) => <li key={index}>{item}</li>)}</ul><p className="muted">Experience: {job.experience_requirements}</p><p className="muted">Education: {job.education_requirements}</p></article>
-    </section>
-    <section className="card comparison-card">
-      <div className="card-heading"><div><p className="eyebrow">RESUME MATCH</p><h3>Your match for this role</h3></div>{resumeId !== null && matches === null && <button className="primary-button" onClick={() => void loadMatch()} disabled={matchStatus === 'loading'}>{matchStatus === 'loading' ? 'Checking...' : 'Check my match'}</button>}</div>
-      {resumeId === null && <div className="architecture-note">Process a resume to see your match for this role.</div>}
-      {matchStatus === 'error' && <div className="error-notice" role="alert">{matchError}</div>}
-      {matchResult && <div className="results-grid resume-result-grid"><article className="card result-card"><p className="eyebrow">MATCH SCORE</p><strong>{Math.round(matchResult.match_score)}%</strong><p className="muted">{matchResult.reasoning}</p></article><article className="card result-card"><p className="eyebrow">MATCHED SKILLS</p>{matchResult.matched_required_skills.length > 0 ? <div className="chip-list">{matchResult.matched_required_skills.map((skill) => <span className="skill-chip" key={skill}>{skill}</span>)}</div> : <p className="muted">None</p>}</article><article className="card result-card"><p className="eyebrow">MISSING REQUIRED SKILLS</p>{matchResult.missing_required_skills.length > 0 ? <div className="chip-list">{matchResult.missing_required_skills.map((skill) => <span className="warning-chip" key={skill}>{skill}</span>)}</div> : <p className="muted">None</p>}</article></div>}
-      {matches !== null && matches.length === 0 && <p className="muted" role="status">This opportunity is not among the top 20 opportunities retrieved for your resume, so no match score was calculated for it. Skill gap analysis below still compares it requirement by requirement.</p>}
-      {resumeId !== null && <div className="detail-actions"><button className="primary-button" onClick={onAnalyzeSkillGap}>Analyze Skill Gaps →</button><button className="secondary-button" onClick={onCustomizeApplication}>Customize Application →</button><button className="secondary-button" onClick={onInterviewPrep}>Prepare for Interview →</button></div>}
-    </section>
-  </>
-}
 const GAP_TONE: Record<GapItem['match_type'], string> = { missing: 'missing', partial: 'needs-improvement', learning_only: 'adequate', demonstrated: 'strong' }
 const GAP_LABEL: Record<GapItem['match_type'], string> = { missing: 'Missing', partial: 'Partially demonstrated', learning_only: 'Currently learning / not yet demonstrated', demonstrated: 'Matched' }
 function GapCard({ item }: { item: GapItem }) {
@@ -602,9 +442,16 @@ function SkillsView({ resumeId, jobId, onRoadmap, onSearchJobs, onUploadResume, 
     return () => { cancelled = true }
   }, [resumeId, jobId])
 
+  // Real gaps from this analysis accent the skill graph; cleared when the analysis is reset
+  // (new resume/job) or this screen unmounts (navigation, sign-out).
+  useEffect(() => {
+    publishScene({ gapSkills: gapSkillsFromAnalysis(analysis) })
+    return () => publishScene({ gapSkills: [] })
+  }, [analysis])
+
   return <>
-    <PageHeading eyebrow="SKILL GAP ANALYSIS" title="Understand what to learn next." lede="A grounded comparison of your resume against the opportunity you selected." action={<button className="primary-button" onClick={onSearchJobs}>Search opportunities →</button>} />
-    {resumeId === null && <EmptyState message="Upload and process your resume before running skill gap analysis." action={<button className="secondary-button" onClick={onUploadResume}>Go to Resume Analyzer</button>} />}
+    <PageHeading eyebrow="Skill Gaps" title="Understand what to learn next." lede="A grounded comparison of your resume against the opportunity you selected." action={<button className="primary-button" onClick={onSearchJobs}>Search opportunities →</button>} />
+    {resumeId === null && <EmptyState message="Upload and process your resume before running skill gap analysis." action={<button className="secondary-button" onClick={onUploadResume}>Go to Resume Studio</button>} />}
     {resumeId !== null && jobId === null && <EmptyState message={'Select an opportunity to analyze your skill gaps. Open its details and choose "Analyze Skill Gaps".'} />}
     {resumeId !== null && jobId !== null && status === 'loading' && <p className="muted" role="status">{analysis ? 'Refreshing your analysis...' : 'Analyzing your skill gaps against this opportunity...'}</p>}
     {resumeId !== null && jobId !== null && status === 'error' && <div className="error-notice" role="alert">{error} <button className="text-button" onClick={() => runAnalysis(resumeId, jobId)}>Retry</button></div>}
@@ -620,10 +467,10 @@ function SkillsView({ resumeId, jobId, onRoadmap, onSearchJobs, onUploadResume, 
       <div className="skill-summary-grid">
         <div className="card skill-score-card">
           <p className="eyebrow">SKILL READINESS</p>
-          <strong>{analysis.summary.overall_readiness}%</strong>
-          <div className="progress-track"><span style={{ width: `${Math.min(100, analysis.summary.overall_readiness)}%` }} /></div>
+          <div className="ring-row"><ScoreRing value={analysis.summary.overall_readiness} label="Skill readiness" caption="ready" /><div>
           <p className="muted">Required skills matched: {analysis.summary.required_requirements_met}/{analysis.summary.required_requirements_total} &middot; Preferred: {analysis.summary.preferred_requirements_met}/{analysis.summary.preferred_requirements_total}</p>
-          <p className="muted">Separate from the match score in Career Recommendations — this measures requirement-by-requirement readiness, not overall similarity.</p>
+          </div></div>
+          <p className="muted">Weighted share of this role’s requirements your resume and profile demonstrate, over the components that could be assessed. Separate from the match score in Opportunities.</p>
         </div>
         <div className="card priority-card">
           <p className="eyebrow">GAP OVERVIEW</p>
@@ -634,6 +481,12 @@ function SkillsView({ resumeId, jobId, onRoadmap, onSearchJobs, onUploadResume, 
           <div className="mini-gap"><span>Qualification gaps</span><span>{analysis.summary.qualification_gap_count}</span></div>
         </div>
       </div>
+      <section className="card comparison-card">
+        <MeterChart title="How readiness is calculated"
+          description={<>Each component’s score (requirements met, with partial credit for related evidence) and its weight. Readiness is the weighted average of the assessed components{analysis.summary.score_breakdown.some((component) => !component.included) ? '; components marked “Not available” could not be assessed and are left out of the average' : ''}.</>}
+          labelHeader="Component" valueHeader="Score" detailHeader="Weight · evidence" max={100} emptyText="No score breakdown was returned for this analysis."
+          rows={readinessRows(analysis.summary.score_breakdown).map((row) => ({ key: row.key, label: row.label, value: row.percent, display: row.percent === null ? '—' : `${row.percent}%`, detail: `${row.weightPercent}% weight · ${row.detail}` }))} />
+      </section>
       <section className="card comparison-card">
         <div className="card-heading"><div><p className="eyebrow">STRENGTHS</p><h3>What you already demonstrate</h3></div></div>
         {analysis.strengths.length === 0 ? <p className="muted">No confirmed strengths were found for this role yet.</p> : <div className="results-grid resume-result-grid">
@@ -842,8 +695,8 @@ function CustomizeView({ resumeId, jobId, structuredResume, onSearchJobs, onUplo
     }
   }
 
-  if (resumeId === null) return <><PageHeading eyebrow="CUSTOMIZE APPLICATION" title="Tailor your resume and cover letter." lede="Generate a resume and cover letter tailored to one opportunity, grounded in your own resume." /><EmptyState message="Upload and process your resume before customizing an application." action={<button className="secondary-button" onClick={onUploadResume}>Go to Resume Analyzer</button>} /></>
-  if (jobId === null) return <><PageHeading eyebrow="CUSTOMIZE APPLICATION" title="Tailor your resume and cover letter." lede="Select an opportunity to customize your application." action={<button className="primary-button" onClick={onSearchJobs}>Search opportunities →</button>} /><EmptyState message={<>Open an opportunity's details or your skill gap analysis and choose “Customize Application” to get started.</>} /></>
+  if (resumeId === null) return <><PageHeading eyebrow="Application materials" title="Tailor your resume and cover letter." lede="Generate a resume and cover letter tailored to one opportunity, grounded in your own resume." /><EmptyState message="Upload and process your resume before customizing an application." action={<button className="secondary-button" onClick={onUploadResume}>Go to Resume Studio</button>} /></>
+  if (jobId === null) return <><PageHeading eyebrow="Application materials" title="Tailor your resume and cover letter." lede="Select an opportunity to customize your application." action={<button className="primary-button" onClick={onSearchJobs}>Search opportunities →</button>} /><EmptyState message={<>Open an opportunity's details or your skill gap analysis and choose “Customize Application” to get started.</>} /></>
 
   const resume = customization?.tailored_resume ?? null
   const original = structuredResume?.data ?? null
@@ -1090,8 +943,8 @@ function InterviewPrepView({ resumeId, jobId, structuredResume, onSearchJobs, on
     }
   }
 
-  if (resumeId === null) return <><PageHeading eyebrow="INTERVIEW PREPARATION" title="Prepare for your interview." lede="Categorized questions and a revision plan grounded in your resume and the opportunity you choose." /><EmptyState message="Upload and process your resume before preparing for an interview." action={<button className="secondary-button" onClick={onUploadResume}>Go to Resume Analyzer</button>} /></>
-  if (jobId === null) return <><PageHeading eyebrow="INTERVIEW PREPARATION" title="Prepare for your interview." lede="Select an opportunity to prepare for its interview." action={<button className="primary-button" onClick={onSearchJobs}>Search opportunities →</button>} /><EmptyState message={<>Open an opportunity's details, skill gap analysis, or customized application and choose “Prepare for Interview” to get started.</>} /></>
+  if (resumeId === null) return <><PageHeading eyebrow="Interview Prep" title="Prepare for your interview." lede="Categorized questions and a revision plan grounded in your resume and the opportunity you choose." /><EmptyState message="Upload and process your resume before preparing for an interview." action={<button className="secondary-button" onClick={onUploadResume}>Go to Resume Studio</button>} /></>
+  if (jobId === null) return <><PageHeading eyebrow="Interview Prep" title="Prepare for your interview." lede="Select an opportunity to prepare for its interview." action={<button className="primary-button" onClick={onSearchJobs}>Search opportunities →</button>} /><EmptyState message={<>Open an opportunity's details, skill gap analysis, or customized application and choose “Prepare for Interview” to get started.</>} /></>
 
   const evidenceById: Record<string, EvidenceRecord> = {}
   if (prep) for (const record of prep.evidence) evidenceById[record.evidence_id] = record
@@ -1160,19 +1013,6 @@ function InterviewPrepView({ resumeId, jobId, structuredResume, onSearchJobs, on
   </>
 }
 
-function RoadmapView({ resumeId }: { resumeId: number | null }) {
-  const [matches, setMatches] = useState<JobMatchResult[] | null>(null)
-  useEffect(() => {
-    if (resumeId === null) return
-    void getJobMatches(resumeId, 1).then(setMatches).catch(() => setMatches(null))
-  }, [resumeId])
-  const top = matches?.[0] ?? null
-  return <>
-    <PageHeading eyebrow="LEARNING ROADMAP" title="A path from gaps to capability." lede="Personalized roadmap generation is not part of this release." />
-    <EmptyState title="Not available yet" message="A generated learning roadmap is not implemented in this version, so nothing is shown here rather than a placeholder plan. Skill Gap Analysis already gives a prioritized improvement plan for any opportunity you select." />
-    {top && top.missing_required_skills.length > 0 && <section className="card comparison-card"><div className="card-heading"><div><p className="eyebrow">CURRENT SKILL GAP CONTEXT</p><h3>From your top job match, for reference</h3></div></div><div className="chip-list">{top.missing_required_skills.map((skill) => <span className="warning-chip" key={skill}>{skill}</span>)}</div></section>}
-  </>
-}
 const STARTER_PROMPTS = [
   'Which opportunities fit my resume?', 'What skills am I missing?', 'Why does this job fit me?',
   'What should I learn next?', 'Help me customize my application.', 'Prepare me for an interview.',
@@ -1231,6 +1071,11 @@ function AssistantView({ resumeId, jobId, onAction }: { resumeId: number | null;
   const [busyAction, setBusyAction] = useState(false)
   const messageEndRef = useRef<HTMLDivElement>(null)
   useEffect(() => { messageEndRef.current?.scrollIntoView({ block: 'nearest' }) }, [active?.messages.length, sending])
+  // The skill graph's assistant ring tightens only while a message request is really pending.
+  useEffect(() => {
+    publishScene({ assistantPending: sending })
+    return () => publishScene({ assistantPending: false })
+  }, [sending])
 
   // Conversation actions report failures in the panel instead of failing silently.
   const runAction = async (action: () => Promise<void>, fallback: string) => {
@@ -1277,9 +1122,9 @@ function AssistantView({ resumeId, jobId, onAction }: { resumeId: number | null;
   const contextLine = `${active?.active_job_id ? `Opportunity: ${activeJobTitle || active.active_job_id}` : 'No opportunity selected yet'} · ${resumeId !== null ? 'Resume connected' : 'No processed resume yet'}`
 
   return <>
-    <PageHeading eyebrow="AI CAREER ASSISTANT" title="Guidance grounded in your profile." lede="Ask about your recommendations, skill gaps, resume, cover letter, or interview preparation." />
+    <PageHeading eyebrow="Career Assistant" title="Guidance grounded in your profile." lede="Ask about your recommendations, skill gaps, resume, cover letter, or interview preparation." />
     <div className="assistant-layout">
-      <section className="card assistant-panel">
+      <section className="card assistant-panel" data-graph-anchor="">
         <div className="assistant-context"><span className="mini-icon">AI</span><div><strong>Career context</strong><small>{contextLine}</small></div></div>
         <div className="message-list" role="log" aria-live="polite" aria-label="Conversation">
           {active === null || active.messages.length === 0
@@ -1290,11 +1135,11 @@ function AssistantView({ resumeId, jobId, onAction }: { resumeId: number | null;
                 <div className="starter-prompts">{STARTER_PROMPTS.map((prompt) => <button key={prompt} onClick={() => void send(prompt)} disabled={sending}>{prompt}</button>)}</div>
               </div>
             : active.messages.map((message) => <AssistantMessageBubble key={message.id} message={message} onAction={onAction} />)}
-          {sending && <p className="muted typing-indicator" role="status"><span className="spinner" aria-hidden="true" /> Thinking...</p>}
+          {sending && <p className="muted typing-indicator" role="status"><span className="typing-dots" aria-hidden="true"><span /><span /><span /></span> Thinking…</p>}
           <div ref={messageEndRef} />
         </div>
         {error && <div className="error-notice" role="alert">{error}</div>}
-        <form className="assistant-input" onSubmit={(event) => { event.preventDefault(); void send(input) }}>
+        <form className="assistant-input" data-graph-keep-clear="" onSubmit={(event) => { event.preventDefault(); void send(input) }}>
           <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask about your next step..." aria-label="Ask the career assistant" disabled={sending} />
           <button className="primary-button" disabled={sending || !input.trim()}>{sending ? 'Sending...' : 'Send'}</button>
         </form>
@@ -1321,14 +1166,13 @@ function AssistantView({ resumeId, jobId, onAction }: { resumeId: number | null;
   </>
 }
 function ProgressView({ profile, resumeLifecycle, structuredResume }: { profile: CandidateProfile | null; resumeLifecycle: ResumeLifecycle; structuredResume: StructuredResume | null }) {
-  const completionFields = profile ? [profile.full_name, profile.email, profile.education, profile.degree, profile.specialization, profile.experience_level, profile.career_interests.length, profile.target_roles.length, profile.skills.length, profile.career_goals] : []
-  const profileCompletion = profile ? Math.round(completionFields.filter(Boolean).length / completionFields.length * 100) : null
+  const completion = profile ? profileCompletion(profile) : null
   const data = structuredResume?.data
   const resumeAnalyzed = resumeLifecycle === 'processed'
   return <>
-    <PageHeading eyebrow="PROGRESS TRACKER" title="See your development clearly." lede="A focused view of what has genuinely been completed so far." />
+    <PageHeading eyebrow="Progress" title="See your development clearly." lede="A focused view of what has genuinely been completed so far." />
     <section className="dashboard-stats">
-      <Stat label="Profile completion" value={profileCompletion === null ? 'N/A' : `${profileCompletion}%`} detail={profile ? 'Calculated from your saved profile' : 'Profile not loaded yet'} />
+      <Stat label="Profile completion" value={completion === null ? 'N/A' : `${completion.percent}%`} detail={completion ? `${completion.filled} of ${completion.total} profile details saved` : 'Profile not loaded yet'} />
       <Stat label="Resume analyzed" value={resumeAnalyzed ? 'Yes' : 'No'} detail={resumeAnalyzed ? 'Structured resume on file' : 'No resume processed yet'} />
       <Stat label="Skills extracted" value={String(data?.skills.length ?? 0)} detail="From your latest resume" />
       <Stat label="Projects extracted" value={String(data?.projects.length ?? 0)} detail="From your latest resume" />
@@ -1344,13 +1188,12 @@ function ProfileView({ profile, onProfileSaved }: { profile: CandidateProfile | 
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
   useEffect(() => { setForm(profile ? toPayload(profile) : EMPTY_PROFILE) }, [profile])
-  const updateText = (field: keyof CandidateProfilePayload) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setForm({ ...form, [field]: event.target.value || null }); setStatus('idle'); setMessage('') }
-  const updateList = (field: 'career_interests' | 'target_roles' | 'skills') => (event: ChangeEvent<HTMLInputElement>) => { setForm({ ...form, [field]: event.target.value.split(',').map((item) => item.trim()).filter(Boolean) }); setStatus('idle'); setMessage('') }
-  const completionFields = [form.full_name, form.email, form.education, form.degree, form.specialization, form.experience_level, form.career_interests.length, form.target_roles.length, form.skills.length, form.career_goals]
-  const completion = Math.round(completionFields.filter((value) => Boolean(value)).length / completionFields.length * 100)
+  const updateText = (field: keyof CandidateProfilePayload) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { const value = event.target.value || null; setForm((current) => ({ ...current, [field]: value })); setStatus('idle'); setMessage('') }
+  const updateList = (field: 'career_interests' | 'target_roles' | 'skills') => (event: ChangeEvent<HTMLInputElement>) => { const items = event.target.value.split(',').map((item) => item.trim()).filter(Boolean); setForm((current) => ({ ...current, [field]: items })); setStatus('idle'); setMessage('') }
+  const completion = profileCompletion(form).percent
   const loading = profile === null
   const save = async () => { if (profile === null) { setStatus('error'); setMessage('Your profile is not ready yet.'); return } if (!form.full_name.trim()) { setStatus('error'); setMessage('Full name is required.'); return } if (!/^\S+@\S+\.\S+$/.test(form.email)) { setStatus('error'); setMessage('Please enter a valid email address.'); return } setSaving(true); setStatus('idle'); setMessage(''); try { const savedProfile = await updateProfile(profile.id, form); onProfileSaved(savedProfile); setStatus('success'); setMessage('Profile saved.') } catch (error: unknown) { setStatus('error'); setMessage(error instanceof Error ? error.message : 'We could not save your profile. Please try again.') } finally { setSaving(false) } }
-  return <><PageHeading eyebrow="CAREER PROFILE" title="Your structured context." lede="This information is combined with extracted resume data and passed to career services." action={<button className="primary-button" disabled={loading || saving} onClick={() => void save()}>{saving ? 'Saving...' : 'Save changes'}</button>} />{loading && <div className="architecture-note" role="status">Loading your saved profile...</div>}{!loading && status === 'error' && <div className="error-notice" role="alert">{message}</div>}{!loading && status === 'success' && <div className="success-notice" role="status">{message}</div>}<section className="profile-layout"><form className="card form-card" onSubmit={(event) => { event.preventDefault(); void save() }}><div className="card-heading"><div><p className="eyebrow">CORE DETAILS</p><h3>About you</h3></div><span className="completion-label">{completion}% complete</span></div><div className="form-grid"><label>Full name<input value={form.full_name} onChange={updateText('full_name')} disabled={loading || saving} /></label><label>Email address<input type="email" value={form.email} onChange={updateText('email')} disabled={loading || saving} /></label><label>Education<input value={form.education ?? ''} onChange={updateText('education')} disabled={loading || saving} /></label><label>Degree<input value={form.degree ?? ''} onChange={updateText('degree')} disabled={loading || saving} /></label><label>Specialization<input value={form.specialization ?? ''} onChange={updateText('specialization')} disabled={loading || saving} /></label><label>Experience level<input value={form.experience_level ?? ''} onChange={updateText('experience_level')} disabled={loading || saving} /></label><label>Career interests<input value={form.career_interests.join(', ')} onChange={updateList('career_interests')} disabled={loading || saving} /></label><label>Target roles<input value={form.target_roles.join(', ')} onChange={updateList('target_roles')} disabled={loading || saving} /></label><label>Skills<input value={form.skills.join(', ')} onChange={updateList('skills')} disabled={loading || saving} /></label><p className="field-hint full-width">Separate multiple career interests, target roles or skills with commas.</p><label className="full-width">Career goals<textarea value={form.career_goals ?? ''} onChange={updateText('career_goals')} disabled={loading || saving} /></label></div></form><aside className="card profile-aside"><p className="eyebrow">PROFILE STATUS</p><div className="profile-score"><strong>{completion}%</strong><span>{completion === 100 ? 'ready for guidance' : 'in progress'}</span></div><div className="progress-track"><span style={{ width: `${completion}%` }} /></div><p className="muted">Your profile, resume and learning activity work together as shared context.</p><div className="aside-divider" /><p className="eyebrow">PROFILE SECTIONS</p><ul className="check-list"><li className={form.full_name && form.email ? 'done' : ''}>Personal details</li><li className={form.career_interests.length ? 'done' : ''}>Career interests</li><li className={form.education || form.degree ? 'done' : ''}>Education details</li><li className={form.skills.length ? 'done' : ''}>Skills and technologies</li><li className={form.target_roles.length || form.career_goals ? 'done' : ''}>Career direction</li></ul></aside></section></>
+  return <><PageHeading eyebrow="Profile" title="Your structured context." lede="This information is combined with extracted resume data and passed to career services." action={<button className="primary-button" disabled={loading || saving} onClick={() => void save()}>{saving ? 'Saving...' : 'Save changes'}</button>} />{loading && <div className="architecture-note" role="status">Loading your saved profile...</div>}{!loading && status === 'error' && <div className="error-notice" role="alert">{message}</div>}{!loading && status === 'success' && <div className="success-notice" role="status">{message}</div>}<section className="profile-layout"><form className="card form-card" onSubmit={(event) => { event.preventDefault(); void save() }}><div className="card-heading"><div><p className="eyebrow">CORE DETAILS</p><h3>About you</h3></div><span className="completion-label">{completion}% complete</span></div><div className="form-grid"><label>Full name<input value={form.full_name} onChange={updateText('full_name')} disabled={loading || saving} /></label><label>Email address<input type="email" value={form.email} onChange={updateText('email')} disabled={loading || saving} /></label><label>Education<input value={form.education ?? ''} onChange={updateText('education')} disabled={loading || saving} /></label><label>Degree<input value={form.degree ?? ''} onChange={updateText('degree')} disabled={loading || saving} /></label><label>Specialization<input value={form.specialization ?? ''} onChange={updateText('specialization')} disabled={loading || saving} /></label><label>Experience level<input value={form.experience_level ?? ''} onChange={updateText('experience_level')} disabled={loading || saving} /></label><label>Career interests<input value={form.career_interests.join(', ')} onChange={updateList('career_interests')} disabled={loading || saving} /></label><label>Target roles<input value={form.target_roles.join(', ')} onChange={updateList('target_roles')} disabled={loading || saving} /></label><label>Skills<input value={form.skills.join(', ')} onChange={updateList('skills')} disabled={loading || saving} /></label><p className="field-hint full-width">Separate multiple career interests, target roles or skills with commas.</p><label className="full-width">Career goals<textarea value={form.career_goals ?? ''} onChange={updateText('career_goals')} disabled={loading || saving} /></label></div></form><aside className="card profile-aside"><p className="eyebrow">PROFILE STATUS</p><div className="profile-score"><strong>{completion}%</strong><span>{completion === 100 ? 'ready for guidance' : 'in progress'}</span></div><div className="progress-track"><span style={{ width: `${completion}%` }} /></div><p className="muted">Your saved profile and your latest analysed resume are used together when opportunities are matched and analysed.</p><div className="aside-divider" /><p className="eyebrow">PROFILE SECTIONS</p><ul className="check-list"><li className={form.full_name && form.email ? 'done' : ''}>Personal details{form.full_name && form.email ? <span className="visually-hidden"> (complete)</span> : null}</li><li className={form.career_interests.length ? 'done' : ''}>Career interests{form.career_interests.length ? <span className="visually-hidden"> (complete)</span> : null}</li><li className={form.education || form.degree ? 'done' : ''}>Education details{form.education || form.degree ? <span className="visually-hidden"> (complete)</span> : null}</li><li className={form.skills.length ? 'done' : ''}>Skills and technologies{form.skills.length ? <span className="visually-hidden"> (complete)</span> : null}</li><li className={form.target_roles.length || form.career_goals ? 'done' : ''}>Career direction{form.target_roles.length || form.career_goals ? <span className="visually-hidden"> (complete)</span> : null}</li></ul></aside></section></>
 }
 const formatBytes = (bytes: number) => bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`
 const ACCEPTED_RESUME_TYPES = '.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -1371,7 +1214,7 @@ function RealResumeView({ file, lifecycle, stage, restoring, notice, fileNotice,
 }) {
   const [dragging, setDragging] = useState(false)
   const busy = lifecycle === 'uploading' || lifecycle === 'processing'
-  if (restoring) return <PageHeading eyebrow="RESUME ANALYZER" title="Turn your resume into an advantage." lede="Checking for a previously processed resume..." />
+  if (restoring) return <PageHeading eyebrow="Resume Studio" title="Upload and analyse your resume." lede="Checking for your most recently uploaded resume…" />
   const stageIndex = stage ? RESUME_STAGES.findIndex((item) => item.id === stage) : -1
   const stepState = (index: number): StepState => {
     if (busy) return index < stageIndex ? 'complete' : index === stageIndex ? 'active' : 'waiting'
@@ -1383,30 +1226,30 @@ function RealResumeView({ file, lifecycle, stage, restoring, notice, fileNotice,
   const onDrop = (event: DragEvent<HTMLDivElement>) => { event.preventDefault(); setDragging(false); if (!busy) onFileSelected(event.dataTransfer.files[0]) }
   const statusText = busy ? `${RESUME_STAGES[stageIndex]?.label ?? 'Processing'}...` : lifecycle === 'processed' && !file ? 'Resume processed.' : ''
   return <>
-    <PageHeading eyebrow="RESUME ANALYZER" title="Turn your resume into an advantage." lede="Upload your resume to extract your skills, education, experience and projects. Everything shown afterwards comes from this file." />
+    <PageHeading eyebrow="Resume Studio" title="Upload and analyse your resume." lede="We extract your skills, education, experience and projects from the file you upload. Everything shown across the workspace comes from it." action={lifecycle === 'processed' && !file ? <button className="secondary-button" onClick={onViewResults}>View analysis results</button> : undefined} />
     <section className="resume-layout">
       <div className="card upload-card">
-        <div className="card-heading"><div><p className="eyebrow">RESUME INPUT</p><h2 className="card-title">Upload your resume</h2></div><span className="file-support">PDF OR DOCX · MAX 10 MB</span></div>
-        {resumeRecord && !file && <div className="current-resume">
-          <div><small>{lifecycle === 'processed' ? 'Active resume' : lifecycle === 'failed' ? 'Last upload (not processed)' : 'Current upload'}</small><strong>{resumeRecord.original_filename}</strong><small>{formatBytes(resumeRecord.file_size)} · uploaded {formatDateTime(resumeRecord.created_at)}</small></div>
-          {lifecycle === 'processed' && <button className="text-button" onClick={onViewResults}>View results →</button>}
+        <div className="card-heading"><div><p className="eyebrow">Resume file</p><h2 className="card-title">{resumeRecord ? 'Your resume' : 'Upload your resume'}</h2></div><span className="file-support">PDF or DOCX · up to 10 MB</span></div>
+        {resumeRecord && <div className="current-resume">
+          <div><small>{lifecycle === 'processed' ? 'Active resume · analysed' : lifecycle === 'failed' ? 'Last upload · analysis failed' : lifecycle === 'awaiting_analysis' ? 'Uploaded · not analysed yet' : 'Current upload'}</small><strong>{resumeRecord.original_filename}</strong><small>{formatBytes(resumeRecord.file_size)} · uploaded {formatDateTime(resumeRecord.created_at)}</small></div>
+          {lifecycle === 'processed' && <button className="text-button" onClick={onViewResults}>View results</button>}
         </div>}
-        <div className={`drop-zone ${file ? 'has-file' : ''} ${dragging ? 'dragging' : ''}`} onDragOver={(event) => { event.preventDefault(); if (!busy) setDragging(true) }} onDragLeave={() => setDragging(false)} onDrop={onDrop}>
-          <span className="upload-symbol" aria-hidden="true">{file ? '✓' : '+'}</span>
+        <div className={`drop-zone ${file ? 'has-file' : ''} ${dragging ? 'dragging' : ''}`} data-graph-keep-clear="" data-graph-anchor="" onDragOver={(event) => { event.preventDefault(); if (!busy) setDragging(true) }} onDragLeave={() => setDragging(false)} onDrop={onDrop}>
+          <span className="upload-symbol" aria-hidden="true"><Icon name={file ? 'check' : 'upload'} /></span>
           {file
-            ? <><strong>{file.name}</strong><p>{formatBytes(file.size)} · ready to process</p>{!busy && <div className="drop-actions">{fileInput('Choose a different file')}<button className="text-button" onClick={onClearFile}>Remove</button></div>}</>
-            : <><strong>{resumeRecord ? 'Upload a new version' : 'Drop your resume here'}</strong><p>Drag a file here, or choose one from your device.</p>{fileInput('Browse files')}<small>PDF and DOCX files up to 10 MB. Scanned images without selectable text cannot be read.</small></>}
+            ? <><strong>{file.name}</strong><p>{formatBytes(file.size)} · ready to upload and analyse</p>{!busy && <div className="drop-actions">{fileInput('Choose a different file')}<button className="text-button" onClick={onClearFile}>Remove</button></div>}</>
+            : <><strong>{resumeRecord ? 'Upload a new version' : 'Drop your resume here'}</strong><p>Drag a file here, or choose one from your device.</p>{fileInput('Browse files')}<small>PDF or DOCX, up to 10 MB. Scanned images without selectable text cannot be read. Your current resume stays active until a new one is accepted.</small></>}
         </div>
         {fileNotice && <div className="error-notice" role="alert">{fileNotice}</div>}
-        {notice && <div className="error-notice" role="alert"><strong>{lifecycle === 'failed' ? 'Processing failed.' : 'Upload not accepted.'}</strong> {notice}{lifecycle === 'failed' && <> {resumeRecord && !file ? 'You can retry processing this file, or upload a different one.' : 'Please choose a different file and try again.'}</>}</div>}
-        {file && <button className="primary-button full-button" disabled={busy} onClick={() => void onAnalyze()}>{busy ? statusText : resumeRecord ? 'Upload and process new resume' : 'Process resume'}</button>}
-        {!file && resumeRecord && (lifecycle === 'processed' || lifecycle === 'failed' || busy) && <button className="secondary-button full-button" disabled={busy} onClick={() => void onReprocess()}>{busy ? statusText : lifecycle === 'failed' ? 'Retry processing' : 'Reprocess this resume'}</button>}
+        {notice && <div className="error-notice" role="alert"><div><strong>{lifecycle === 'failed' ? 'Analysis failed.' : 'Upload not accepted.'}</strong> {notice}{lifecycle === 'failed' && <> {resumeRecord && !file ? 'You can retry the analysis of this file, or upload a different one.' : 'Please choose a different file and try again.'}</>}</div></div>}
+        {file && <button className="primary-button full-button" disabled={busy} aria-busy={busy} onClick={() => void onAnalyze()}>{busy ? <><span className="spinner" aria-hidden="true" />{statusText}</> : resumeRecord ? 'Upload and analyse new resume' : 'Upload and analyse'}</button>}
+        {!file && resumeRecord && (lifecycle === 'processed' || lifecycle === 'failed' || lifecycle === 'awaiting_analysis' || busy) && <button className={`${lifecycle === 'awaiting_analysis' ? 'primary-button' : 'secondary-button'} full-button`} disabled={busy} aria-busy={busy} onClick={() => void onReprocess()}>{busy ? <><span className="spinner" aria-hidden="true" />{statusText}</> : lifecycle === 'failed' ? 'Retry analysis' : lifecycle === 'awaiting_analysis' ? 'Analyse this resume' : 'Reprocess this resume'}</button>}
       </div>
       <div className="card processing-card">
-        <div className="card-heading"><div><p className="eyebrow">PROCESSING</p><h2 className="card-title">Resume analysis</h2></div></div>
+        <div className="card-heading"><div><p className="eyebrow">Analysis</p><h2 className="card-title">Processing steps</h2></div></div>
         <ol className="processing-steps" aria-label="Processing steps">{RESUME_STAGES.map((item, index) => <ProcessingStep key={item.id} label={item.label} state={stepState(index)} />)}</ol>
         <p className="visually-hidden" role="status" aria-live="polite">{statusText}</p>
-        <p className="muted">Each step runs on the server; a step is only marked done after the server confirms it.</p>
+        <p className="muted">Each step is a separate server request. A step is marked done only after the server confirms it — there is no simulated progress.</p>
       </div>
     </section>
   </>
@@ -1428,10 +1271,20 @@ function RealResumeResults({ structuredResume, lifecycle, resumeRecord, onNaviga
     [data.certifications.length, 'certification', 'certifications'], [data.experience.length + data.internships.length, 'experience entry', 'experience entries'],
   ] : []
   return <>
-    <PageHeading eyebrow="RESUME RESULTS" title="What we extracted from your resume." lede={data && resumeRecord ? <>From <strong>{resumeRecord.original_filename}</strong>, processed by the resume parser. These are facts found in your file — review them against your actual resume.</> : 'Results appear here once a resume has been processed.'} action={<button className="secondary-button" onClick={() => onNavigate('resume')}>{data ? 'Upload a new version' : 'Go to Resume Analyzer'}</button>} />
-    {!data ? <div className="architecture-note" role="status">{lifecycle === 'uploading' || lifecycle === 'processing' ? 'Your resume is still being processed.' : lifecycle === 'failed' ? 'Your latest resume could not be processed, so there are no results to show. Open the Resume Analyzer to retry or upload a different file.' : 'No resume has been processed yet.'}</div> : <>
+    <PageHeading eyebrow="Resume Studio · Analysis results" title="What we extracted from your resume." lede={data && resumeRecord ? <>From <strong>{resumeRecord.original_filename}</strong>, processed by the resume parser. These are facts found in your file — review them against your actual resume.</> : 'Results appear here once a resume has been processed.'} action={<button className="secondary-button" onClick={() => onNavigate('resume')}>{data ? 'Upload a new version' : 'Go to Resume Studio'}</button>} />
+    {!data ? <div className="architecture-note" role="status">{lifecycle === 'uploading' || lifecycle === 'processing' ? 'Your resume is still being processed.' : lifecycle === 'failed' ? 'Your latest resume could not be analysed, so there are no results to show. Open Resume Studio to retry or upload a different file.' : lifecycle === 'awaiting_analysis' ? 'Your latest resume was uploaded but has not been analysed yet. Open Resume Studio to analyse it.' : 'No resume has been analysed yet.'}</div> : <>
     {warnings.length > 0 && <div className="architecture-note" role="status"><div><strong>Processed with warnings</strong><p>{outdatedParser ? 'This resume was processed by an earlier version of the parser. Reprocess it to re-extract your stored file with the current parser — your original upload is kept.' : `Some parts of this resume's structure may need review — double-check the sections below against your actual resume.${excludedProjects > 0 ? ` ${excludedProjects} project ${excludedProjects === 1 ? 'entry looks' : 'entries look'} like parsing fragments and ${excludedProjects === 1 ? 'is' : 'are'} not used as evidence for recommendations or generated materials.` : ''}`}</p>{outdatedParser && <button className="secondary-button" onClick={() => void onReprocess()}>Reprocess with current parser</button>}</div></div>}
     <ul className="result-summary" aria-label="Extraction summary">{summary.map(([count, one, many]) => <li key={many}><strong>{count}</strong><span>{count === 1 ? one : many}</span></li>)}</ul>
+    <section className="results-grid analysis-overview" aria-label="Analysis overview">
+      <article className="card result-card"><h2 className="eyebrow">Sections found</h2>
+        <ul className="coverage-list">{resumeCoverage(data).map((row) => <li key={row.key} className={row.found ? 'found' : 'absent'}><Icon name={row.found ? 'check' : 'minus'} />{row.label}<span className="visually-hidden">{row.found ? ': found' : ': not found'}</span></li>)}</ul>
+        <p className="muted">A section counts as found when at least one entry was extracted from it. This describes what the parser read from your file, not the quality of your resume.</p>
+      </article>
+      <article className="card result-card"><h2 className="eyebrow">Strengths and gaps</h2>
+        <p className="body-text">Strengths and gaps are measured against a specific opportunity’s requirements, so they appear in Skill Gaps for the role you choose — not as a general score for this resume.</p>
+        <div className="detail-actions"><button className="primary-button" onClick={() => onNavigate('careers')}>Choose an opportunity</button></div>
+      </article>
+    </section>
     <div className="results-grid resume-result-grid">
       <article className="card result-card"><h2 className="eyebrow">EXTRACTED SKILLS</h2>{data.skills.length > 0 ? <div className="chip-list">{data.skills.map((skill) => <span className="skill-chip" key={skill}>{skill}</span>)}</div> : <p className="muted">No skills section found.</p>}{projectTechnologies.length > 0 && <><p className="muted">Also used in your projects:</p><div className="chip-list">{projectTechnologies.map((tech) => <span className="skill-chip" key={tech}>{tech}</span>)}</div></>}</article>
       <article className="card result-card"><h2 className="eyebrow">EDUCATION</h2>{data.education.length > 0 ? <ul className="result-items">{data.education.map((entry, index) => <li key={index}>{String(entry.raw_text ?? '')}{(entry.degree || entry.graduation_year) ? <span className="meta-badges">{typeof entry.degree === 'string' && entry.degree && <span className="meta-badge">{entry.degree}</span>}{typeof entry.graduation_year === 'number' && <span className="meta-badge">Graduation {entry.graduation_year}</span>}</span> : null}</li>)}</ul> : <p className="muted">No education entries extracted.</p>}</article>
@@ -1457,6 +1310,6 @@ function RealResumeResults({ structuredResume, lifecycle, resumeRecord, onNaviga
 type StepState = 'waiting' | 'active' | 'complete' | 'failed'
 const STEP_TEXT: Record<StepState, string> = { waiting: 'Waiting', active: 'In progress', complete: 'Done', failed: 'Failed' }
 function ProcessingStep({ label, state }: { label: string; state: StepState }) { return <li className={`processing-step ${state}`}><span className={`process-icon ${state}`} aria-hidden="true">{state === 'complete' ? '✓' : state === 'failed' ? '!' : state === 'active' ? <span className="spinner" /> : ''}</span><strong>{label}</strong><span className="step-text">{STEP_TEXT[state]}</span></li> }
-function SettingsView() { return <><PageHeading eyebrow="SETTINGS" title="Keep your workspace focused." lede="Manage the preferences that shape your career companion experience." /><section className="settings-list"><article className="card setting-row"><div><strong>Profile preferences</strong><p>Your saved career interests and target roles guide the recommendations shown to you.</p></div><span className="planned-tag">ACTIVE</span></article><article className="card setting-row"><div><strong>Data connection</strong><p>Your profile, resume analysis, opportunity search and matching, skill gap analysis, resume and cover letter customization, interview preparation, the AI career assistant and the application tracker are all backed by the AI Career Companion API. The learning roadmap is not available yet.</p></div><span className="planned-tag">ACTIVE</span></article><article className="card setting-row"><div><strong>Privacy</strong><p>Your resume file, extracted profile data and application tracker entries are stored by the AI Career Companion backend. When an external AI language model is configured for this workspace, relevant excerpts of your resume and profile, together with the selected opportunity (and, for the assistant, your recent chat messages), are sent to that provider to help write tailored materials, interview preparation and assistant replies; otherwise these features run without any external AI service. Your uploaded resume file itself is not sent.</p></div><span className="planned-tag">ACTIVE</span></article></section></> }
+function SettingsView() { return <><PageHeading eyebrow="Settings" title="Keep your workspace focused." lede="Manage the preferences that shape your career companion experience." /><section className="settings-list"><article className="card setting-row"><div><strong>Profile preferences</strong><p>Your saved career interests and target roles guide the recommendations shown to you.</p></div><span className="planned-tag">ACTIVE</span></article><article className="card setting-row"><div><strong>Data connection</strong><p>Your profile, resume analysis, opportunity search and matching, skill gap analysis, resume and cover letter customization, interview preparation, the AI career assistant and the application tracker are all backed by the AI Career Companion API. The learning roadmap is not available yet.</p></div><span className="planned-tag">ACTIVE</span></article><article className="card setting-row"><div><strong>Privacy</strong><p>Your resume file, extracted profile data and application tracker entries are stored by the AI Career Companion backend. When an external AI language model is configured for this workspace, relevant excerpts of your resume and profile, together with the selected opportunity (and, for the assistant, your recent chat messages), are sent to that provider to help write tailored materials, interview preparation and assistant replies; otherwise these features run without any external AI service. Your uploaded resume file itself is not sent.</p></div><span className="planned-tag">ACTIVE</span></article></section></> }
 
 export default App

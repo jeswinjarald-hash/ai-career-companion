@@ -42,7 +42,7 @@ const rangeError = (form: FilterForm): string => {
 const hasFilters = (form: FilterForm) => Object.entries(form).some(([key, value]) => key !== 'sort' && value !== EMPTY_FILTERS[key as keyof FilterForm])
 
 function ApplicationCard({ application, onOpen }: { application: Application; onOpen: () => void }) {
-  return <article className="card application-card">
+  return <article className="card application-card" data-graph-magnet="">
     <div className="card-heading">
       <div>
         <h3>{application.job_title}</h3>
@@ -73,7 +73,7 @@ function ManualApplicationForm({ onCreated, onCancel }: { onCreated: (applicatio
   const [form, setForm] = useState<ManualApplicationCreate>(EMPTY_MANUAL)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const set = (field: keyof ManualApplicationCreate) => (event: { target: { value: string } }) => setForm({ ...form, [field]: event.target.value })
+  const set = (field: keyof ManualApplicationCreate) => (event: { target: { value: string } }) => { const value = event.target.value; setForm((current) => ({ ...current, [field]: value })) }
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -150,7 +150,7 @@ export function ApplicationTrackerView({ onOpenApplication, onBrowseOpportunitie
   const invalidRange = rangeError(filters)
 
   return <>
-    <PageHeading eyebrow="APPLICATION TRACKER" title="Every application, one place." lede="Track opportunities from Careers and external applications — statuses, deadlines, interviews and follow-ups."
+    <PageHeading eyebrow="Applications" title="Every application, one place." lede="Track opportunities from Careers and external applications — statuses, deadlines, interviews and follow-ups."
       action={<button className="primary-button" onClick={() => { setShowForm((open) => !open); setNotice(null) }}>{showForm ? 'Close form' : 'Add application'}</button>} />
 
     {overview.state === 'loading' && <p className="muted" role="status">Loading your application summary...</p>}
@@ -185,7 +185,7 @@ export function ApplicationTrackerView({ onOpenApplication, onBrowseOpportunitie
         {listState !== 'error' && applications !== null && applications.length === 0 && (filtered
           ? <div className="architecture-note" role="status">No applications match these filters.</div>
           : <div className="architecture-note tracker-empty" role="status">
-            <div><strong>No applications tracked yet.</strong><p>Add an opportunity from Career Recommendations with “Add to Tracker”, or add an external application manually.</p></div>
+            <div><strong>No applications tracked yet.</strong><p>Add an opportunity from Opportunities with “Add to Tracker”, or add an external application manually.</p></div>
             <div className="detail-actions"><button className="secondary-button" onClick={onBrowseOpportunities}>Browse opportunities</button><button className="secondary-button" onClick={() => setShowForm(true)}>Add application manually</button></div>
           </div>)}
         {listState !== 'error' && applications !== null && applications.length > 0 && <section className="application-list" aria-busy={listState === 'loading'}>

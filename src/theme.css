@@ -1,0 +1,190 @@
+/* Immersive workspace layer ("Aurora Prism") — loaded after App.css, profile.css and
+   applications.css. Ambient light, pointer lighting, glass surfaces, prism gradients and
+   micro-interactions on top of the tokens in index.css.
+   Rules for everything decorative here: pointer-events: none; below interactive content;
+   animate/move only with `transform` or `opacity`; nothing changes layout or dimensions;
+   pointer lighting is off for touch input and under prefers-reduced-motion. */
+
+/* ---------- Ambient background ---------- */
+.ambient { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: radial-gradient(1100px 680px at 82% -12%, rgba(79, 140, 255, .14), transparent 60%), radial-gradient(900px 620px at -12% 112%, rgba(67, 230, 208, .07), transparent 60%), linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%); }
+.ambient::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(140, 165, 215, .045) 1px, transparent 1px), linear-gradient(90deg, rgba(140, 165, 215, .045) 1px, transparent 1px); background-size: 44px 44px; -webkit-mask-image: radial-gradient(ellipse 70% 60% at 60% 30%, #000 30%, transparent 80%); mask-image: radial-gradient(ellipse 70% 60% at 60% 30%, #000 30%, transparent 80%); }
+.ambient-orb { position: absolute; display: block; border-radius: 50%; will-change: transform; animation: drift 46s ease-in-out infinite alternate; }
+.ambient-orb.blue { top: -18vmax; right: -12vmax; width: 52vmax; height: 52vmax; background: radial-gradient(circle, rgba(79, 140, 255, .17), rgba(79, 140, 255, 0) 65%); }
+.ambient-orb.orchid { top: 34%; left: 40%; width: 36vmax; height: 36vmax; background: radial-gradient(circle, rgba(177, 108, 255, .12), rgba(177, 108, 255, 0) 65%); animation-duration: 64s; animation-delay: -30s; }
+.ambient-orb.teal { bottom: -22vmax; left: -14vmax; width: 48vmax; height: 48vmax; background: radial-gradient(circle, rgba(67, 230, 208, .09), rgba(67, 230, 208, 0) 65%); animation-duration: 58s; animation-delay: -12s; }
+@keyframes drift { 0% { transform: translate3d(0, 0, 0) scale(1); } 50% { transform: translate3d(-4vmax, 3vmax, 0) scale(1.06); } 100% { transform: translate3d(3vmax, -2vmax, 0) scale(.96); } }
+
+/* Pointer spotlights: fixed-size blobs moved by transform (set from usePointerLight), so a
+   pointer move never repaints the full screen. Centred on the pointer via negative margins. */
+.ambient-spot { position: absolute; top: 0; left: 0; display: block; border-radius: 50%; opacity: 0; will-change: transform, opacity; transition: opacity .6s var(--ease); }
+.ambient-spot.primary { width: 820px; height: 820px; margin: -410px 0 0 -410px; background: radial-gradient(circle, rgba(92, 132, 255, .22) 0%, rgba(140, 108, 255, .11) 32%, rgba(140, 108, 255, 0) 62%); }
+.ambient-spot.secondary { width: 520px; height: 520px; margin: -260px 0 0 -260px; background: radial-gradient(circle, rgba(67, 230, 208, .07) 0%, rgba(67, 230, 208, 0) 60%); }
+.ambient[data-tracking="on"][data-pointer="in"] .ambient-spot { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .ambient-orb { animation: none !important; } .ambient-spot { display: none; } }
+
+.app-shell, .auth-page { position: relative; z-index: 1; background: transparent; }
+@media (min-width: 961px) {
+  .app-shell { background: linear-gradient(to right, rgba(9, 13, 25, .55) calc(var(--sidebar) - 1px), var(--line) calc(var(--sidebar) - 1px), var(--line) var(--sidebar), transparent var(--sidebar)); }
+}
+
+/* ---------- Glass shell ---------- */
+.sidebar { background: linear-gradient(180deg, rgba(18, 27, 50, .74), rgba(10, 15, 29, .74)); border-right: 1px solid var(--line); -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%); box-shadow: inset -1px 0 0 rgba(255, 255, 255, .02); }
+.topbar { background: rgba(8, 11, 20, .6); border-bottom: 1px solid var(--line); -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%); }
+.drawer { background: linear-gradient(180deg, rgba(18, 27, 50, .95), rgba(10, 15, 29, .97)); border-right: 1px solid var(--line-strong); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+.drawer-backdrop { background: rgba(3, 5, 12, .62); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+.skip-link { background: var(--accent-solid); color: #fff; }
+
+/* Brand and avatars: filled marks carry white text on the deep CTA range. */
+.brand-mark > span, .auth-brand > span, .mini-icon, .assistant-mark, .message.assistant > span[aria-hidden] { background: var(--prism-cta); color: #fff; box-shadow: 0 6px 18px -8px rgba(98, 73, 230, .9), inset 0 1px 0 rgba(255, 255, 255, .18); }
+.avatar { background: var(--accent-soft); color: var(--accent-strong); box-shadow: inset 0 0 0 1px var(--accent-line); }
+
+/* ---------- Navigation ---------- */
+.nav-group-label { color: var(--subtle); }
+.nav-item { color: var(--body); transition: background-color .18s var(--ease), color .18s var(--ease), transform .18s var(--ease); }
+.nav-item:hover { background: rgba(79, 140, 255, .08); color: var(--ink); transform: translateX(2px); }
+.nav-item:hover .nav-icon { color: var(--accent-strong); }
+.nav-item.active { background: linear-gradient(90deg, rgba(79, 140, 255, .22), rgba(177, 108, 255, .10) 70%, rgba(177, 108, 255, 0)); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(106, 156, 255, .30); }
+.nav-item.active .nav-icon { color: var(--orchid); opacity: 1; }
+.nav-item.active::before { left: -12px; width: 3px; background: linear-gradient(180deg, #4f8cff, #b16cff); box-shadow: 0 0 14px rgba(140, 108, 255, .8); transform-origin: center; animation: indicator-in .32s var(--ease); }
+@keyframes indicator-in { from { transform: scaleY(0); opacity: 0; } }
+.menu-button, .drawer-close { background: var(--surface-2); border-color: var(--line-strong); color: var(--ink); }
+
+/* ---------- Surfaces ---------- */
+.card { background: linear-gradient(180deg, rgba(22, 32, 56, .84), rgba(14, 21, 38, .86)); border-color: var(--line); box-shadow: var(--shadow); transition: border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .25s var(--ease); }
+.state-banner, .skill-score-card, .upload-card, .assistant-panel, .auth-panel { background: linear-gradient(155deg, rgba(40, 62, 120, .5), rgba(14, 21, 38, .74) 45%, rgba(58, 34, 98, .42)); border-color: rgba(106, 156, 255, .28); -webkit-backdrop-filter: blur(12px) saturate(130%); backdrop-filter: blur(12px) saturate(130%); box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, .05); }
+.auth-panel { border: 1px solid rgba(106, 156, 255, .28); border-radius: var(--radius-lg); }
+.state-banner.success { border-color: var(--success-line); }
+.state-banner.warning { border-color: var(--warning-line); }
+.state-banner.danger { border-color: var(--danger-line); }
+.architecture-note, .empty-state { background: rgba(14, 21, 38, .72); }
+.empty-state { border-color: var(--line-strong); }
+.current-resume, .mini-gap-block, .project-entry, .kpi-strip > div, .activity-metrics > div, .result-summary li { background: rgba(255, 255, 255, .03); border-color: var(--line); }
+.kpi-strip > div, .activity-metrics > div { position: relative; overflow: hidden; }
+.kpi-strip > div::after, .activity-metrics > div::after { content: ""; position: absolute; inset: 0 0 auto 0; height: 2px; background: var(--prism); opacity: .6; }
+
+/* Card spotlight: a soft radial highlight at the pointer (--sx/--sy, local to the card) and
+   an illuminated border, both clipped to the card's own box (inset: 0 + inherited radius).
+   :where() keeps specificity at zero so sticky cards keep their own positioning. */
+:where(.card) { position: relative; isolation: isolate; }
+.card::before, .card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .35s var(--ease); }
+.card::before { z-index: -1; background: radial-gradient(440px circle at var(--sx, 50%) var(--sy, 50%), rgba(96, 146, 255, .20), rgba(165, 108, 255, .09) 42%, rgba(160, 108, 255, 0) 72%); }
+.card::after { padding: 1px; background: radial-gradient(320px circle at var(--sx, 50%) var(--sy, 50%), rgba(160, 196, 255, 1), rgba(177, 108, 255, .7) 42%, rgba(67, 230, 208, 0) 76%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+.card.is-lit { border-color: rgba(106, 156, 255, .30); background-color: rgba(30, 44, 78, .2); }
+/* Glass highlight panels are already brighter; their pointer light is gentler so text keeps
+   AA contrast (verified on rendered pixels by e2e/contrast.spec.ts). */
+.state-banner::before, .skill-score-card::before, .upload-card::before, .assistant-panel::before { background: radial-gradient(400px circle at var(--sx, 50%) var(--sy, 50%), rgba(96, 146, 255, .10), rgba(165, 108, 255, .05) 42%, rgba(165, 108, 255, 0) 72%); }
+.card.is-lit::before, .card.is-lit::after { opacity: 1; }
+/* Keyboard equivalent: a calm prism border while something inside has keyboard focus. */
+.card:has(:focus-visible)::after { opacity: 1; background: var(--prism); }
+
+/* Interactive cards lift slightly on hover (removed under reduced motion). */
+.career-card, .application-card, .next-step-grid button { transition: transform .22s var(--ease), border-color .22s var(--ease), box-shadow .22s var(--ease); }
+.career-card:hover, .application-card:hover, .next-step-grid button:hover { transform: translateY(-2px); border-color: var(--accent-line); box-shadow: var(--glow); }
+.next-step-grid button { background: rgba(255, 255, 255, .03); }
+.match-row { transition: background-color .18s var(--ease); border-radius: var(--radius-sm); }
+.match-row:hover { background: rgba(79, 140, 255, .06); }
+.role-mark { background: linear-gradient(135deg, rgba(79, 140, 255, .3), rgba(177, 108, 255, .22)); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.opportunity-type-chip { background: var(--surface-3); color: var(--ink); }
+
+/* ---------- Controls ---------- */
+.primary-button { background: var(--prism-cta); color: #fff; border-color: rgba(169, 198, 255, .22); box-shadow: 0 10px 24px -12px rgba(98, 73, 230, .95), inset 0 1px 0 rgba(255, 255, 255, .16); transition: transform .16s var(--ease), box-shadow .16s var(--ease), filter .16s var(--ease); }
+.primary-button:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 14px 28px -12px rgba(98, 73, 230, 1), 0 0 0 1px rgba(169, 198, 255, .32), inset 0 1px 0 rgba(255, 255, 255, .2); }
+.primary-button:active:not(:disabled), .secondary-button:active:not(:disabled), .file-button:active { transform: translateY(0) scale(.98); filter: none; }
+.primary-button:disabled, .secondary-button:disabled { filter: saturate(.35); box-shadow: none; }
+.secondary-button, .file-button { background: rgba(255, 255, 255, .04); border-color: var(--line-strong); color: var(--ink); transition: transform .16s var(--ease), border-color .16s var(--ease), background-color .16s var(--ease); }
+.secondary-button:hover:not(:disabled), .file-button:hover { background: var(--accent-soft); border-color: var(--accent-line); color: #fff; transform: translateY(-1px); }
+.primary-button.danger-button, .danger-button { background: var(--danger-solid); color: #fff; box-shadow: none; filter: none; }
+.primary-button.danger-button:hover:not(:disabled), .danger-button:hover:not(:disabled) { background: #a92626; }
+.text-button { color: var(--accent); }
+.text-button:hover:not(:disabled) { color: var(--accent-strong); }
+.text-button.active { background: linear-gradient(120deg, rgba(79, 140, 255, .2), rgba(177, 108, 255, .16)); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(106, 156, 255, .3); }
+
+/* Fields: recessed wells with a teal focus ring. */
+.form-grid input, .form-grid textarea, .form-grid select, .auth-form input, .tracker-form input, .tracker-form select, .tracker-form textarea, .tracker-filters input, .tracker-filters select, .inline-select select, .assistant-input input, .cover-letter-editor { background: rgba(5, 8, 16, .58); border-color: var(--line-strong); color: var(--ink); }
+.form-grid input::placeholder, .auth-form input::placeholder, .assistant-input input::placeholder, .tracker-filters input::placeholder, .cover-letter-editor::placeholder { color: var(--subtle); }
+.form-grid input:focus, .form-grid textarea:focus, .form-grid select:focus, .auth-form input:focus, .tracker-form input:focus, .tracker-form select:focus, .tracker-form textarea:focus, .tracker-filters input:focus, .tracker-filters select:focus, .inline-select select:focus, .assistant-input input:focus, .cover-letter-editor:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(67, 230, 208, .18); }
+.form-grid input:disabled, .form-grid textarea:disabled { background: rgba(255, 255, 255, .02); color: var(--muted); }
+select option { background: var(--surface); color: var(--ink); }
+
+/* ---------- Data display ---------- */
+.progress-track, .meter-bar { background: rgba(255, 255, 255, .07); }
+.progress-track span, .meter-bar > span { background: linear-gradient(90deg, #4f8cff, #b16cff 60%, #43e6d0); box-shadow: 0 0 12px rgba(140, 108, 255, .4); }
+.meter-bar.muted-bar > span { background: var(--line-strong); box-shadow: none; }
+.meter-bar > span { animation: bar-in .7s var(--ease) both; transform-origin: left center; }
+@keyframes bar-in { from { transform: scaleX(0); } }
+.skill-chip { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-strong); }
+.match-badge, .status-chip.info, .skill-status.adequate { background: linear-gradient(120deg, rgba(79, 140, 255, .18), rgba(177, 108, 255, .14)); border-color: rgba(106, 156, 255, .38); color: #c9d9ff; }
+.match-score b { color: #fff; }
+
+/* Score rings (ScoreRing in src/components/charts.tsx): arc length = the real value. */
+.score-ring { position: relative; display: inline-grid; place-items: center; flex: 0 0 auto; }
+.score-ring svg { display: block; transform: rotate(-90deg); }
+.score-ring .ring-track { stroke: rgba(255, 255, 255, .08); }
+.score-ring .ring-value { stroke-linecap: round; filter: drop-shadow(0 0 6px rgba(140, 108, 255, .45)); animation: ring-in .9s var(--ease) both; }
+@keyframes ring-in { from { stroke-dashoffset: var(--ring-circumference); } }
+.score-ring-label { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.score-ring-label strong { color: var(--ink); font-size: var(--ring-font, 24px); font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+.score-ring-label span { margin-top: 4px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.score-ring.unavailable .score-ring-label strong { color: var(--muted); }
+.ring-row { display: flex; align-items: center; gap: var(--s5); }
+.ring-row > div { min-width: 0; }
+
+/* ---------- Resume studio ---------- */
+.drop-zone { background: rgba(5, 8, 16, .38); border-color: var(--accent-line); transition: border-color .2s var(--ease), background-color .2s var(--ease), box-shadow .2s var(--ease); }
+.drop-zone:hover { border-color: var(--accent); background: rgba(79, 140, 255, .05); }
+.drop-zone.dragging { border-color: var(--teal); background: var(--teal-soft); box-shadow: 0 0 0 4px rgba(67, 230, 208, .12), inset 0 0 40px rgba(67, 230, 208, .08); }
+.drop-zone.has-file { background: rgba(79, 140, 255, .06); }
+.upload-symbol { background: linear-gradient(135deg, rgba(79, 140, 255, .38), rgba(177, 108, 255, .3)); color: #fff; box-shadow: 0 10px 26px -12px rgba(98, 73, 230, .95), inset 0 0 0 1px rgba(255, 255, 255, .12); transition: transform .2s var(--ease); }
+.drop-zone:hover .upload-symbol, .drop-zone.dragging .upload-symbol { transform: translateY(-2px); }
+.process-icon { background: rgba(255, 255, 255, .04); }
+.process-icon.complete { background: var(--success); border-color: var(--success); color: #062012; }
+.process-icon.active { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(67, 230, 208, .12); }
+.process-icon.failed { background: var(--danger-solid); border-color: var(--danger-solid); color: #fff; }
+.processing-step.active .step-text { color: var(--teal); }
+
+/* ---------- Assistant ---------- */
+.assistant-context { background: rgba(255, 255, 255, .03); }
+.message > div { background: rgba(255, 255, 255, .04); }
+.message.user > div { background: linear-gradient(135deg, rgba(47, 99, 224, .32), rgba(138, 63, 224, .22)); border-color: var(--accent-line); }
+.message > span[aria-hidden] { background: var(--surface-3); color: var(--ink); }
+.starter-prompts button, .assistant-quick > button:not(.secondary-button):not(.text-button), .message-actions button { background: rgba(255, 255, 255, .03); transition: border-color .16s var(--ease), background-color .16s var(--ease), transform .16s var(--ease); }
+.starter-prompts button:hover:not(:disabled), .message-actions button:hover { transform: translateY(-1px); }
+.conversation-row:hover { background: rgba(255, 255, 255, .04); }
+/* Shown only while a message request is pending (AssistantView `sending`). */
+.typing-dots { display: inline-flex; gap: 4px; align-items: center; }
+.typing-dots > span { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); animation: typing 1.2s ease-in-out infinite; }
+.typing-dots > span:nth-child(2) { animation-delay: .15s; background: var(--accent); }
+.typing-dots > span:nth-child(3) { animation-delay: .3s; background: var(--orchid); }
+@keyframes typing { 0%, 80%, 100% { opacity: .3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+.spinner { border-color: rgba(106, 156, 255, .25); border-top-color: var(--teal); }
+
+/* ---------- Auth ---------- */
+.auth-aside { background: linear-gradient(160deg, rgba(40, 62, 120, .5), rgba(9, 13, 25, .72) 55%, rgba(58, 34, 98, .42)); border-left: 1px solid var(--line); color: var(--body); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.auth-aside .eyebrow { color: var(--teal); }
+.auth-flow { background: rgba(255, 255, 255, .03); border-color: var(--line); }
+.auth-flow > span { color: var(--teal); }
+.auth-flow small { color: var(--muted); }
+.auth-page.single .auth-panel { margin-top: 12vh; }
+
+/* ---------- Typography accents ---------- */
+.eyebrow { color: var(--accent); }
+.page-heading h1 { color: #f6f8ff; text-shadow: 0 0 34px rgba(98, 120, 255, .28); }
+.page-heading { position: relative; }
+.page-heading::after { content: ""; position: absolute; left: 0; bottom: -12px; width: 64px; height: 2px; border-radius: 2px; background: var(--prism); opacity: .85; pointer-events: none; }
+
+/* ---------- Reduced motion: static, complete, no lift or pointer light ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .career-card:hover, .application-card:hover, .next-step-grid button:hover, .primary-button:hover:not(:disabled), .secondary-button:hover:not(:disabled), .file-button:hover, .nav-item:hover, .starter-prompts button:hover:not(:disabled), .message-actions button:hover, .drop-zone:hover .upload-symbol { transform: none; }
+  .card.is-lit::before, .card.is-lit::after { opacity: 0; }
+}
+
+/* ---------- No backdrop-filter support: solid surfaces keep text readable ---------- */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .sidebar, .drawer { background: var(--bg-2); }
+  .topbar { background: var(--bg); }
+  .state-banner, .skill-score-card, .upload-card, .assistant-panel, .auth-panel, .auth-aside { background: var(--surface); }
+}
+
+/* Skill graph canvas (SkillGraphCanvas): fills the fixed ambient layer, between the drifting
+   glows and the pointer spotlights. Decorative only — no hit testing, no layout impact. */
+.skill-graph { position: absolute; inset: 0; display: block; width: 100%; height: 100%; pointer-events: none; }

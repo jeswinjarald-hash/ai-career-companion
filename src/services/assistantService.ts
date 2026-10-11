@@ -82,8 +82,12 @@ const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
   return body as T
 }
 
+// Request bodies, named so src/api/contract.check.ts can verify them against the backend.
+export type CreateConversationPayload = { title: string | null; job_id: string | null }
+export type SendMessagePayload = { content: string; job_id: string | null }
+
 export const createConversation = (title?: string, jobId?: string) =>
-  request<ConversationDetail>('/api/career-assistant/conversations', { method: 'POST', body: JSON.stringify({ title: title ?? null, job_id: jobId ?? null }) })
+  request<ConversationDetail>('/api/career-assistant/conversations', { method: 'POST', body: JSON.stringify({ title: title ?? null, job_id: jobId ?? null } satisfies CreateConversationPayload) })
 
 export const listConversations = () => request<ConversationSummary[]>('/api/career-assistant/conversations')
 
@@ -99,7 +103,7 @@ export const getConversation = async (conversationId: number): Promise<Conversat
 export const sendMessage = (conversationId: number, content: string, jobId?: string) =>
   request<AssistantResponse>(`/api/career-assistant/conversations/${conversationId}/messages`, {
     method: 'POST',
-    body: JSON.stringify({ content, job_id: jobId ?? null }),
+    body: JSON.stringify({ content, job_id: jobId ?? null } satisfies SendMessagePayload),
   })
 
 export const deleteConversation = (conversationId: number) =>

@@ -1,16 +1,16 @@
-.form-grid textarea {
-  min-height: 88px;
-  resize: vertical;
-}
-
-.form-grid input:disabled,
-.form-grid textarea:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.form-grid .field-hint {
-  margin: -6px 0 0;
-  color: var(--muted);
-  font: 12px/1.4 Arial, sans-serif;
+/* Career profile — layout and completion checklist. Field styles live in App.css. */
+.profile-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: var(--s4); align-items: start; }
+.profile-aside { position: sticky; top: 76px; }
+.profile-score { display: flex; align-items: baseline; gap: var(--s2); margin-top: var(--s2); }
+.profile-score strong { color: var(--ink); font-size: 36px; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.profile-score span { color: var(--muted); font-size: 14px; }
+.check-list { display: grid; gap: var(--s2); }
+.check-list li { display: flex; align-items: center; gap: var(--s2); color: var(--muted); font-size: 14px; }
+.check-list li::before { content: ""; width: 16px; height: 16px; flex: 0 0 auto; border: 1.5px solid var(--line-strong); border-radius: 50%; }
+.check-list li.done { color: var(--ink); }
+.check-list li.done::before { border-color: var(--success); background: var(--success) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23062012' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat; }
+.form-grid .field-hint { margin-top: -6px; }
+@media (max-width: 960px) {
+  .profile-layout { grid-template-columns: 1fr; }
+  .profile-aside { position: static; }
 }

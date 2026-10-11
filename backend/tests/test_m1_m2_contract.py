@@ -6,6 +6,7 @@ from app.schemas.job_chunk import JobSearchResult
 from app.schemas.job_posting import JobPosting
 from app.services import job_matching
 from app.services.job_matching import match_jobs_for_profile
+from pdf_line_fixture import pdf_from_lines
 from test_resume_api import register_session, resume_client, valid_docx
 from test_structured_context import prepare
 from test_structured_context import resume_docx
@@ -170,9 +171,56 @@ def test_matching_uses_requested_resume_id_without_stale_resume(resume_client, m
     assert captured_ids == [first_resume_id, second_resume_id]
 
 
-def test_real_resume_flow_reaches_ranked_matches(resume_client) -> None:
-    client, _ = resume_client
-    session = register_session(client, email="arun.audit@example.com", full_name="Arun Kumar")
+# Fully synthetic resume (fictional person, reserved example.com domain): the end-to-end
+# flow is exercised on a deterministic PDF built in memory, never on files from the real
+# resume store, and nothing extracted from it is printed.
+SYNTHETIC_PDF_RESUME_LINES = [
+    "Alex Sample",
+    "alex.sample@example.com | +1 555 0100 | Sampletown",
+    "",
+    "SUMMARY",
+    "Information technology student focused on backend development, REST APIs and data-driven applications.",
+    "",
+    "TECHNICAL SKILLS",
+    "Python, FastAPI, SQL, PostgreSQL, Git, GitHub, Docker, REST API Development, Pandas, HTML, CSS",
+    "",
+    "EDUCATION",
+    "B.Tech in Information Technology",
+    "Example Institute of Technology | 2022 - 2026",
+    "",
+    "EXPERIENCE",
+    "Backend Developer Intern, Example Labs | June 2025 - August 2025",
+    "- Built REST endpoints with Python and FastAPI backed by a PostgreSQL database.",
+    "- Wrote SQL queries and automated data validation scripts, tracked in Git.",
+    "",
+    "PROJECTS",
+    "Library Catalogue API",
+    "- Designed a FastAPI service with SQL storage, authentication and automated tests.",
+    "Sales Data Dashboard",
+    "- Analysed sample sales data with Python and Pandas and published summary reports.",
+    "",
+    "CERTIFICATIONS",
+    "Introduction to Databases (online course)",
+]
+
+
+def test_synthetic_pdf_resume_flow_reaches_ranked_matches(resume_client, monkeypatch) -> None:
+    client, storage_dir = resume_client
+    real_store = (Path(__file__).resolve().parents[1] / "data" / "resumes").resolve()
+    original_read_bytes, original_glob = Path.read_bytes, Path.glob
+
+    def guarded_read_bytes(self: Path) -> bytes:
+        assert real_store not in self.resolve().parents, "tests must not read the real resume store"
+        return original_read_bytes(self)
+
+    def guarded_glob(self: Path, pattern: str, *args, **kwargs):
+        assert self.resolve() != real_store, "tests must not enumerate the real resume store"
+        return original_glob(self, pattern, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_bytes", guarded_read_bytes)
+    monkeypatch.setattr(Path, "glob", guarded_glob)
+
+    session = register_session(client, email="alex.sample@example.com", full_name="Alex Sample")
     profile_id = session["profile"]["id"]
     assert client.patch(
         f"/api/profiles/{profile_id}",
@@ -185,10 +233,9 @@ def test_real_resume_flow_reaches_ranked_matches(resume_client) -> None:
             "target_roles": ["Backend Developer"],
         },
     ).status_code == 200
-    resume_path = next((Path(__file__).parents[1] / "data" / "resumes").glob("*.pdf"))
     upload = client.post(
         f"/api/profiles/{profile_id}/resumes",
-        files={"file": (resume_path.name, resume_path.read_bytes(), "application/pdf")},
+        files={"file": ("synthetic-resume.pdf", pdf_from_lines(SYNTHETIC_PDF_RESUME_LINES), "application/pdf")},
     )
     resume_id = upload.json()["id"]
 
@@ -198,6 +245,8 @@ def test_real_resume_flow_reaches_ranked_matches(resume_client) -> None:
     matches = client.get(f"/api/resumes/{resume_id}/job-matches?top_k=5")
 
     assert upload.status_code == 201
+    stored_files = [path for path in Path(storage_dir).rglob("*") if path.is_file()]
+    assert len(stored_files) == 1 and Path(storage_dir).resolve() in stored_files[0].resolve().parents
     assert extraction.status_code == 200
     assert extraction.json()["character_count"] > 500
     assert sections.status_code == 200
@@ -210,22 +259,3 @@ def test_real_resume_flow_reaches_ranked_matches(resume_client) -> None:
     assert matches.status_code == 200
     assert len(matches.json()) == 5
     assert all(item["reasoning"] and item["strengths"] is not None and item["gaps"] is not None for item in matches.json())
-    print(
-        {
-            "profile_id": profile_id,
-            "resume_id": resume_id,
-            "skills": data["skills"],
-            "projects": data["projects"],
-            "top_matches": [
-                {
-                    "title": item["job_title"],
-                    "domain": item["domain"],
-                    "score": item["match_score"],
-                    "matched": item["matched_required_skills"],
-                    "missing": item["missing_required_skills"],
-                    "projects": item["relevant_projects"],
-                }
-                for item in matches.json()
-            ],
-        }
-    )

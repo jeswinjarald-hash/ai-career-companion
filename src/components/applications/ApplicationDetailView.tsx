@@ -164,13 +164,13 @@ export function ApplicationDetailView({ applicationId, resumeId, onBack, onOpenC
   }
 
   const back = <button className="text-button" onClick={onBack}>Back to tracker →</button>
-  if (loadState === 'loading') return <PageHeading eyebrow="APPLICATION" title="Loading application..." lede="" action={back} />
-  if (loadState === 'missing') return <><PageHeading eyebrow="APPLICATION" title="Application not found." lede="It may have been deleted, or it is not part of your tracker." action={back} /></>
-  if (loadState === 'error' || !application || !draft) return <><PageHeading eyebrow="APPLICATION" title="We could not load this application." lede={loadError} action={back} /><button className="secondary-button" onClick={() => window.location.reload()}>Retry</button></>
+  if (loadState === 'loading') return <PageHeading eyebrow="Application" title="Loading application..." lede="" action={back} />
+  if (loadState === 'missing') return <><PageHeading eyebrow="Application" title="Application not found." lede="It may have been deleted, or it is not part of your tracker." action={back} /></>
+  if (loadState === 'error' || !application || !draft) return <><PageHeading eyebrow="Application" title="We could not load this application." lede={loadError} action={back} /><button className="secondary-button" onClick={() => window.location.reload()}>Retry</button></>
 
   const isDataset = application.source === 'dataset'
   const busy = saving !== ''
-  const field = (key: keyof Draft) => (event: { target: { value: string } }) => setDraft({ ...draft, [key]: event.target.value })
+  const field = (key: keyof Draft) => (event: { target: { value: string } }) => { const value = event.target.value; setDraft((current) => current && { ...current, [key]: value }) }
 
   return <>
     <PageHeading eyebrow={isDataset ? `APPLICATION · ${application.job_id}` : 'APPLICATION · EXTERNAL'} title={application.job_title}
@@ -221,7 +221,7 @@ export function ApplicationDetailView({ applicationId, resumeId, onBack, onOpenC
     <section className="card comparison-card">
       <div className="card-heading"><div><p className="eyebrow">GENERATED MATERIALS</p><h3>Resume, cover letter and interview preparation</h3></div></div>
       {!isDataset
-        ? <p className="muted">Generated resumes, cover letters and interview preparation are created for opportunities from Career Recommendations, so they can't be linked to an external application.</p>
+        ? <p className="muted">Generated resumes, cover letters and interview preparation are created for opportunities from Opportunities, so they can't be linked to an external application.</p>
         : resumeId === null
           ? <p className="muted">Process a resume to view or generate application materials for this opportunity.{application.customization_id !== null || application.interview_preparation_id !== null ? ' Previously linked materials remain attached.' : ''}</p>
           : <div className="linked-materials">

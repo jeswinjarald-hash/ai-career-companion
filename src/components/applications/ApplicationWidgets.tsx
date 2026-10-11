@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Stat } from '../common'
+import { MeterChart } from '../charts'
+import { applicationStatusRows } from '../../lib/insights'
 import {
   ApplicationApiError, createApplicationFromJob, findApplicationForJob, updateApplication,
   type Application, type ApplicationReminder, type ApplicationSummary,
@@ -53,8 +55,11 @@ export function ApplicationActivity({ onOpenTracker, onOpenApplication }: { onOp
         <div><strong>{summary.offers_received}</strong><small>Offers</small></div>
       </div>
       {summary.total_applications === 0
-        ? <p className="muted">No applications tracked yet. Add an opportunity from Career Recommendations or add an external application in the tracker.</p>
-        : <ApplicationReminderList reminders={reminders.reminders.slice(0, 5)} onOpen={onOpenApplication} />}
+        ? <p className="muted">No applications tracked yet. Add an opportunity from Opportunities or add an external application in the tracker.</p>
+        : <>
+          <ApplicationReminderList reminders={reminders.reminders.slice(0, 5)} onOpen={onOpenApplication} />
+          <div className="activity-chart"><ApplicationStatusChart counts={summary.status_counts} total={summary.total_applications} /></div>
+        </>}
     </>}
   </section>
 }
@@ -152,4 +157,13 @@ export function TrackerLinkPanel({ kind, jobId, artifactId, onOpenApplication }:
       {application && <button className="text-button" onClick={() => onOpenApplication(application.id)}>Open application →</button>}
     </div>
   </section>
+}
+
+// Applications per status from GET /api/applications/summary (status_counts). Bars share
+// one scale (0 → the total number of applications); statuses with none are omitted.
+export function ApplicationStatusChart({ counts, total }: { counts: ApplicationSummary['status_counts']; total: number }) {
+  const rows = applicationStatusRows(counts)
+  return <MeterChart title="Applications by status" description={`${total} tracked application${total === 1 ? '' : 's'}; each bar is out of that total.`}
+    labelHeader="Status" valueHeader="Applications" max={total} emptyText="No applications to show yet."
+    rows={rows.map((row) => ({ key: row.status, label: STATUS_LABEL[row.status], value: row.count, display: String(row.count) }))} />
 }
