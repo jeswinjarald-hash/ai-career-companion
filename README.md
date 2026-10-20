@@ -113,6 +113,14 @@ The app is not deployed; these are the settings a deployment needs. They were ch
 | [`docs/MILESTONE_4.md`](docs/MILESTONE_4.md) | Application tracker; index of M4.2–M4.4 artifacts |
 | [`backend/data/evaluation/m4/README.md`](backend/data/evaluation/m4/README.md) | Evaluation framework, label policy, how to run |
 | [`docs/file-purpose-guide.md`](docs/file-purpose-guide.md) | What each file is for |
+| [`docs/Internship_artifacts/README.md`](docs/Internship_artifacts/README.md) | Agile methodology, backlog, user stories, milestone history, retrospective, DoD, traceability, and validated Infosys templates |
+| [`docs/project-report/README.md`](docs/project-report/README.md) | Academic project report source, exports, and supporting figures |
 
 Resumes, databases and `.env` files contain personal or secret data and stay local; see
 `.gitignore`.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE). Third-party dependencies,
+the pretrained embedding model, and other external materials retain their own licenses;
+review their terms separately before redistribution.
