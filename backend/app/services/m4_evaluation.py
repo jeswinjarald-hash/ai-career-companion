@@ -48,6 +48,7 @@ from app.services.job_matching import (
 )
 from app.services.job_search_service import search_jobs
 from app.services.llm_provider import NullLLMProvider
+from app.services.structured_resume import PARSER_VERSION
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 M4_EVALUATION_DIR = BACKEND_ROOT / "data" / "evaluation" / "m4"
@@ -254,7 +255,13 @@ def seed_candidate(db: Session, candidate: dict[str, Any], user_id: int) -> Seed
     )
     db.add(resume)
     db.flush()
-    structured = StructuredResume(resume_id=resume.id, data=copy.deepcopy(candidate["structured_data"]))
+    data = copy.deepcopy(candidate["structured_data"])
+    # The fixtures are hand-written structured data, not output of an older parser. Without
+    # a version they would be served with the "outdated parser, reprocess the file" warning,
+    # which blocks `validation.passed` although there is no stored file to reprocess.
+    # A fixture that sets its own parser_version keeps it.
+    data.setdefault("parser_version", PARSER_VERSION)
+    structured = StructuredResume(resume_id=resume.id, data=data)
     db.add(structured)
     db.commit()
     return SeededCandidate(candidate, user_id, profile, resume, structured)

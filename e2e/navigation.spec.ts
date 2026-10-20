@@ -41,15 +41,26 @@ test('a direct deep link opens the requested page after the session check', asyn
   await expect(page.getByText('Process a resume to see opportunities ranked for you.')).toBeVisible()
 })
 
+// Every page.goto reloads the app, which restores the active resume with
+// GET /api/profiles/<id>/resumes. The empty states can render before that answer, so
+// wait for it: the assertions then check the settled page, and the next page.goto does
+// not abort the request mid-flight (which the network guard rightly reports).
+async function gotoRestored(page: Page, path: string) {
+  const restored = page.waitForResponse((response) => response.request().method() === 'GET'
+    && /^\/api\/profiles\/\d+\/resumes$/.test(new URL(response.url()).pathname))
+  await page.goto(path)
+  await restored
+}
+
 test('empty states without a resume are honest', async ({ page }) => {
-  await page.goto('/skills')
+  await gotoRestored(page, '/skills')
   await expect(page.getByText('Upload and process your resume before running skill gap analysis.')).toBeVisible()
-  await page.goto('/progress')
+  await gotoRestored(page, '/progress')
   await expect(page.locator('.stat-card', { hasText: 'Resume analyzed' }).locator('strong')).toHaveText('No')
   // Defect D: a new account has only its name and e-mail, which do not count as completion.
   await expect(page.locator('.stat-card', { hasText: 'Profile completion' }).locator('strong')).toHaveText('0%')
   await expect(page.locator('.stat-card', { hasText: 'Profile completion' }).locator('small')).toHaveText('0 of 8 profile details saved')
-  await page.goto('/profile')
+  await gotoRestored(page, '/profile')
   await expect(page.locator('.completion-label')).toHaveText('0% complete')
   await page.getByLabel('Degree').fill('B.Tech')
   await page.getByLabel('Skills').fill('Python, SQL')

@@ -15,6 +15,7 @@ from app.schemas.skill_gap import SkillGapSummary
 from app.services import m4_evaluation
 from app.services.job_dataset_service import load_job_postings
 from app.services.llm_provider import NullLLMProvider
+from app.services.structured_resume import PARSER_VERSION, effective_parser_warnings
 
 JOBS = {job.job_id: job for job in load_job_postings()}
 
@@ -66,6 +67,27 @@ def test_candidate_fixtures_target_real_jobs_and_use_the_persisted_resume_shape(
     scenarios = cases["matching_scenarios"]
     assert scenarios["target_job_id"] in JOBS
     assert {s["scenario_id"] for s in scenarios["scenarios"]} == {"A_required_strong", "B_preferred_strong", "C_semantic_not_exact", "D_unsuitable"}
+
+
+def test_seeded_fixtures_are_current_parser_output_unless_they_say_otherwise() -> None:
+    """Hand-written fixtures have no stored file to reprocess, so seeding must not make
+    them look like outdated parser output (that warning blocks `validation.passed`)."""
+    candidate = m4_evaluation.load_case_file("candidates.json")["candidates"][0]
+    assert "parser_version" not in candidate["structured_data"]
+    db = m4_evaluation.new_session()
+    try:
+        seeded = m4_evaluation.seed_candidate(db, candidate, user_id=1)
+        assert seeded.structured.data["parser_version"] == PARSER_VERSION
+        assert effective_parser_warnings(seeded.structured.data) == []
+        assert "parser_version" not in candidate["structured_data"], "the case file data must not be mutated"
+
+        old = copy.deepcopy(candidate)
+        old["structured_data"]["parser_version"] = 1
+        kept = m4_evaluation.seed_candidate(db, old, user_id=2)
+        assert kept.structured.data["parser_version"] == 1
+        assert any(w.startswith("outdated_parser_version") for w in effective_parser_warnings(kept.structured.data))
+    finally:
+        db.close()
 
 
 def test_conversation_cases_reference_real_jobs() -> None:
